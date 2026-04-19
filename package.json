@@ -1,0 +1,20 @@
+{
+  "name": "work-analytics",
+  "version": "1.0.0",
+  "description": "Веб-приложение для сбора, агрегации и визуализации данных об IT-вакансиях",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js",
+    "dev": "node --watch server/app.js"
+  },
+  "keywords": ["analytics", "vacancies", "parser"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "axios": "^1.15.0",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

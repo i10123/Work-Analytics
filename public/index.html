@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Work Analytics — анализ IT-вакансий с HH.ru, Rabota.by и Хабр Карьеры. Статистика зарплат, навыков и опыта." />
+  <title>Work Analytics — Анализ IT-вакансий</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- ========== LAYOUT ========== -->
+  <div class="app-layout" id="appLayout">
+    <!-- Элементы фона для Glassmorphism / 3D -->
+    <div class="bg-shape bg-shape--1"></div>
+    <div class="bg-shape bg-shape--2"></div>
+    <div class="bg-shape bg-shape--3"></div>
+
+    <!-- Мобильная шапка -->
+    <header class="mobile-topbar" id="mobileTopbar">
+      <div class="mobile-topbar__logo">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none"
+          stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <h2>Work Analytics</h2>
+      </div>
+      <button class="mobile-topbar__toggle" id="mobileMenuToggle" aria-label="Открыть меню">☰</button>
+    </header>
+
+    <!-- ===== САЙДБАР (левая панель: история отчётов) ===== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <span class="sidebar__logo-icon">
+            <svg viewBox="0 0 24 24" width="32" height="32" stroke="url(#logoGradient)" stroke-width="2.5" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <defs>
+                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="var(--color-primary)" />
+                  <stop offset="100%" stop-color="var(--color-accent)" />
+                </linearGradient>
+              </defs>
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </span>
+          <h1 class="sidebar__title">Work Analytics</h1>
+        </div>
+      </div>
+
+
+      <button class="btn new-report-btn" id="btnNewReport">
+        <svg class="new-report-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span>Новый сбор данных</span>
+      </button>
+
+      <div class="sidebar__section-title">История отчётов</div>
+      <div class="sidebar__reports-list" id="reportsList">
+        <!-- Динамически заполняется через JS -->
+        <div class="sidebar__empty" id="reportsEmpty">
+          <span class="sidebar__empty-icon">
+            <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="1.5" fill="none"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </span>
+          <p>Нет сохранённых отчётов</p>
+        </div>
+      </div>
+
+      <!-- Статус очереди -->
+      <div class="sidebar__queue-status" id="queueStatus" style="display: none;">
+        <div class="queue-badge">
+          <span class="queue-badge__dot"></span>
+          <span id="queueText">В очереди: 0</span>
+        </div>
+      </div>
+
+      <!-- Кнопка Настройки -->
+      <button class="btn sidebar__settings-btn mt-auto" id="btnSettings">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+          </path>
+        </svg>
+        <span>Настройки</span>
+      </button>
+    </aside>
+
+    <!-- ===== ОСНОВНОЙ КОНТЕНТ ===== -->
+    <main class="main-content" id="mainContent">
+      <button class="absolute-toggle" id="sidebarToggle" aria-label="Меню">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+      <!-- ---- ЭКРАН ПРИВЕТСТВИЯ ---- -->
+      <section class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-screen__inner">
+          <div class="welcome-screen__icon">🔍</div>
+          <h2 class="welcome-screen__title">Добро пожаловать в Work Analytics</h2>
+          <p class="welcome-screen__desc">
+            Анализируйте IT-вакансии из трёх источников одновременно.<br />
+            Нажмите <strong>«Новый сбор данных»</strong>, чтобы начать.
+          </p>
+          <div class="welcome-screen__features">
+            <div class="feature-card">
+              <span class="feature-card__icon svg-icon">
+                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
+              <span class="feature-card__text">HH.ru</span>
+            </div>
+            <div class="feature-card">
+              <span class="feature-card__icon svg-icon">
+                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                  </path>
+                </svg>
+              </span>
+              <span class="feature-card__text">Rabota.by</span>
+            </div>
+            <div class="feature-card">
+              <span class="feature-card__icon svg-icon">
+                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+              </span>
+              <span class="feature-card__text">Хабр Карьера</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- МОДАЛЬНОЕ ОКНО: Новый сбор ---- -->
+      <div class="modal-overlay" id="modalOverlay" style="display: none;">
+        <div class="modal" id="parseModal">
+          <div class="modal__header">
+            <h2 class="modal__title">Новый сбор данных</h2>
+            <button class="modal__close" id="modalClose" aria-label="Закрыть">✕</button>
+          </div>
+          <form class="modal__form" id="parseForm">
+            <div class="form-group">
+              <label class="form-label" for="inputQuery">Ключевое слово</label>
+              <input class="form-input" type="text" id="inputQuery" placeholder="Frontend, Python, DevOps..." required
+                autocomplete="off" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Период</label>
+                <div class="segmented-control" id="controlPeriod">
+                  <button type="button" class="segmented-control__btn" data-value="1day">1д</button>
+                  <button type="button" class="segmented-control__btn" data-value="3days">3д</button>
+                  <button type="button" class="segmented-control__btn active" data-value="7days">7д</button>
+                  <button type="button" class="segmented-control__btn" data-value="14days">14д</button>
+                  <button type="button" class="segmented-control__btn" data-value="30days">30д</button>
+                  <div class="segmented-control__indicator"></div>
+                </div>
+                <!-- Скрытый селект для совместимости с существующим кодом -->
+                <select id="selectPeriod" style="display: none;">
+                  <option value="1day">1 день</option>
+                  <option value="3days">3 дня</option>
+                  <option value="7days" selected>7 дней</option>
+                  <option value="14days">14 дней</option>
+                  <option value="30days">30 дней</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="inputLimit">Лимит вакансий</label>
+                <div class="number-stepper">
+                  <button type="button" class="stepper-btn stepper-btn--minus" data-stepper="minus"
+                    aria-label="Уменьшить">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
+                  <input class="form-input" type="number" id="inputLimit" value="50" min="5" max="200" step="5" />
+                  <button type="button" class="stepper-btn stepper-btn--plus" data-stepper="plus"
+                    aria-label="Увеличить">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn--primary btn--full btn--lg" type="submit" id="btnSubmitParse">
+              🚀 Запустить сбор
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- ---- СТАТУС ПАРСИНГА (progress) ---- -->
+      <section class="progress-section" id="progressSection" style="display: none;">
+        <div class="progress-card">
+          <div class="progress-card__spinner"></div>
+          <h3 class="progress-card__title" id="progressTitle">Сбор данных...</h3>
+          <p class="progress-card__step" id="progressStep">Инициализация...</p>
+          <div class="progress-bar">
+            <div class="progress-bar__fill" id="progressFill"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---- ДАШБОРД (графики и данные) ---- -->
+      <section class="dashboard" id="dashboard" style="display: none;">
+        <!-- Заголовок и мета -->
+        <div class="dashboard__header">
+          <div class="dashboard__meta">
+            <h2 class="dashboard__title" id="dashTitle">—</h2>
+            <p class="dashboard__subtitle" id="dashSubtitle">—</p>
+          </div>
+          <!-- Переключатель валют -->
+          <div class="currency-switcher" id="currencySwitcher">
+            <button class="currency-btn active" data-currency="RUB">₽ RUB</button>
+            <button class="currency-btn" data-currency="USD">$ USD</button>
+            <button class="currency-btn" data-currency="EUR">€ EUR</button>
+            <button class="currency-btn" data-currency="BYN">BYN BYN</button>
+          </div>
+        </div>
+
+        <!-- Уведомление об ошибках (partial) -->
+        <div class="alert alert--warning" id="alertPartial" style="display: none;">
+          <span class="alert__icon">⚠️</span>
+          <span class="alert__text" id="alertPartialText">—</span>
+        </div>
+
+        <!-- KPI-карточки -->
+        <div class="kpi-grid" id="kpiGrid">
+          <div class="kpi-card">
+            <span class="kpi-card__icon">📌</span>
+            <span class="kpi-card__value" id="kpiTotal">—</span>
+            <span class="kpi-card__label">Всего вакансий</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-card__icon">💰</span>
+            <span class="kpi-card__value" id="kpiAvgSalary">—</span>
+            <span class="kpi-card__label">Средняя зарплата</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-card__icon">📈</span>
+            <span class="kpi-card__value" id="kpiMedianSalary">—</span>
+            <span class="kpi-card__label">Медианная зарплата</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-card__icon">🏢</span>
+            <span class="kpi-card__value" id="kpiCompanies">—</span>
+            <span class="kpi-card__label">Компаний</span>
+          </div>
+        </div>
+
+        <!-- Графики -->
+        <div class="charts-grid">
+          <!-- График: Вилка зарплат -->
+          <div class="chart-card">
+            <h3 class="chart-card__title">Распределение зарплат</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSalary"></canvas>
+            </div>
+          </div>
+
+          <!-- График: Источники -->
+          <div class="chart-card">
+            <h3 class="chart-card__title">Вакансии по источникам</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSources"></canvas>
+            </div>
+          </div>
+
+          <!-- График: Топ навыков -->
+          <div class="chart-card chart-card--wide">
+            <h3 class="chart-card__title">Топ-15 востребованных навыков</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSkills"></canvas>
+            </div>
+          </div>
+
+          <!-- График: Опыт -->
+          <div class="chart-card">
+            <h3 class="chart-card__title">Требуемый опыт</h3>
+            <div class="chart-card__body">
+              <canvas id="chartExperience"></canvas>
+            </div>
+          </div>
+
+          <!-- График: Города -->
+          <div class="chart-card">
+            <h3 class="chart-card__title">Топ-10 городов</h3>
+            <div class="chart-card__body">
+              <canvas id="chartCities"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Таблица вакансий -->
+        <div class="table-card">
+          <h3 class="table-card__title">Все вакансии</h3>
+          <div class="table-wrapper">
+            <table class="data-table" id="jobsTable">
+              <thead>
+                <tr>
+                  <th>Источник</th>
+                  <th>Вакансия</th>
+                  <th>Компания</th>
+                  <th>Город</th>
+                  <th>Зарплата</th>
+                  <th>Навыки</th>
+                </tr>
+              </thead>
+              <tbody id="jobsTableBody">
+                <!-- Динамически -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===== МОДАЛЬНОЕ ОКНО НАСТРОЕК (вынесено на уровень body для корректного z-index и позиционирования) ===== -->
+  <div class="settings-overlay" id="settingsOverlay" style="display: none;">
+    <div class="settings-modal" id="settingsModal">
+      <!-- Заголовок -->
+      <div class="settings-modal__header">
+        <div class="settings-modal__header-left">
+          <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
+          <h2 class="settings-modal__title">Настройки</h2>
+        </div>
+        <button class="modal__close" id="settingsClose" aria-label="Закрыть настройки">✕</button>
+      </div>
+
+      <!-- Табы -->
+      <div class="settings-tabs" id="settingsTabs">
+        <button class="settings-tab active" data-tab="general">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
+          </svg>
+          Общие
+        </button>
+        <button class="settings-tab" data-tab="parsing">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          Парсинг
+        </button>
+        <button class="settings-tab" data-tab="api">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4">
+            </path>
+          </svg>
+          API
+        </button>
+        <button class="settings-tab" data-tab="data">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
+            stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+          </svg>
+          Данные
+        </button>
+      </div>
+
+      <!-- Контент табов -->
+      <div class="settings-content">
+        <!-- Таб: Общие -->
+        <div class="settings-panel active" id="settingsPanel-general">
+          <div class="settings-section">
+            <h3 class="settings-section__title">Тема оформления</h3>
+            <div class="settings-theme-grid" id="settingsThemeGrid">
+              <label class="settings-theme-card" data-theme="slate-modernity">
+                <div class="settings-theme-card__preview"
+                  style="background: linear-gradient(135deg, #12181f 0%, #1F2933 40%, #273440 70%, #9CA3AF 100%);">
+                  <div class="settings-theme-card__dots">
+                    <span style="background: #9CA3AF;"></span>
+                    <span style="background: #6b7280;"></span>
+                    <span style="background: #4b5563;"></span>
+                  </div>
+                </div>
+                <div class="settings-theme-card__info">
+                  <span class="settings-theme-card__name">Arctic Graphite</span>
+                  <span class="settings-theme-card__label">Нейтральный</span>
+                </div>
+                <div class="settings-theme-card__check">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </label>
+              <label class="settings-theme-card" data-theme="deep-aqua">
+                <div class="settings-theme-card__preview"
+                  style="background: linear-gradient(135deg, #002b30 0%, #003D44 40%, #005660 70%, #FF8A5B 100%);">
+                  <div class="settings-theme-card__dots">
+                    <span style="background: #FF8A5B;"></span>
+                    <span style="background: #4db6ac;"></span>
+                    <span style="background: #003D44;"></span>
+                  </div>
+                </div>
+                <div class="settings-theme-card__info">
+                  <span class="settings-theme-card__name">Deep Aqua Ember</span>
+                  <span class="settings-theme-card__label">Бирюзовый</span>
+                </div>
+                <div class="settings-theme-card__check">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </label>
+              <label class="settings-theme-card" data-theme="solar-coral">
+                <div class="settings-theme-card__preview"
+                  style="background: linear-gradient(135deg, #1c0e0c 0%, #2a1512 40%, #3a1e19 70%, #FF6F61 100%);">
+                  <div class="settings-theme-card__dots">
+                    <span style="background: #FFD6A5;"></span>
+                    <span style="background: #FF6F61;"></span>
+                    <span style="background: #2a1512;"></span>
+                  </div>
+                </div>
+                <div class="settings-theme-card__info">
+                  <span class="settings-theme-card__name">Solar Coral</span>
+                  <span class="settings-theme-card__label">Тёплый</span>
+                </div>
+                <div class="settings-theme-card__check">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section__title">Валюта</h3>
+            <div class="settings-currency-selector" id="settingsDefaultCurrency">
+              <button class="settings-currency-btn active" data-currency="RUB">₽ Рос. руб</button>
+              <button class="settings-currency-btn" data-currency="USD">$ Доллар</button>
+              <button class="settings-currency-btn" data-currency="EUR">€ Евро</button>
+              <button class="settings-currency-btn" data-currency="BYN">BYN Бел. руб</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Таб: Парсинг -->
+        <div class="settings-panel" id="settingsPanel-parsing">
+          <div class="settings-section">
+            <div class="settings-form-grid">
+              <div class="form-group">
+                <label class="form-label">Период поиска</label>
+                <div class="segmented-control" id="settingsControlPeriod">
+                  <button type="button" class="segmented-control__btn" data-value="1day">1д</button>
+                  <button type="button" class="segmented-control__btn" data-value="3days">3д</button>
+                  <button type="button" class="segmented-control__btn active" data-value="7days">7д</button>
+                  <button type="button" class="segmented-control__btn" data-value="14days">14д</button>
+                  <button type="button" class="segmented-control__btn" data-value="30days">30д</button>
+                  <div class="segmented-control__indicator"></div>
+                </div>
+                <select id="settingsDefaultPeriod" style="display: none;">
+                  <option value="1day">1 день</option>
+                  <option value="3days">3 дня</option>
+                  <option value="7days" selected>7 дней</option>
+                  <option value="14days">14 дней</option>
+                  <option value="30days">30 дней</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="settingsDefaultLimit">Лимит вакансий</label>
+                <div class="number-stepper">
+                  <button type="button" class="stepper-btn stepper-btn--minus" data-stepper="minus">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
+                  <input class="form-input" type="number" id="settingsDefaultLimit" value="50" min="5" max="200"
+                    step="5" />
+                  <button type="button" class="stepper-btn stepper-btn--plus" data-stepper="plus">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section__title">Источники данных</h3>
+            <div class="settings-sources-list">
+              <label class="settings-source-item">
+                <div class="settings-source-item__info">
+                  <span class="source-badge source-badge--hh">HH.ru</span>
+                </div>
+                <input type="checkbox" class="settings-toggle" id="settingsSourceHH" checked />
+                <span class="settings-toggle-visual"></span>
+              </label>
+              <label class="settings-source-item">
+                <div class="settings-source-item__info">
+                  <span class="source-badge source-badge--rabotaby">Rabota.by</span>
+                </div>
+                <input type="checkbox" class="settings-toggle" id="settingsSourceRabotaby" checked />
+                <span class="settings-toggle-visual"></span>
+              </label>
+              <label class="settings-source-item">
+                <div class="settings-source-item__info">
+                  <span class="source-badge source-badge--habr">Хабр Карьера</span>
+                </div>
+                <input type="checkbox" class="settings-toggle" id="settingsSourceHabr" checked />
+                <span class="settings-toggle-visual"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Таб: API -->
+        <div class="settings-panel" id="settingsPanel-api">
+          <div class="settings-section">
+            <h3 class="settings-section__title">Google Gemini AI</h3>
+            <div class="settings-api-status" id="settingsGeminiStatus">
+              <div class="settings-api-status__row">
+                <span class="settings-api-status__label">Статус</span>
+                <span class="settings-api-status__value settings-api-status__value--loading" id="geminiStatusText">
+                  <span class="settings-api-status__dot"></span>
+                  Проверка...
+                </span>
+              </div>
+              <div class="settings-api-status__row">
+                <span class="settings-api-status__label">Доступно ключей</span>
+                <span class="settings-api-status__value" id="geminiKeysCount">—</span>
+              </div>
+              <div class="settings-api-status__row">
+                <span class="settings-api-status__label">Модель</span>
+                <span class="settings-api-status__value">Gemini 2.0 Flash</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section__title">Курсы валют</h3>
+            <div class="settings-api-status" id="settingsCurrencyStatus">
+              <div class="settings-api-status__row">
+                <span class="settings-api-status__label">Провайдер</span>
+                <span class="settings-api-status__value">ExchangeRate API</span>
+              </div>
+              <div class="settings-api-status__row">
+                <span class="settings-api-status__label">Статус</span>
+                <span class="settings-api-status__value settings-api-status__value--loading" id="currencyStatusText">
+                  <span class="settings-api-status__dot"></span>
+                  Проверка...
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Таб: Данные -->
+        <div class="settings-panel" id="settingsPanel-data">
+          <div class="settings-section">
+            <div class="settings-data-stats" id="settingsDataStats">
+              <div class="settings-data-stat">
+                <span class="settings-data-stat__value" id="dataReportsCount">—</span>
+                <span class="settings-data-stat__label">Отчётов</span>
+              </div>
+              <div class="settings-data-stat">
+                <span class="settings-data-stat__value" id="dataJobsCount">—</span>
+                <span class="settings-data-stat__label">Вакансий</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section__title">Очистка данных</h3>
+            <div class="settings-cleanup-container">
+              <div class="cleanup-card cleanup-card--danger">
+                <div class="cleanup-card__inner">
+                  <div class="cleanup-card__icon">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      <line x1="10" y1="11" x2="10" y2="17"></line>
+                      <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                  </div>
+                  <div class="cleanup-card__info">
+                    <span class="cleanup-card__title">Локальная база данных</span>
+                    <span class="cleanup-card__desc">Удаление кэша или всех сохранённых отчётов</span>
+                  </div>
+                  <div class="cleanup-card__actions">
+                    <button class="btn btn--cleanup-ghost" id="btnClearCache">Кэш</button>
+                    <button class="btn btn--cleanup-danger" id="btnDeleteAllReports">Удалить всё</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="cleanup-card">
+                <div class="cleanup-card__inner">
+                  <div class="cleanup-card__icon">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M23 4v6h-6"></path>
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                  </div>
+                  <div class="cleanup-card__info">
+                    <span class="cleanup-card__title">Настройки приложения</span>
+                    <span class="cleanup-card__desc">Сброс всех параметров к заводским значениям</span>
+                  </div>
+                  <div class="cleanup-card__actions">
+                    <button class="btn btn--cleanup-ghost" id="btnResetSettings">Сбросить</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="settings-modal__footer">
+        <button class="btn btn--primary" id="settingsSave">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Кастомное окно подтверждения (Confirm Modal) -->
+  <div class="modal-overlay--confirm" id="confirmModalOverlay" style="display: none;">
+    <div class="confirm-modal" id="confirmModal">
+      <div class="confirm-modal__icon" id="confirmIcon">⚠️</div>
+      <h3 class="confirm-modal__title" id="confirmTitle">Сохранить изменения?</h3>
+      <p class="confirm-modal__text" id="confirmText">Вы изменили настройки. Хотите сохранить их перед выходом?</p>
+
+      <div class="confirm-modal__actions" id="confirmActions">
+        <!-- Кнопки будут вставляться динамически для универсальности -->
+        <button class="btn btn--primary" id="btnConfirmSave">Сохранить и выйти</button>
+        <button class="btn btn--outline" id="btnConfirmDiscard">Не сохранять</button>
+        <button class="btn btn--ghost" id="btnConfirmCancel">Вернуться</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
