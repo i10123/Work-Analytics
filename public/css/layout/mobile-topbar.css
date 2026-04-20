@@ -1,0 +1,42 @@
+.mobile-topbar {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 20;
+}
+
+.mobile-topbar__logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mobile-topbar__logo span {
+  font-size: 1.4rem;
+}
+
+.mobile-topbar__logo h2 {
+  font-size: var(--font-size-md);
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.mobile-topbar__toggle {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text);
+  font-size: 1.4rem;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .mobile-topbar {
+    display: flex;
+  }
+}

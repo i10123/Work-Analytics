@@ -1,0 +1,31 @@
+export const SETTINGS_KEY = 'workanalytics-settings';
+
+export const DEFAULT_SETTINGS = {
+  theme: 'slate-modernity',
+  defaultCurrency: 'RUB',
+  defaultPeriod: '7days',
+  defaultLimit: 50,
+  sources: { hh: true, rabotaby: true, habr: true },
+};
+
+/**
+ * Загружает настройки из localStorage.
+ */
+export function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    }
+  } catch (e) {
+    console.warn('[Settings] ⚠️ Ошибка чтения настроек:', e);
+  }
+  return { ...DEFAULT_SETTINGS };
+}
+
+/**
+ * Сохраняет настройки в localStorage.
+ */
+export function saveSettings(settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
