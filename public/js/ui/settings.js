@@ -4,7 +4,7 @@ import { showToast, showScreen } from './common.js';
 import { setAppTheme } from './theme.js';
 import { renderDashboard } from './dashboard.js';
 import { loadReportsList } from '../api.js';
-import { currentReport, currentCurrency, setCurrentCurrency, baselineSettings, setBaselineSettings } from '../state.js';
+import { currentReport, setCurrentReport, currentCurrency, setCurrentCurrency, baselineSettings, setBaselineSettings } from '../state.js';
 
 export function setupSettingsListeners() {
   if (DOM.btnSettings) DOM.btnSettings.addEventListener('click', openSettings);
@@ -223,34 +223,59 @@ async function loadApiStatus() {
     const response = await fetch('/api/status');
     const data = await response.json();
 
-    if (data.success && DOM.geminiStatusText && DOM.geminiKeysCount && DOM.currencyStatusText) {
-      if (data.gemini.configured) {
-        DOM.geminiStatusText.className = 'settings-api-status__value settings-api-status__value--ok';
-        DOM.geminiStatusText.innerHTML = '<span class="settings-api-status__dot"></span>Настроен';
-        DOM.geminiKeysCount.textContent = data.gemini.keysCount;
-      } else {
-        DOM.geminiStatusText.className = 'settings-api-status__value settings-api-status__value--error';
-        DOM.geminiStatusText.innerHTML = '<span class="settings-api-status__dot"></span>Не настроен';
-        DOM.geminiKeysCount.textContent = '0';
-      }
+    if (!data.success) return;
 
-      if (data.currency.configured) {
-        DOM.currencyStatusText.className = 'settings-api-status__value settings-api-status__value--ok';
-        DOM.currencyStatusText.innerHTML = '<span class="settings-api-status__dot"></span>Настроен';
+    /** Универсальная функция для обновления статуса */
+    const updateStatus = (element, configured, textOk = 'Настроен', textFail = 'Не настроен') => {
+      if (!element) return;
+      if (configured) {
+        element.className = 'settings-api-status__value settings-api-status__value--ok';
+        element.innerHTML = `<span class="settings-api-status__dot"></span>${textOk}`;
       } else {
-        DOM.currencyStatusText.className = 'settings-api-status__value settings-api-status__value--error';
-        DOM.currencyStatusText.innerHTML = '<span class="settings-api-status__dot"></span>Не настроен';
+        element.className = 'settings-api-status__value settings-api-status__value--error';
+        element.innerHTML = `<span class="settings-api-status__dot"></span>${textFail}`;
+      }
+    };
+
+    /** Универсальная функция для рендеринга списка ключей */
+    const renderKeys = (container, row, keys) => {
+      if (!container || !row) return;
+      if (keys && keys.length > 0) {
+        container.innerHTML = keys.map(k => `<span class="settings-api-status__key-tag">${k}</span>`).join('');
+        row.style.display = 'flex';
+      } else {
+        row.style.display = 'none';
+      }
+    };
+
+    // OpenRouter
+    if (data.openrouter) {
+      updateStatus(DOM.dashscopeStatusText, data.openrouter.configured);
+      if (DOM.dashscopeKeyText && DOM.dashscopeKeyRow) {
+        if (data.openrouter.configured) {
+          DOM.dashscopeKeyText.textContent = data.openrouter.key;
+          DOM.dashscopeKeyRow.style.display = 'flex';
+        } else {
+          DOM.dashscopeKeyRow.style.display = 'none';
+        }
       }
     }
+
+    // Currency
+    if (data.currency) {
+      updateStatus(DOM.currencyStatusText, data.currency.configured);
+      renderKeys(DOM.currencyKeysList, DOM.currencyKeysRow, data.currency.keys);
+    }
+
   } catch (error) {
-    if (DOM.geminiStatusText) {
-      DOM.geminiStatusText.className = 'settings-api-status__value settings-api-status__value--error';
-      DOM.geminiStatusText.innerHTML = '<span class="settings-api-status__dot"></span>Недоступен';
-    }
-    if (DOM.currencyStatusText) {
-      DOM.currencyStatusText.className = 'settings-api-status__value settings-api-status__value--error';
-      DOM.currencyStatusText.innerHTML = '<span class="settings-api-status__dot"></span>Недоступен';
-    }
+    console.error('[Settings] ❌ Ошибка загрузки статуса API:', error);
+    const elements = [DOM.dashscopeStatusText, DOM.currencyStatusText];
+    elements.forEach(el => {
+      if (el) {
+        el.className = 'settings-api-status__value settings-api-status__value--error';
+        el.innerHTML = '<span class="settings-api-status__dot"></span>Недоступен';
+      }
+    });
   }
 }
 
@@ -287,6 +312,7 @@ async function handleDeleteAllReports() {
     const data = await response.json();
 
     if (data.success) {
+      setCurrentReport(null);
       showScreen('welcome');
       loadReportsList();
       loadDataStats();

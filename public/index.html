@@ -82,18 +82,6 @@
         </div>
       </div>
 
-      <!-- Панель логов -->
-      <div class="sidebar__logs" id="sidebarLogs">
-        <div class="sidebar__logs-header" id="logsToggle">
-          <span class="sidebar__logs-title">Логирование</span>
-          <svg class="sidebar__logs-chevron" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
-        <div class="sidebar__logs-content" id="logsContainer">
-          <!-- Логи будут добавляться здесь -->
-        </div>
-      </div>
 
       <!-- Статус очереди -->
       <div class="sidebar__queue-status" id="queueStatus" style="display: none;">
@@ -238,12 +226,14 @@
 
       <!-- ---- СТАТУС ПАРСИНГА (progress) ---- -->
       <section class="progress-section" id="progressSection" style="display: none;">
-        <div class="progress-card">
-          <div class="progress-card__spinner"></div>
-          <h3 class="progress-card__title" id="progressTitle">Сбор данных...</h3>
-          <p class="progress-card__step" id="progressStep">Инициализация...</p>
-          <div class="progress-bar">
-            <div class="progress-bar__fill" id="progressFill"></div>
+        <div class="progress-container">
+          <div class="progress-card">
+            <div class="progress-card__spinner"></div>
+            <h3 class="progress-card__title" id="progressTitle">Сбор данных...</h3>
+            <p class="progress-card__step" id="progressStep">Инициализация...</p>
+            <div class="progress-bar">
+              <div class="progress-bar__fill" id="progressFill"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -261,7 +251,7 @@
             <button class="currency-btn active" data-currency="RUB">₽ RUB</button>
             <button class="currency-btn" data-currency="USD">$ USD</button>
             <button class="currency-btn" data-currency="EUR">€ EUR</button>
-            <button class="currency-btn" data-currency="BYN">BYN BYN</button>
+            <button class="currency-btn" data-currency="BYN">Br BYN</button>
           </div>
         </div>
 
@@ -518,7 +508,7 @@
               <button class="settings-currency-btn active" data-currency="RUB">₽ Рос. руб</button>
               <button class="settings-currency-btn" data-currency="USD">$ Доллар</button>
               <button class="settings-currency-btn" data-currency="EUR">€ Евро</button>
-              <button class="settings-currency-btn" data-currency="BYN">BYN Бел. руб</button>
+              <button class="settings-currency-btn" data-currency="BYN">Br Бел. руб</button>
             </div>
           </div>
         </div>
@@ -597,22 +587,18 @@
         <!-- Таб: API -->
         <div class="settings-panel" id="settingsPanel-api">
           <div class="settings-section">
-            <h3 class="settings-section__title">Google Gemini AI</h3>
-            <div class="settings-api-status" id="settingsGeminiStatus">
+            <h3 class="settings-section__title">OpenRouter</h3>
+            <div class="settings-api-status" id="settingsOpenrouterStatus">
               <div class="settings-api-status__row">
                 <span class="settings-api-status__label">Статус</span>
-                <span class="settings-api-status__value settings-api-status__value--loading" id="geminiStatusText">
+                <span class="settings-api-status__value settings-api-status__value--loading" id="openrouterStatusText">
                   <span class="settings-api-status__dot"></span>
                   Проверка...
                 </span>
               </div>
-              <div class="settings-api-status__row">
-                <span class="settings-api-status__label">Доступно ключей</span>
-                <span class="settings-api-status__value" id="geminiKeysCount">—</span>
-              </div>
-              <div class="settings-api-status__row">
-                <span class="settings-api-status__label">Модель</span>
-                <span class="settings-api-status__value">Gemini 2.0 Flash</span>
+              <div class="settings-api-status__row" id="openrouterKeyRow" style="display: none;">
+                <span class="settings-api-status__label">Ключ</span>
+                <span class="settings-api-status__value settings-api-status__value--key" id="openrouterKeyText">—</span>
               </div>
             </div>
           </div>
@@ -621,15 +607,15 @@
             <h3 class="settings-section__title">Курсы валют</h3>
             <div class="settings-api-status" id="settingsCurrencyStatus">
               <div class="settings-api-status__row">
-                <span class="settings-api-status__label">Провайдер</span>
-                <span class="settings-api-status__value">ExchangeRate API</span>
-              </div>
-              <div class="settings-api-status__row">
                 <span class="settings-api-status__label">Статус</span>
                 <span class="settings-api-status__value settings-api-status__value--loading" id="currencyStatusText">
                   <span class="settings-api-status__dot"></span>
                   Проверка...
                 </span>
+              </div>
+              <div class="settings-api-status__row" id="currencyKeysRow" style="display: none;">
+                <span class="settings-api-status__label">Ключи</span>
+                <div class="settings-api-status__keys" id="currencyKeysList"></div>
               </div>
             </div>
           </div>

@@ -1,80 +1,61 @@
 /**
- * @file ai.js — Модуль интеграции с Google Gemini API.
- * @description Извлекает IT-навыки из текстовых описаний вакансий с помощью ИИ.
- *              Описания отправляются батчами (пачками) по 5 штук, чтобы не превышать
- *              лимит бесплатного API (15 запросов в минуту).
+ * @file ai.js — Модуль интеграции с ИИ-провайдерами (Gemini, DeepSeek, OpenRouter).
+ * @description Извлекает IT-навыки из текстовых описаний вакансий.
+ *              Поддерживает ротацию ключей Gemini и резервные провайдеры (DeepSeek, OpenRouter).
  */
 
 const axios = require('axios');
 
-/** Количество вакансий в одном батче для отправки в Gemini */
+/** Количество вакансий в одном батче */
 const BATCH_SIZE = 10;
 
-/** Задержка между батчами (мс) — защита от rate limit */
+/** Задержка между батчами (мс) */
 const BATCH_DELAY_MS = 4500;
 
-/** Текущий индекс используемого ключа */
-let currentKeyIndex = 0;
+/** Текущий индекс используемого ключа Gemini */
+let currentGeminiKeyIndex = 0;
 
-/**
- * Получает массив ключей из переменной окружения.
- * @returns {string[]}
- */
-function getKeys() {
-  const keysStr = process.env.GEMINI_API_KEYS || '';
-  return keysStr.split(',').map(k => k.trim()).filter(k => k && !k.startsWith('YOUR_') && !/^key\d*$/.test(k));
-}
-
-/**
- * Извлекает IT-навыки из массива вакансий с помощью Google Gemini API.
- * Вакансии обрабатываются батчами по {@link BATCH_SIZE} штук.
- *
- * @param {Array<Object>} jobs — Массив объектов вакансий. Каждый объект должен содержать
- *                                поле `description` (текст описания вакансии).
- * @returns {Promise<Array<Object>>} — Тот же массив, но каждый объект обогащён полем `skills: string[]`.
- */
 async function extractSkillsFromJobs(jobs) {
-  const keys = getKeys();
+  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.DASHSCOPE_API_KEY;
 
-  /** Если ключи не заданы — возвращаем пустые навыки */
-  if (keys.length === 0) {
-    console.warn('[AI] ⚠️ Gemini API ключи не заданы в .env (GEMINI_API_KEYS). Навыки не будут извлечены.');
+  if (!openrouterKey) {
+    console.warn('[AI] ⚠️ OpenRouter не настроен в .env. Навыки не будут извлечены.');
     return jobs.map((job) => ({ ...job, skills: [] }));
   }
 
-  console.log(`[AI] 🤖 Начинаю извлечение навыков для ${jobs.length} вакансий (батчи по ${BATCH_SIZE})...`);
+  console.log(`[AI] 🤖 Начинаю извлечение навыков для ${jobs.length} вакансий через OpenRouter...`);
 
-  /** Разбиваем массив вакансий на батчи */
   const batches = splitIntoBatches(jobs, BATCH_SIZE);
   const enrichedJobs = [];
 
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
-    console.log(`[AI] 📦 Обработка батча ${i + 1}/${batches.length} (${batch.length} вакансий)...`);
+    console.log(`[AI] 📦 Обработка батча ${i + 1}/${batches.length}...`);
+
+    let skillsMap = null;
 
     try {
-      const skillsMap = await processBatchWithRotation(batch, keys);
-
-      /** Присваиваем навыки каждой вакансии в батче */
-      for (let j = 0; j < batch.length; j++) {
-        enrichedJobs.push({
-          ...batch[j],
-          skills: skillsMap[j] || [],
-        });
-      }
-
-      console.log(`[AI] ✅ Батч ${i + 1} обработан.`);
+      skillsMap = await processBatchOpenAI(batch, openrouterKey, 'https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001');
     } catch (error) {
-      console.error(`[AI] ❌ Ошибка обработки батча ${i + 1}: ${error.message}`);
-      /** При ошибке — добавляем вакансии без навыков */
-      for (const job of batch) {
-        enrichedJobs.push({ ...job, skills: [] });
-      }
+      console.warn(`[AI] ⚠️ Ошибка OpenRouter: ${error.message}`);
     }
 
-    /** Пауза между батчами (кроме последнего) */
+    /** Присваиваем навыки (или пустые массивы при фиаско) */
+    for (let j = 0; j < batch.length; j++) {
+      enrichedJobs.push({
+        ...batch[j],
+        skills: skillsMap ? (skillsMap[j] || []) : [],
+      });
+    }
+
+    if (skillsMap) {
+      console.log(`[AI] ✅ Батч ${i + 1} обработан.`);
+    } else {
+      console.error(`[AI] ❌ Батч ${i + 1} не удалось обработать.`);
+    }
+
+    /** Пауза между батчами */
     if (i < batches.length - 1) {
-      console.log(`[AI] ⏳ Пауза ${BATCH_DELAY_MS}мс перед следующим батчем...`);
       await delay(BATCH_DELAY_MS);
     }
   }
@@ -85,49 +66,76 @@ async function extractSkillsFromJobs(jobs) {
   return enrichedJobs;
 }
 
-/**
- * Пробует выполнить батч, если лимит — переключает ключ и пробует снова (каждый ключ до 2 раз).
- *
- * @param {Array<Object>} batch — Батч вакансий.
- * @param {string[]} keys — Пул ключей.
- */
-async function processBatchWithRotation(batch, keys) {
+// --- GEMINI LOGIC ---
+
+function getGeminiKeys() {
+  const keysStr = process.env.GEMINI_API_KEYS || '';
+  return keysStr.split(',').map(k => k.trim()).filter(k => k && !k.startsWith('YOUR_') && !/^key\d*$/.test(k));
+}
+
+async function processBatchGeminiWithRotation(batch, keys) {
   let attempts = 0;
-  const maxAttempts = keys.length * 2; // Пробуем каждый ключ дважды при ошибках
+  const maxAttempts = keys.length; 
 
   while (attempts < maxAttempts) {
-    const currentKey = keys[currentKeyIndex % keys.length];
-    
+    const currentKey = keys[currentGeminiKeyIndex % keys.length];
     try {
-      return await processBatch(batch, currentKey);
+      return await processBatchGemini(batch, currentKey);
     } catch (error) {
       const isQuotaError = error.response && (error.response.status === 429 || error.response.status === 403);
-      
       if (isQuotaError) {
-        console.warn(`[AI] 🔁 Лимит ключа #${currentKeyIndex + 1} исчерпан (HTTP ${error.response.status}). Переключаюсь на следующий...`);
-        currentKeyIndex++;
+        console.warn(`[AI] 🔁 Лимит Gemini ключа #${currentGeminiKeyIndex + 1} исчерпан. Переключаюсь...`);
+        currentGeminiKeyIndex++;
         attempts++;
-        continue; // Сразу пробуем следующий ключ
+        continue;
       }
-      
-      // Если другая ошибка — выбрасываем её вверх
       throw error;
     }
   }
-  
-  throw new Error('Все доступные API-ключи Gemini выдали ошибку лимита.');
+  throw new Error('Gemini quota exhausted');
 }
 
-/**
- * Отправляет батч описаний вакансий в Gemini API и получает массив навыков.
- *
- * @param {Array<Object>} batch — Массив вакансий (с полем description).
- * @param {string} apiKey — API-ключ Google Gemini.
- * @returns {Promise<Array<Array<string>>>} — Массив массивов навыков (по одному на вакансию).
- */
-async function processBatch(batch, apiKey) {
+async function processBatchGemini(batch, apiKey) {
+  const prompt = generatePrompt(batch);
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-  /** Формируем текст для ИИ: нумерованный список описаний */
+  const response = await axios.post(url, {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+  }, { timeout: 30000 });
+
+  const rawText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+  return parseJsonFromAi(rawText, batch.length);
+}
+
+// --- OPENAI-COMPATIBLE LOGIC (DeepSeek, OpenRouter) ---
+
+async function processBatchOpenAI(batch, apiKey, url, model) {
+  const prompt = generatePrompt(batch);
+
+  const response = await axios.post(url, {
+    model: model,
+    messages: [
+      { role: 'system', content: 'Ты — эксперт по IT-навыкам. Возвращай ТОЛЬКО JSON.' },
+      { role: 'user', content: prompt }
+    ],
+    temperature: 0.1,
+    response_format: { type: 'json_object' } // DeepSeek поддерживает это
+  }, {
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 45000
+  });
+
+  const rawText = response.data?.choices?.[0]?.message?.content || '[]';
+  return parseJsonFromAi(rawText, batch.length);
+}
+
+// --- HELPERS ---
+
+function generatePrompt(batch) {
   const descriptions = batch
     .map((job, idx) => {
       const text = (job.description || job.title || '').substring(0, 1500);
@@ -135,69 +143,39 @@ async function processBatch(batch, apiKey) {
     })
     .join('\n\n');
 
-  const prompt = `Ты — эксперт по IT-навыкам. Проанализируй описания ${batch.length} вакансий ниже.
-Для КАЖДОЙ вакансии извлеки список IT-навыков (технологии, языки программирования, фреймворки, инструменты).
-
+  return `Проанализируй описания ${batch.length} вакансий. Для КАЖДОЙ извлеки список IT-навыков.
 ПРАВИЛА:
-- Возвращай ТОЛЬКО JSON-массив массивов, без пояснений.
-- Каждый внутренний массив = навыки одной вакансии.
-- Навыки должны быть краткими (1-2 слова): "React", "Node.js", "PostgreSQL", "Docker".
-- Если навыки не найдены — верни пустой массив [].
-- Количество внутренних массивов ДОЛЖНО быть ровно ${batch.length}.
+- Возвращай ТОЛЬКО JSON-массив массивов: [[навыки1], [навыки2], ...]
+- Навыки кратко (1-2 слова): "React", "Python".
+- Если навыков нет — [].
+- Количество внутренних массивов должно быть ровно ${batch.length}.
 
-ОПИСАНИЯ ВАКАНСИЙ:
+ОПИСАНИЯ:
 ${descriptions}
 
-ОТВЕТ (только JSON):`;
+ОТВЕТ (ТОЛЬКО JSON):`;
+}
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-  const response = await axios.post(
-    url,
-    {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.1,
-        maxOutputTokens: 2048,
-      },
-    },
-    { timeout: 30000 }
-  );
-
-  /** Извлекаем текст ответа из вложенной структуры Gemini API */
-  const rawText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-
-  /** Пытаемся распарсить JSON из ответа (ИИ может обернуть в ```json ... ```) */
+function parseJsonFromAi(rawText, expectedLength) {
   const cleaned = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-
   try {
     const parsed = JSON.parse(cleaned);
-
-    /** Проверяем, что вернулся массив массивов */
-    if (Array.isArray(parsed) && parsed.every(Array.isArray)) {
-      return parsed;
+    let result = Array.isArray(parsed) ? parsed : (parsed.skills || parsed.data || []);
+    
+    if (Array.isArray(result) && result.every(Array.isArray)) {
+      return result;
     }
-
-    /** Если вернулся плоский массив — оборачиваем */
-    if (Array.isArray(parsed)) {
-      return [parsed];
+    if (Array.isArray(result)) {
+      // Если пришел плоский массив вместо массива массивов
+      return [result];
     }
-
-    console.warn('[AI] ⚠️ Неожиданный формат ответа Gemini. Пропускаю навыки.');
-    return batch.map(() => []);
-  } catch (parseError) {
-    console.error('[AI] ❌ Ошибка парсинга JSON от Gemini:', parseError.message);
-    console.error('[AI] 📝 Сырой ответ:', rawText.substring(0, 300));
-    return batch.map(() => []);
+    return new Array(expectedLength).fill([]);
+  } catch (e) {
+    console.error('[AI] ❌ Ошибка парсинга JSON:', e.message);
+    return new Array(expectedLength).fill([]);
   }
 }
 
-/**
- * Разбивает массив на батчи (подмассивы) указанного размера.
- * @param {Array} array — Исходный массив.
- * @param {number} size — Размер одного батча.
- * @returns {Array<Array>} — Массив батчей.
- */
 function splitIntoBatches(array, size) {
   const batches = [];
   for (let i = 0; i < array.length; i += size) {
@@ -206,11 +184,6 @@ function splitIntoBatches(array, size) {
   return batches;
 }
 
-/**
- * Промис-обёртка над setTimeout для асинхронных пауз.
- * @param {number} ms — Время ожидания в миллисекундах.
- * @returns {Promise<void>}
- */
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

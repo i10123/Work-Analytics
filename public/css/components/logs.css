@@ -1,77 +1,156 @@
-/* Панель логов в сайдбаре */
-.sidebar__logs {
-  margin-top: 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+/* Панель логов в процессе сбора данных */
+.progress-logs {
+  width: 100%;
+  max-width: 500px;
+  margin-top: 2rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.5s ease-out;
 }
 
-.sidebar__logs-header {
-  padding: 0.75rem 1rem;
+.progress-logs:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: var(--shadow-xl), 0 0 30px rgba(0, 0, 0, 0.3);
+}
+
+.progress-logs__header {
+  padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   user-select: none;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--glass-border);
 }
 
-.sidebar__logs-header:hover {
-  background: rgba(255, 255, 255, 0.05);
+.progress-logs__header:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.sidebar__logs-title {
-  font-size: 0.8rem;
-  font-weight: 600;
+.progress-logs__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  opacity: 0.7;
 }
 
-.sidebar__logs-chevron {
-  transition: transform 0.3s ease;
+.progress-logs__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--color-primary-glow);
+  animation: pulse 2s infinite;
 }
 
-.sidebar__logs.collapsed .sidebar__logs-chevron {
+.progress-logs__chevron {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.6;
+}
+
+.progress-logs.collapsed .progress-logs__chevron {
   transform: rotate(-90deg);
 }
 
-.sidebar__logs-content {
-  max-height: 200px;
+.progress-logs__content {
+  max-height: 260px;
   overflow-y: auto;
-  padding: 0.5rem;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  padding: 1rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Roboto Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-  transition: max-height 0.3s ease, padding 0.3s ease;
+  scrollbar-color: var(--color-primary) transparent;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), padding 0.4s ease;
+  background: rgba(0, 0, 0, 0.2);
 }
 
-.sidebar__logs.collapsed .sidebar__logs-content {
+.progress-logs.collapsed .progress-logs__content {
   max-height: 0;
   padding-top: 0;
   padding-bottom: 0;
 }
 
+/* Лог-записи */
 .log-entry {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  margin-bottom: 0.25rem;
-  animation: fadeIn 0.3s ease;
-  word-break: break-all;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  animation: logFadeIn 0.3s ease-out forwards;
+  word-break: break-word;
+  display: flex;
+  gap: 10px;
+  border-left: 3px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.log-entry--info { color: #94a3b8; }
-.log-entry--success { color: #4ade80; background: rgba(74, 222, 128, 0.05); }
-.log-entry--warning { color: #fbbf24; background: rgba(251, 191, 36, 0.05); }
-.log-entry--error { color: #f87171; background: rgba(248, 113, 113, 0.05); }
+.log-entry:last-child {
+  margin-bottom: 0;
+}
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
+.log-entry--time {
+  opacity: 0.4;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.log-entry--info { 
+  color: #e2e8f0; 
+  border-left-color: #64748b;
+}
+.log-entry--success { 
+  color: #4ade80; 
+  background: rgba(74, 222, 128, 0.05); 
+  border-left-color: #22c55e;
+}
+.log-entry--warning { 
+  color: #fbbf24; 
+  background: rgba(251, 191, 36, 0.05); 
+  border-left-color: #f59e0b;
+}
+.log-entry--error { 
+  color: #f87171; 
+  background: rgba(248, 113, 113, 0.05); 
+  border-left-color: #ef4444;
+}
+
+@keyframes logFadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Скроллбар для логов */
+.progress-logs__content::-webkit-scrollbar {
+  width: 4px;
+}
+.progress-logs__content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.progress-logs__content::-webkit-scrollbar-thumb {
+  background: var(--color-primary-glow);
+  border-radius: 10px;
 }

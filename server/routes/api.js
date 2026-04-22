@@ -195,15 +195,36 @@ router.get('/status', (req, res) => {
   const currencyKeysStr = process.env.EXCHANGE_RATE_API_KEYS || '';
   const currencyKeys = currencyKeysStr.split(',').map((k) => k.trim()).filter(Boolean);
 
+  /** DeepSeek API */
+  const deepseekKey = process.env.DEEPSEEK_API_KEY || '';
+
+  /** DashScope / OpenRouter API */
+  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.DASHSCOPE_API_KEY || '';
+
+  const maskKey = (key) => {
+    if (!key) return null;
+    if (key.length <= 15) return key;
+    return `${key.substring(0, 10)}...${key.substring(key.length - 8)}`;
+  };
+
   return res.json({
     success: true,
     gemini: {
       configured: geminiKeys.length > 0,
       keysCount: geminiKeys.length,
+      keys: geminiKeys.map(maskKey),
     },
     currency: {
       configured: currencyKeys.length > 0,
-      keysCount: currencyKeys.length,
+      keys: currencyKeys.map(maskKey),
+    },
+    deepseek: {
+      configured: !!deepseekKey,
+      key: maskKey(deepseekKey),
+    },
+    openrouter: {
+      configured: !!openrouterKey,
+      key: maskKey(openrouterKey),
     },
   });
 });

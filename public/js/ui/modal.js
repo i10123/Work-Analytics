@@ -58,6 +58,7 @@ export async function handleFormSubmit(e) {
       console.log(`[App] ✅ Задача создана: ${data.task.id}`);
       closeModal();
       showScreen('progress');
+      
       if(DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${query}"`;
       if(DOM.progressStep) DOM.progressStep.textContent = 'Задача добавлена в очередь...';
     } else {

@@ -3,11 +3,7 @@ import { escapeHtml } from '../utils/formatters.js';
 import { loadReportById } from '../api.js';
 
 export function setupSidebarListeners() {
-  if (DOM.logsToggle) {
-    DOM.logsToggle.addEventListener('click', () => {
-      DOM.sidebarLogs.classList.toggle('collapsed');
-    });
-  }
+  // Логирование удалено по просьбе пользователя
 }
 
 /**
@@ -17,16 +13,16 @@ export function setupSidebarListeners() {
 export function renderReportsList(reports) {
   if (!DOM.reportsEmpty || !DOM.reportsList) return;
 
+  /** Очищаем список (оставляя блок "пусто") */
+  const items = DOM.reportsList.querySelectorAll('.report-item');
+  items.forEach((el) => el.remove());
+
   if (reports.length === 0) {
     DOM.reportsEmpty.style.display = 'block';
     return;
   }
 
   DOM.reportsEmpty.style.display = 'none';
-
-  /** Очищаем список (оставляя пустой блок) */
-  const items = DOM.reportsList.querySelectorAll('.report-item');
-  items.forEach((el) => el.remove());
 
   reports.forEach((report) => {
     const div = document.createElement('div');
@@ -65,27 +61,10 @@ export function renderReportsList(reports) {
 }
 
 /**
- * Добавляет запись в UI-лог.
+ * Добавляет запись в UI-лог (отключено).
  * @param {string} message — Сообщение.
  * @param {'info'|'success'|'warning'|'error'} type — Тип лога.
  */
 export function addLogEntry(message, type = 'info') {
-  if (!DOM.logsContainer) return;
-
-  const entry = document.createElement('div');
-  entry.className = `log-entry log-entry--${type}`;
-  
-  const time = new Date().toLocaleTimeString('ru-RU', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  
-  entry.innerHTML = `<span style="opacity: 0.5;">[${time}]</span> ${escapeHtml(message)}`;
-  
-  DOM.logsContainer.appendChild(entry);
-  
-  // Авто-скролл вниз
-  DOM.logsContainer.scrollTop = DOM.logsContainer.scrollHeight;
-
-  // Ограничиваем количество записей (например, последние 50)
-  while (DOM.logsContainer.children.length > 50) {
-    DOM.logsContainer.removeChild(DOM.logsContainer.firstChild);
-  }
+  // Метод оставлен пустым, чтобы не ломать вызовы в других модулях
 }

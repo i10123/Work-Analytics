@@ -381,6 +381,34 @@
 }
 .settings-api-status__value--loading { color: var(--color-warning); }
 
+.settings-api-status__keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  max-width: 70%;
+}
+
+.settings-api-status__key-tag {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+}
+
+.settings-api-status__value--key {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+}
+
 .settings-data-stats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
