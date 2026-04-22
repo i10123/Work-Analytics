@@ -293,3 +293,117 @@ export function renderChartCities(jobs, charts) {
     },
   });
 }
+
+/**
+ * Рендерит график распределения форматов работы (Удаленка vs Офис).
+ */
+export function renderChartWorkFormat(jobs, charts) {
+  const ctxId = 'chartWorkFormat';
+  const ctx = document.getElementById(ctxId);
+  if (!ctx) return;
+  if (charts.workFormat) charts.workFormat.destroy();
+
+  const theme = getChartTheme();
+  const counts = { Remote: 0, Office: 0 };
+  
+  jobs.forEach(j => {
+    const format = j.workFormat === 'Remote' ? 'Remote' : 'Office';
+    counts[format]++;
+  });
+
+  const labels = ['Удаленка', 'Офис'];
+  const data = [counts.Remote, counts.Office];
+  
+  // Цвета: Бирюзовый для удаленки, Индиго для офиса
+  const colors = [theme.colors[1], theme.colors[0]];
+
+  charts.workFormat = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: colors,
+        borderColor: 'transparent',
+        borderWidth: 0,
+        hoverOffset: 6,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: theme.textSecondary, padding: 12, usePointStyle: true, font: { size: 11 } },
+        },
+      },
+    },
+  });
+}
+
+/**
+ * Рендерит график средней зарплаты в зависимости от формата работы.
+ */
+export function renderChartSalaryByFormat(jobs, rates, charts) {
+  const ctxId = 'chartSalaryByFormat';
+  const ctx = document.getElementById(ctxId);
+  if (!ctx) return;
+  if (charts.salaryByFormat) charts.salaryByFormat.destroy();
+
+  const theme = getChartTheme();
+  const formatStats = {
+    Remote: { sum: 0, count: 0 },
+    Office: { sum: 0, count: 0 }
+  };
+
+  jobs.forEach(j => {
+    if (j.salary && (j.salary.min || j.salary.max)) {
+      const avg = j.salary.min && j.salary.max ? (j.salary.min + j.salary.max) / 2 : j.salary.min || j.salary.max;
+      const converted = convertCurrency(avg, j.salary.currency, currentCurrency, rates);
+      const format = j.workFormat === 'Remote' ? 'Remote' : 'Office';
+      formatStats[format].sum += converted;
+      formatStats[format].count++;
+    }
+  });
+
+  const labels = ['Удаленка', 'Офис'];
+  const data = [
+    formatStats.Remote.count > 0 ? Math.round(formatStats.Remote.sum / formatStats.Remote.count) : 0,
+    formatStats.Office.count > 0 ? Math.round(formatStats.Office.sum / formatStats.Office.count) : 0
+  ];
+
+  const mainColor = theme.colors[2]; // Зеленый для зарплат
+
+  charts.salaryByFormat = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: `Средняя ЗП`,
+        data,
+        backgroundColor: createGradient(ctxId, mainColor),
+        borderColor: mainColor,
+        borderWidth: 1.5,
+        borderRadius: 6,
+        barThickness: 60,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => `Средняя ЗП: ${context.formattedValue} ${getCurrencySymbol(currentCurrency)}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: theme.textMain }, grid: { display: false } },
+        y: { ticks: { color: theme.textSecondary }, grid: { color: theme.grid } },
+      },
+    },
+  });
+}

@@ -9,6 +9,8 @@
 @import url('./components/modals.css');
 @import url('./components/forms.css');
 @import url('./components/tables.css');
+@import url('./components/logs.css');
+@import url('./components/modals-extra.css');
 
 @import url('./sections/welcome.css');
 @import url('./sections/dashboard.css');

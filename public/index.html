@@ -82,6 +82,19 @@
         </div>
       </div>
 
+      <!-- Панель логов -->
+      <div class="sidebar__logs" id="sidebarLogs">
+        <div class="sidebar__logs-header" id="logsToggle">
+          <span class="sidebar__logs-title">Логирование</span>
+          <svg class="sidebar__logs-chevron" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </div>
+        <div class="sidebar__logs-content" id="logsContainer">
+          <!-- Логи будут добавляться здесь -->
+        </div>
+      </div>
+
       <!-- Статус очереди -->
       <div class="sidebar__queue-status" id="queueStatus" style="display: none;">
         <div class="queue-badge">
@@ -280,43 +293,65 @@
             <span class="kpi-card__value" id="kpiCompanies">—</span>
             <span class="kpi-card__label">Компаний</span>
           </div>
+          <div class="kpi-card">
+            <span class="kpi-card__icon">🌐</span>
+            <span class="kpi-card__value" id="kpiRemote">—</span>
+            <span class="kpi-card__label">Процент удаленки</span>
+          </div>
         </div>
 
         <!-- Графики -->
         <div class="charts-grid">
-          <!-- График: Вилка зарплат -->
-          <div class="chart-card">
+        <!-- Графики: Зарплаты -->
+        <div class="charts-grid">
+          <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Распределение зарплат</h3>
             <div class="chart-card__body">
               <canvas id="chartSalary"></canvas>
             </div>
           </div>
+        </div>
 
-          <!-- График: Источники -->
+        <!-- Графики: Круговые (3 колонки) -->
+        <div class="charts-grid charts-grid--triple">
           <div class="chart-card">
             <h3 class="chart-card__title">Вакансии по источникам</h3>
             <div class="chart-card__body">
               <canvas id="chartSources"></canvas>
             </div>
           </div>
-
-          <!-- График: Топ навыков -->
-          <div class="chart-card chart-card--wide">
-            <h3 class="chart-card__title">Топ-15 востребованных навыков</h3>
+          <div class="chart-card">
+            <h3 class="chart-card__title">Удаленка vs Офис</h3>
             <div class="chart-card__body">
-              <canvas id="chartSkills"></canvas>
+              <canvas id="chartWorkFormat"></canvas>
             </div>
           </div>
-
-          <!-- График: Опыт -->
           <div class="chart-card">
             <h3 class="chart-card__title">Требуемый опыт</h3>
             <div class="chart-card__body">
               <canvas id="chartExperience"></canvas>
             </div>
           </div>
+        </div>
 
-          <!-- График: Города -->
+        <!-- Графики: Аналитика по формату -->
+        <div class="charts-grid">
+          <div class="chart-card chart-card--wide">
+            <h3 class="chart-card__title">Средняя зарплата по форматам</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSalaryByFormat"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Графики: Навыки и Города -->
+        <div class="charts-grid">
+          <div class="chart-card chart-card--wide">
+            <h3 class="chart-card__title">Топ-15 востребованных навыков</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSkills"></canvas>
+            </div>
+          </div>
           <div class="chart-card">
             <h3 class="chart-card__title">Топ-10 городов</h3>
             <div class="chart-card__body">
@@ -674,6 +709,24 @@
           </svg>
           Сохранить
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно ошибки (Error Modal) -->
+  <div class="modal-overlay--error" id="errorModalOverlay" style="display: none;">
+    <div class="error-modal" id="errorModal">
+      <div class="error-modal__icon-container">
+        <svg class="error-modal__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      </div>
+      <h3 class="error-modal__title" id="errorTitle">Произошла ошибка</h3>
+      <p class="error-modal__text" id="errorText">Что-то пошло не так при выполнении операции.</p>
+      <div class="error-modal__actions">
+        <button class="btn btn--primary" id="btnErrorOk">Понятно</button>
       </div>
     </div>
   </div>

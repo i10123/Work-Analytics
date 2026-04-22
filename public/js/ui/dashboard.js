@@ -2,7 +2,7 @@ import { DOM } from '../dom.js';
 import { charts, currentCurrency } from '../state.js';
 import { convertCurrency } from '../utils/currency.js';
 import { formatSalary } from '../utils/formatters.js';
-import { renderChartSalary, renderChartSources, renderChartSkills, renderChartExperience, renderChartCities } from './charts.js';
+import { renderChartSalary, renderChartSources, renderChartSkills, renderChartExperience, renderChartCities, renderChartWorkFormat, renderChartSalaryByFormat } from './charts.js';
 import { renderJobsTable } from './table.js';
 
 export function renderDashboard(report) {
@@ -33,6 +33,8 @@ export function renderDashboard(report) {
   renderChartSkills(jobs, charts);
   renderChartExperience(jobs, charts);
   renderChartCities(jobs, charts);
+  renderChartWorkFormat(jobs, charts);
+  renderChartSalaryByFormat(jobs, rates, charts);
 
   renderJobsTable(jobs, rates);
 }
@@ -65,4 +67,10 @@ function renderKPI(jobs, rates) {
 
   const companies = new Set(jobs.map((j) => j.company).filter(Boolean));
   DOM.kpiCompanies.textContent = companies.size;
+
+  const remoteCount = jobs.filter(j => j.workFormat === 'Remote').length;
+  const remotePercent = jobs.length > 0 ? Math.round((remoteCount / jobs.length) * 100) : 0;
+  if (DOM.kpiRemote) {
+    DOM.kpiRemote.textContent = `${remotePercent}%`;
+  }
 }

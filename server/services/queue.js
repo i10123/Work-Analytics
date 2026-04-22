@@ -110,11 +110,24 @@ async function processNext() {
     const enrichedJobs = await extractSkillsFromJobs(allJobs);
 
     /** Шаг 5: Формируем итоговый отчёт */
+    const status = (errors.length > 0 && allJobs.length > 0) ? 'partial' 
+                 : (allJobs.length === 0) ? 'failed' 
+                 : 'completed';
+                 
+    let failMessage = null;
+    if (status === 'failed') {
+      if (errors.length > 0) {
+        failMessage = `Все выбранные источники (${errors.join(', ')}) вернули ошибку или заблокировали доступ.`;
+      } else {
+        failMessage = 'По вашему запросу не найдено ни одной вакансии.';
+      }
+    }
+
     const report = {
       id: task.id,
       query: task.query,
       filters: task.filters,
-      status: errors.length > 0 && allJobs.length > 0 ? 'partial' : allJobs.length === 0 ? 'failed' : 'completed',
+      status,
       createdAt: task.createdAt,
       completedAt: new Date().toISOString(),
       exchangeRates,
@@ -127,6 +140,7 @@ async function processNext() {
         },
       },
       errors,
+      error: failMessage,
       jobs: enrichedJobs,
     };
 
@@ -136,8 +150,9 @@ async function processNext() {
 
     /** Готово! */
     task.status = report.status;
+    task.error = failMessage;
     console.log(`[Queue] ✅ Задача завершена: ${task.id} (статус: ${task.status})`);
-    emitUpdate({ ...task, reportId: task.id, errors });
+    emitUpdate({ ...task, reportId: task.id, errors, error: failMessage });
   } catch (error) {
     task.status = 'failed';
     console.error(`[Queue] ❌ Критическая ошибка при обработке ${task.id}:`, error.message);
@@ -164,7 +179,7 @@ async function runParsersWithRetry(query, filters) {
     { name: 'hh', fn: hhParser.parse },
     { name: 'rabotaby', fn: rabotabyParser.parse },
     { name: 'habr', fn: habrParser.parse },
-  ].filter(p => allowedSources[p.name] !== false);
+  ].filter(p => allowedSources[p.name] === true);
 
   if (parsers.length === 0) {
     console.warn(`[Queue] ⚠️ Для запроса "${query}" не выбрано ни одного источника.`);

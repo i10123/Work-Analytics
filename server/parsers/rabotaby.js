@@ -107,6 +107,7 @@ function normalizeVacancy(vacancy) {
     },
     experience: vacancy.experience?.name || 'Не указан',
     employment: vacancy.employment?.name || 'Не указан',
+    workFormat: (vacancy.schedule?.id === 'remote') ? 'Remote' : 'Office',
     description: vacancy.snippet?.requirement || vacancy.snippet?.responsibility || '',
     publishedAt: vacancy.published_at || '',
     skills: [],

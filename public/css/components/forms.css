@@ -26,7 +26,23 @@
 .form-input:focus,
 .form-select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-glow);
+  box-shadow: 
+    0 0 0 3px var(--color-primary-glow),
+    0 0 15px var(--color-primary-glow);
+  transform: translateY(-1px);
+}
+
+.form-input.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.form-input.is-invalid:focus,
+.form-select.is-invalid:focus {
+  box-shadow: 
+    0 0 0 3px rgba(239, 68, 68, 0.2),
+    0 0 15px rgba(239, 68, 68, 0.2);
 }
 
 .form-input::placeholder {
@@ -194,3 +210,78 @@
 .segmented-control:has(.segmented-control__btn:nth-child(3).active) .segmented-control__indicator { transform: translateX(200%); }
 .segmented-control:has(.segmented-control__btn:nth-child(4).active) .segmented-control__indicator { transform: translateX(300%); }
 .segmented-control:has(.segmented-control__btn:nth-child(5).active) .segmented-control__indicator { transform: translateX(400%); }
+
+/* === CUSTOM VALIDATION TOOLTIP === */
+.validation-tooltip {
+  position: absolute;
+  z-index: 1000;
+  background: #fff;
+  color: #1c0e0c;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  animation: tooltipIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: bottom center;
+}
+
+[data-theme="slate-modernity"] .validation-tooltip {
+  background: var(--color-bg-secondary);
+  color: #fff;
+  border: 1px solid var(--color-border-light);
+}
+
+.validation-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 20px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.validation-tooltip__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: #f59e0b;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+@keyframes tooltipIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.validation-tooltip--exit {
+  animation: tooltipOut 0.2s ease forwards;
+}
+
+@keyframes tooltipOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(5px); }
+}
+
+/* SHAKE ANIMATION */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  border-color: var(--color-danger) !important;
+}

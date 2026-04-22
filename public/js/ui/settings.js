@@ -188,6 +188,17 @@ function handleSaveSettings() {
 
   closeSettings(true);
   showToast('Настройки сохранены', 'success');
+
+  // Синхронизация полей поиска при сохранении настроек
+  if (DOM.selectPeriod) {
+    DOM.selectPeriod.value = settings.defaultPeriod;
+    const control = document.getElementById('controlPeriod');
+    if (control) {
+      const btns = control.querySelectorAll('.segmented-control__btn');
+      btns.forEach(b => b.classList.toggle('active', b.dataset.value === settings.defaultPeriod));
+    }
+  }
+  if (DOM.inputLimit) DOM.inputLimit.value = settings.defaultLimit;
 }
 
 function getSettingsFromUI() {
@@ -312,8 +323,14 @@ async function handleResetSettings() {
   DOM.currencyBtns?.forEach((b) => {
     b.classList.toggle('active', b.dataset.currency === DEFAULT_SETTINGS.defaultCurrency);
   });
-  if (DOM.selectPeriod) DOM.selectPeriod.value = DEFAULT_SETTINGS.defaultPeriod;
   if (DOM.inputLimit) DOM.inputLimit.value = DEFAULT_SETTINGS.defaultLimit;
+
+  // Обновляем состояние сегментированных контролов в форме поиска
+  const control = document.getElementById('controlPeriod');
+  if (control) {
+    const btns = control.querySelectorAll('.segmented-control__btn');
+    btns.forEach(b => b.classList.toggle('active', b.dataset.value === DEFAULT_SETTINGS.defaultPeriod));
+  }
 
   openSettings();
   showToast('Настройки сброшены', 'success');

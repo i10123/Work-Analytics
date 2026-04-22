@@ -6,13 +6,16 @@ import { loadReportsList } from './api.js';
 import { setupSSE } from './ui/sse.js';
 import { openModal, closeModal, handleFormSubmit } from './ui/modal.js';
 import { renderDashboard } from './ui/dashboard.js';
+import { setupSidebarListeners } from './ui/sidebar.js';
 import { setupSettingsListeners, setupStepperListeners, setupSegmentedControlListeners } from './ui/settings.js';
+import { initializePremiumUI } from './ui/ui-premium.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('[App] 🚀 Инициализация Work Analytics (Modular)...');
 
   initializeTheme();
   initializeSettings();
+  initializePremiumUI();
   setupEventListeners();
   setupSSE();
   loadReportsList();
@@ -72,4 +75,8 @@ function setupEventListeners() {
   setupSettingsListeners();
   setupStepperListeners();
   setupSegmentedControlListeners();
+  setupSidebarListeners();
+
+  // Сворачиваем логи по умолчанию при загрузке
+  if (DOM.sidebarLogs) DOM.sidebarLogs.classList.add('collapsed');
 }

@@ -164,6 +164,7 @@ function parseHabrHTML(html) {
           salary,
           experience: '',
           employment: '',
+          workFormat: (city.toLowerCase().includes('удаленно') || city.toLowerCase().includes('удалённо') || skills.some(s => s.toLowerCase().includes('удален'))) ? 'Remote' : 'Office',
           description: description || title,
           publishedAt: '',
           skills, // Навыки из тегов Хабра (дополнительно обогащаются Gemini)

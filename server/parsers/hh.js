@@ -48,7 +48,9 @@ async function parse(query, filters = {}) {
           only_with_salary: false,
         },
         headers: {
-          'User-Agent': 'WorkAnalytics/1.0 (student-project)',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'application/json',
+          'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
         },
         timeout: 15000,
       });
@@ -107,6 +109,7 @@ function normalizeHHVacancy(vacancy) {
     },
     experience: vacancy.experience?.name || 'Не указан',
     employment: vacancy.employment?.name || 'Не указан',
+    workFormat: (vacancy.schedule?.id === 'remote') ? 'Remote' : 'Office',
     description: vacancy.snippet?.requirement || vacancy.snippet?.responsibility || '',
     publishedAt: vacancy.published_at || '',
     skills: [], // Будут заполнены через Gemini AI

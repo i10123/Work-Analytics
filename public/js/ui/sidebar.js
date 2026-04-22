@@ -2,6 +2,14 @@ import { DOM } from '../dom.js';
 import { escapeHtml } from '../utils/formatters.js';
 import { loadReportById } from '../api.js';
 
+export function setupSidebarListeners() {
+  if (DOM.logsToggle) {
+    DOM.logsToggle.addEventListener('click', () => {
+      DOM.sidebarLogs.classList.toggle('collapsed');
+    });
+  }
+}
+
 /**
  * Рендерит список отчётов в боковой панели.
  * @param {Array<Object>} reports — Массив метаданных отчётов.
@@ -54,4 +62,30 @@ export function renderReportsList(reports) {
 
     DOM.reportsList.insertBefore(div, DOM.reportsEmpty);
   });
+}
+
+/**
+ * Добавляет запись в UI-лог.
+ * @param {string} message — Сообщение.
+ * @param {'info'|'success'|'warning'|'error'} type — Тип лога.
+ */
+export function addLogEntry(message, type = 'info') {
+  if (!DOM.logsContainer) return;
+
+  const entry = document.createElement('div');
+  entry.className = `log-entry log-entry--${type}`;
+  
+  const time = new Date().toLocaleTimeString('ru-RU', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  
+  entry.innerHTML = `<span style="opacity: 0.5;">[${time}]</span> ${escapeHtml(message)}`;
+  
+  DOM.logsContainer.appendChild(entry);
+  
+  // Авто-скролл вниз
+  DOM.logsContainer.scrollTop = DOM.logsContainer.scrollHeight;
+
+  // Ограничиваем количество записей (например, последние 50)
+  while (DOM.logsContainer.children.length > 50) {
+    DOM.logsContainer.removeChild(DOM.logsContainer.firstChild);
+  }
 }

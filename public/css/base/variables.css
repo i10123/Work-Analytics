@@ -11,9 +11,10 @@
 
   --color-primary: #9CA3AF;
   --color-primary-hover: #ffffff;
-  --color-primary-glow: rgba(156, 163, 175, 0.3);
+  --color-primary-glow: rgba(156, 163, 175, 0.4);
   --color-accent: #6b7280;
   --color-accent-soft: rgba(107, 114, 128, 0.15);
+  --color-accent-glow: rgba(107, 114, 128, 0.3);
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
@@ -42,14 +43,15 @@
   --border-radius-sm: 6px;
   --border-radius-lg: 16px;
 
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.35);
-  --shadow-glow: 0 0 25px var(--color-primary-glow);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --shadow-glow: 0 0 20px var(--color-primary-glow);
+  --shadow-glow-accent: 0 0 20px var(--color-accent-glow);
 
   --glass-bg: rgba(30, 34, 53, 0.7);
   --glass-border: rgba(255, 255, 255, 0.05);

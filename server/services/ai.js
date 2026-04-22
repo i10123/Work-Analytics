@@ -8,7 +8,7 @@
 const axios = require('axios');
 
 /** Количество вакансий в одном батче для отправки в Gemini */
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 10;
 
 /** Задержка между батчами (мс) — защита от rate limit */
 const BATCH_DELAY_MS = 4500;

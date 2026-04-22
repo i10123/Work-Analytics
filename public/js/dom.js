@@ -7,6 +7,9 @@ export const DOM = {
   reportsEmpty: document.getElementById('reportsEmpty'),
   queueStatus: document.getElementById('queueStatus'),
   queueText: document.getElementById('queueText'),
+  sidebarLogs: document.getElementById('sidebarLogs'),
+  logsToggle: document.getElementById('logsToggle'),
+  logsContainer: document.getElementById('logsContainer'),
 
   /* Экраны */
   welcomeScreen: document.getElementById('welcomeScreen'),
@@ -21,6 +24,10 @@ export const DOM = {
   selectPeriod: document.getElementById('selectPeriod'),
   inputLimit: document.getElementById('inputLimit'),
   btnSubmitParse: document.getElementById('btnSubmitParse'),
+
+  /* Чарты */
+  chartWorkFormat: document.getElementById('chartWorkFormat'),
+  chartSalaryByFormat: document.getElementById('chartSalaryByFormat'),
 
   /* Прогресс */
   progressTitle: document.getElementById('progressTitle'),
@@ -37,6 +44,7 @@ export const DOM = {
   kpiAvgSalary: document.getElementById('kpiAvgSalary'),
   kpiMedianSalary: document.getElementById('kpiMedianSalary'),
   kpiCompanies: document.getElementById('kpiCompanies'),
+  kpiRemote: document.getElementById('kpiRemote'),
 
   /* Валюты */
   currencyBtns: document.querySelectorAll('.currency-btn'),
@@ -75,4 +83,10 @@ export const DOM = {
   btnDeleteAllReports: document.getElementById('btnDeleteAllReports'),
   btnClearCache: document.getElementById('btnClearCache'),
   btnResetSettings: document.getElementById('btnResetSettings'),
+
+  /* Модалка ошибки */
+  errorModalOverlay: document.getElementById('errorModalOverlay'),
+  errorTitle: document.getElementById('errorTitle'),
+  errorText: document.getElementById('errorText'),
+  btnErrorOk: document.getElementById('btnErrorOk'),
 };
