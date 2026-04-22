@@ -5,6 +5,12 @@
  */
 
 const axios = require('axios');
+const { init } = require('@heyputer/puter.js/src/init.cjs');
+
+/** Инициализация Puter (если есть токен) */
+const puter = process.env.PUTER_AUTH_TOKEN && process.env.PUTER_AUTH_TOKEN !== 'YOUR_PUTER_AUTH_TOKEN_HERE'
+  ? init(process.env.PUTER_AUTH_TOKEN)
+  : null;
 
 /** Количество вакансий в одном батче */
 const BATCH_SIZE = 10;
@@ -38,6 +44,16 @@ async function extractSkillsFromJobs(jobs) {
       skillsMap = await processBatchOpenAI(batch, openrouterKey, 'https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001');
     } catch (error) {
       console.warn(`[AI] ⚠️ Ошибка OpenRouter: ${error.message}`);
+      
+      // Попытка использовать Puter как запасной вариант
+      if (puter) {
+        console.log(`[AI] 🔄 Пробую резервный провайдер: Puter (DeepSeek)...`);
+        try {
+          skillsMap = await processBatchPuter(batch);
+        } catch (puterError) {
+          console.error(`[AI] ❌ Ошибка резервного провайдера (Puter): ${puterError.message}`);
+        }
+      }
     }
 
     /** Присваиваем навыки (или пустые массивы при фиаско) */
@@ -130,6 +146,21 @@ async function processBatchOpenAI(batch, apiKey, url, model) {
   });
 
   const rawText = response.data?.choices?.[0]?.message?.content || '[]';
+  return parseJsonFromAi(rawText, batch.length);
+}
+
+// --- PUTER LOGIC ---
+
+async function processBatchPuter(batch) {
+  if (!puter) throw new Error('Puter not initialized');
+  const prompt = generatePrompt(batch);
+
+  // Используем DeepSeek v3.2 через Puter
+  const response = await puter.ai.chat(prompt, { 
+    model: 'deepseek/deepseek-v3.2'
+  });
+
+  const rawText = response.message?.content || '[]';
   return parseJsonFromAi(rawText, batch.length);
 }
 
