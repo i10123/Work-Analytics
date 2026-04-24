@@ -48,7 +48,7 @@ async function parse(query, filters = {}) {
           only_with_salary: false,
         },
         headers: {
-          'User-Agent': 'WorkAnalytics/1.0 (student-project)',
+          'User-Agent': 'WorkAnalytics/1.0 (student-project@example.com)',
         },
         timeout: 15000,
       });
@@ -93,12 +93,18 @@ async function parse(query, filters = {}) {
 function normalizeVacancy(vacancy) {
   const salary = vacancy.salary || {};
 
+  const workFormat = (vacancy.schedule?.id === 'remote') ? 'Remote' : 'Office';
+  let city = vacancy.area?.name || 'Не указан';
+  if (workFormat === 'Remote' || city === 'Не указан' || city === 'Беларусь') {
+    city = 'Онлайн';
+  }
+
   return {
     source: 'rabotaby',
     sourceId: vacancy.id,
     title: vacancy.name || 'Без названия',
     company: vacancy.employer?.name || 'Не указана',
-    city: vacancy.area?.name || 'Не указан',
+    city: city,
     url: vacancy.alternate_url || '',
     salary: {
       min: salary.from || null,
@@ -107,7 +113,7 @@ function normalizeVacancy(vacancy) {
     },
     experience: vacancy.experience?.name || 'Не указан',
     employment: vacancy.employment?.name || 'Не указан',
-    workFormat: (vacancy.schedule?.id === 'remote') ? 'Remote' : 'Office',
+    workFormat: workFormat,
     description: vacancy.snippet?.requirement || vacancy.snippet?.responsibility || '',
     publishedAt: vacancy.published_at || '',
     skills: [],

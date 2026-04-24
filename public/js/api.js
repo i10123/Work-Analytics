@@ -32,13 +32,15 @@ export async function loadReportById(reportId) {
 
     if (data.success) {
       setCurrentReport(data.report);
+      localStorage.setItem('lastReportId', reportId);
       showScreen('dashboard');
       renderDashboard(data.report);
 
-      /** Подсвечиваем активный отчёт в сайдбаре */
       document.querySelectorAll('.report-item').forEach((el) => {
         el.classList.toggle('active', el.dataset.id === reportId);
       });
+    } else {
+      localStorage.removeItem('lastReportId');
     }
   } catch (error) {
     console.error(`[App] ❌ Ошибка загрузки отчёта ${reportId}:`, error);

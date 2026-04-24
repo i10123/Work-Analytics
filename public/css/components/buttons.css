@@ -101,8 +101,8 @@
 
 .absolute-toggle {
   position: absolute;
-  top: 24px;
-  left: 24px;
+  top: 18px;
+  left: 20px;
   background: var(--glass-bg);
   backdrop-filter: blur(8px);
   border: 1px solid var(--glass-border);

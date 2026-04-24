@@ -18,6 +18,6 @@ export function convertCurrency(amount, from, to, rates) {
  * @returns {string} — Символ (₽, $, €, Br).
  */
 export function getCurrencySymbol(currency) {
-  const symbols = { RUB: '₽', USD: '$', EUR: '€', BYN: 'Br' };
+  const symbols = { RUB: '₽', USD: '$', EUR: '€', BYN: '\uE901' };
   return symbols[currency] || currency;
 }

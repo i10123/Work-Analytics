@@ -2,7 +2,7 @@ import { DOM } from './dom.js';
 import { initializeTheme } from './ui/theme.js';
 import { loadSettings } from './utils/settings.js';
 import { setCurrentCurrency, currentReport } from './state.js';
-import { loadReportsList } from './api.js';
+import { loadReportsList, loadReportById } from './api.js';
 import { setupSSE } from './ui/sse.js';
 import { openModal, closeModal, handleFormSubmit } from './ui/modal.js';
 import { renderDashboard } from './ui/dashboard.js';
@@ -10,15 +10,28 @@ import { setupSidebarListeners } from './ui/sidebar.js';
 import { setupSettingsListeners, setupStepperListeners, setupSegmentedControlListeners } from './ui/settings.js';
 import { initializePremiumUI } from './ui/ui-premium.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   console.log('[App] 🚀 Инициализация Work Analytics (Modular)...');
 
   initializeTheme();
+  
+  if (window.Chart) {
+    const rootStyles = getComputedStyle(document.documentElement);
+    Chart.defaults.font.family = rootStyles.getPropertyValue('--font-family').trim() || "'Outfit', 'nbrb', sans-serif";
+  }
+
   initializeSettings();
   initializePremiumUI();
   setupEventListeners();
   setupSSE();
-  loadReportsList();
+  
+  // Загружаем список и пробуем восстановить последний отчёт
+  await loadReportsList();
+  
+  const lastReportId = localStorage.getItem('lastReportId');
+  if (lastReportId) {
+    loadReportById(lastReportId);
+  }
 });
 
 function initializeSettings() {

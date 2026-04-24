@@ -5,12 +5,17 @@
  */
 
 const axios = require('axios');
-const { init } = require('@heyputer/puter.js/src/init.cjs');
+let puter = null;
 
-/** Инициализация Puter (если есть токен) */
-const puter = process.env.PUTER_AUTH_TOKEN && process.env.PUTER_AUTH_TOKEN !== 'YOUR_PUTER_AUTH_TOKEN_HERE'
-  ? init(process.env.PUTER_AUTH_TOKEN)
-  : null;
+try {
+  const puterModule = require('@heyputer/puter.js');
+  const init = puterModule.init || (puterModule.default && puterModule.default.init);
+  if (init && process.env.PUTER_AUTH_TOKEN && process.env.PUTER_AUTH_TOKEN !== 'YOUR_PUTER_AUTH_TOKEN_HERE') {
+    puter = init(process.env.PUTER_AUTH_TOKEN);
+  }
+} catch (e) {
+  console.warn('[AI] ⚠️ Модуль @heyputer/puter.js не загружен. Резервный провайдер (Puter) отключен.');
+}
 
 /** Количество вакансий в одном батче */
 const BATCH_SIZE = 10;

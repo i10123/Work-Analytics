@@ -44,13 +44,12 @@ export function renderChartSalary(jobs, rates, charts) {
     })
     .filter((s) => s > 0);
 
+  const card = ctx.closest('.chart-card');
   if (salaries.length === 0) {
-    charts.salary = new Chart(ctx, {
-      type: 'bar',
-      data: { labels: ['Нет данных'], datasets: [{ data: [0] }] },
-    });
+    if (card) card.style.display = 'none';
     return;
   }
+  if (card) card.style.display = '';
 
   const min = Math.min(...salaries);
   const max = Math.max(...salaries);
@@ -122,11 +121,12 @@ export function renderChartSources(report, charts) {
   if (stats.rabotaby > 0) { labels.push('Rabota.by'); data.push(stats.rabotaby); colors.push(theme.colors[2]); }
   if (stats.habr > 0) { labels.push('Хабр Карьера'); data.push(stats.habr); colors.push(theme.colors[0]); }
 
+  const card = ctx.closest('.chart-card');
   if (data.length === 0) {
-    labels.push('Нет данных');
-    data.push(1);
-    colors.push(theme.grid);
+    if (card) card.style.display = 'none';
+    return;
   }
+  if (card) card.style.display = '';
 
   charts.sources = new Chart(ctx, {
     type: 'doughnut',
@@ -176,6 +176,13 @@ export function renderChartSkills(jobs, charts) {
   const labels = sorted.map(([name]) => name);
   const data = sorted.map(([, count]) => count);
 
+  const card = ctx.closest('.chart-card');
+  if (data.length === 0) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = '';
+
   const palette = theme.colors;
   const bgColors = data.map((_, i) => palette[i % palette.length] + '99');
   const borderColors = data.map((_, i) => palette[i % palette.length]);
@@ -220,6 +227,13 @@ export function renderChartExperience(jobs, charts) {
   const sorted = Object.entries(expCount).sort((a, b) => b[1] - a[1]);
   const labels = sorted.map(([name]) => name);
   const data = sorted.map(([, count]) => count);
+
+  const card = ctx.closest('.chart-card');
+  if (data.length === 0) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = '';
 
   const palette = theme.colors;
   const colors = data.map((_, i) => palette[i % palette.length]);
@@ -267,6 +281,13 @@ export function renderChartCities(jobs, charts) {
 
   const labels = sorted.map(([name]) => name);
   const data = sorted.map(([, count]) => count);
+  const card = ctx.closest('.chart-card');
+  if (data.length === 0) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = '';
+
   const mainColor = theme.colors[1];
 
   charts.cities = new Chart(ctx, {
@@ -314,6 +335,13 @@ export function renderChartWorkFormat(jobs, charts) {
   const labels = ['Удаленка', 'Офис'];
   const data = [counts.Remote, counts.Office];
   
+  const card = ctx.closest('.chart-card');
+  if (data.every(d => d === 0)) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = '';
+
   // Цвета: Бирюзовый для удаленки, Индиго для офиса
   const colors = [theme.colors[1], theme.colors[0]];
 
@@ -372,6 +400,13 @@ export function renderChartSalaryByFormat(jobs, rates, charts) {
     formatStats.Remote.count > 0 ? Math.round(formatStats.Remote.sum / formatStats.Remote.count) : 0,
     formatStats.Office.count > 0 ? Math.round(formatStats.Office.sum / formatStats.Office.count) : 0
   ];
+
+  const card = ctx.closest('.chart-card');
+  if (data.every(d => d === 0)) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = '';
 
   const mainColor = theme.colors[2]; // Зеленый для зарплат
 

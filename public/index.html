@@ -9,7 +9,7 @@
   <title>Work Analytics — Анализ IT-вакансий</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
 </head>
@@ -68,7 +68,16 @@
         <span>Новый сбор данных</span>
       </button>
 
-      <div class="sidebar__section-title">История отчётов</div>
+      <div class="sidebar__section-header">
+        <div class="sidebar__section-title">История отчётов</div>
+        <div class="sidebar__search-wrapper">
+          <input type="text" id="reportsSearch" class="sidebar__search-input" placeholder="Поиск..." autocomplete="off">
+          <svg class="sidebar__search-icon" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+      </div>
       <div class="sidebar__reports-list" id="reportsList">
         <!-- Динамически заполняется через JS -->
         <div class="sidebar__empty" id="reportsEmpty">
@@ -242,16 +251,29 @@
       <section class="dashboard" id="dashboard" style="display: none;">
         <!-- Заголовок и мета -->
         <div class="dashboard__header">
-          <div class="dashboard__meta">
-            <h2 class="dashboard__title" id="dashTitle">—</h2>
-            <p class="dashboard__subtitle" id="dashSubtitle">—</p>
+          <div class="dashboard__info-wrapper">
+            <div class="dashboard__icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+              </svg>
+            </div>
+            <div class="dashboard__meta">
+              <h2 class="dashboard__title" id="dashTitle">Загрузка...</h2>
+              <div class="dashboard__subtitle-group">
+                <p class="dashboard__subtitle" id="dashSubtitle">—</p>
+                <div class="dashboard__badges" id="dashBadges">
+                  <!-- Badges will be injected here -->
+                </div>
+              </div>
+            </div>
           </div>
           <!-- Переключатель валют -->
           <div class="currency-switcher" id="currencySwitcher">
             <button class="currency-btn active" data-currency="RUB">₽ RUB</button>
             <button class="currency-btn" data-currency="USD">$ USD</button>
             <button class="currency-btn" data-currency="EUR">€ EUR</button>
-            <button class="currency-btn" data-currency="BYN">Br BYN</button>
+            <button class="currency-btn" data-currency="BYN">&#xe901; BYN</button>
           </div>
         </div>
 
@@ -291,7 +313,6 @@
         </div>
 
         <!-- Графики -->
-        <div class="charts-grid">
         <!-- Графики: Зарплаты -->
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
@@ -352,17 +373,21 @@
 
         <!-- Таблица вакансий -->
         <div class="table-card">
-          <h3 class="table-card__title">Все вакансии</h3>
+          <div class="table-card__header">
+            <h3 class="table-card__title">Все вакансии</h3>
+            <input type="text" id="jobsTableSearch" class="form-input" placeholder="Поиск по таблице..." style="max-width: 300px;">
+          </div>
           <div class="table-wrapper">
             <table class="data-table" id="jobsTable">
               <thead>
                 <tr>
-                  <th>Источник</th>
-                  <th>Вакансия</th>
-                  <th>Компания</th>
-                  <th>Город</th>
-                  <th>Зарплата</th>
+                  <th data-sort="source" style="cursor: pointer;">Источник <span class="sort-icon"></span></th>
+                  <th data-sort="title" style="cursor: pointer;">Вакансия <span class="sort-icon"></span></th>
+                  <th data-sort="company" style="cursor: pointer;">Компания <span class="sort-icon"></span></th>
+                  <th data-sort="city" style="cursor: pointer;">Город <span class="sort-icon"></span></th>
+                  <th data-sort="salary" style="cursor: pointer;">Зарплата <span class="sort-icon"></span></th>
                   <th>Навыки</th>
+                  <th>Действие</th>
                 </tr>
               </thead>
               <tbody id="jobsTableBody">
@@ -508,7 +533,7 @@
               <button class="settings-currency-btn active" data-currency="RUB">₽ Рос. руб</button>
               <button class="settings-currency-btn" data-currency="USD">$ Доллар</button>
               <button class="settings-currency-btn" data-currency="EUR">€ Евро</button>
-              <button class="settings-currency-btn" data-currency="BYN">Br Бел. руб</button>
+              <button class="settings-currency-btn" data-currency="BYN">&#xe901; Бел. руб</button>
             </div>
           </div>
         </div>

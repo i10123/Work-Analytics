@@ -5,6 +5,7 @@ export const DOM = {
   btnNewReport: document.getElementById('btnNewReport'),
   reportsList: document.getElementById('reportsList'),
   reportsEmpty: document.getElementById('reportsEmpty'),
+  reportsSearch: document.getElementById('reportsSearch'),
   queueStatus: document.getElementById('queueStatus'),
   queueText: document.getElementById('queueText'),
   sidebarLogs: document.getElementById('sidebarLogs'),

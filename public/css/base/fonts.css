@@ -1,0 +1,30 @@
+@font-face {
+    font-family: "nbrb";
+    src: url("/fonts/nbrb.woff2") format("woff2"),
+         url("/fonts/nbrb.ttf") format("truetype"),
+         url("/fonts/nbrb.woff") format("woff");
+    unicode-range: U+E901, U+42, U+59, U+4E;
+}
+
+.nbrb-icon {
+    font-family: "nbrb" !important;
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: normal;
+    -webkit-font-feature-settings: "liga";
+    -moz-font-feature-settings: "liga=1";
+    -moz-font-feature-settings: "liga";
+    -ms-font-feature-settings: "liga" 1;
+    font-feature-settings: "liga";
+    -webkit-font-variant-ligatures: discretionary-ligatures;
+    font-variant-ligatures: discretionary-ligatures;
+}
+
+.nbrb-icon-byn:before {
+    content: "\e901";
+}
