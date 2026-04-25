@@ -6,7 +6,6 @@
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
   z-index: 10000;
   display: flex;
   align-items: center;
@@ -16,7 +15,6 @@
 
 .error-modal {
   background: var(--glass-bg);
-  backdrop-filter: blur(30px);
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 32px;
   padding: 42px 32px;

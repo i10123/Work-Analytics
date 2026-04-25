@@ -2,7 +2,7 @@ import { DOM } from './dom.js';
 import { escapeHtml } from './utils/formatters.js';
 import { showScreen } from './ui/common.js';
 import { renderDashboard } from './ui/dashboard.js';
-import { setCurrentReport } from './state.js';
+import { setCurrentReport, setAllReports } from './state.js';
 import { renderReportsList } from './ui/sidebar.js';
 
 /**
@@ -14,10 +14,14 @@ export async function loadReportsList() {
     const data = await response.json();
 
     if (data.success) {
+      setAllReports(data.reports);
       renderReportsList(data.reports);
+      return data.reports;
     }
+    return [];
   } catch (error) {
     console.error('[App] ❌ Ошибка загрузки списка отчётов:', error);
+    return [];
   }
 }
 

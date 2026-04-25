@@ -1,174 +1,205 @@
 /**
  * @file hh.js — Парсер вакансий с HeadHunter (hh.ru).
- * @description Использует публичный API HeadHunter для получения вакансий.
- *              API документация: https://api.hh.ru/openapi/redoc
- *              Не требует авторизации для базовых запросов.
+ * @description Рефакторинг с использованием ООП и BaseParser.
  */
 
 const axios = require('axios');
 const { HttpsProxyAgent } = require('https-proxy-agent');
+const BaseParser = require('./base');
 
-/** Базовый URL API HeadHunter */
 const HH_API_BASE = 'https://api.hh.ru';
-
-/** Задержка между запросами страниц (мс) — вежливый парсинг */
 const PAGE_DELAY_MS = 500;
+const DEEP_SCRAPE_DELAY_MS = 500;
 
-/**
- * Парсит вакансии с HH.ru по заданным параметрам.
- *
- * @param {string} query — Поисковый запрос (например: "Frontend разработчик").
- * @param {Object} filters — Фильтры поиска.
- * @param {string} [filters.period="7days"] — Период публикации.
- * @param {number} [filters.limit=50] — Максимальное количество вакансий.
- * @returns {Promise<Array<Object>>} — Массив вакансий в унифицированном формате.
- *
- * @throws {Error} — При критической ошибке сети или API.
- */
-async function parse(query, filters = {}) {
-  const limit = filters.limit || 50;
-  const period = mapPeriodToDays(filters.period);
-  const perPage = 20;
-  const maxPages = Math.ceil(limit / perPage);
+class HhParser extends BaseParser {
+  constructor(area = 113) {
+    super('HH.ru');
+    this.area = area;
+  }
 
-  console.log(`[Parser:HH] 🔍 Поиск: "${query}", период: ${period} дн., лимит: ${limit}`);
+  async parse(query, filters = {}) {
+    const limit = filters.limit || 50;
+    const period = this.mapPeriodToDays(filters.period);
+    const perPage = 20;
+    const maxPages = this.MAX_PAGES_TO_SCAN;
 
-  const allJobs = [];
+    console.log(`[Parser:HH] 🔍 Поиск: "${query}", период: ${period} дн., лимит: ${limit}`);
 
-  for (let page = 0; page < maxPages; page++) {
-    console.log(`[Parser:HH] 📄 Загрузка страницы ${page + 1}/${maxPages}...`);
+    const allJobs = [];
+    // Компилируем стоп-слова ОДИН РАЗ до начала цикла
+    const stopRegexes = this.compileStopWords(filters.stopWords || '');
 
-    try {
-      const axiosConfig = {
-        params: {
-          text: query,
-          period: period,
-          per_page: perPage,
-          page: page,
-          area: 113, // Россия
-          only_with_salary: false,
-        },
-        headers: {
-          'User-Agent': 'JobMarketAnalyzer/1.0 (deniskarakulko90@gmail.com)',
-          'HH-User-Agent': 'JobMarketAnalyzer/1.0 (deniskarakulko90@gmail.com)',
-          'Accept': 'application/json'
-        },
-        timeout: 15000,
-      };
+    for (let page = 0; page < maxPages; page++) {
+      console.log(`[Parser:HH] 📄 Загрузка страницы ${page + 1}/${maxPages}...`);
 
-      if (process.env.RU_PROXY) {
-        axiosConfig.httpsAgent = new HttpsProxyAgent(process.env.RU_PROXY);
+      try {
+        const axiosConfig = {
+          params: {
+            text: query,
+            period: period,
+            per_page: perPage,
+            page: page,
+            area: this.area,
+            only_with_salary: false,
+          },
+          headers: {
+            'User-Agent': 'JobMarketAnalyzer/1.0',
+            'HH-User-Agent': 'JobMarketAnalyzer/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 15000,
+        };
+
+        if (process.env.RU_PROXY) {
+          axiosConfig.httpsAgent = new HttpsProxyAgent(process.env.RU_PROXY);
+        }
+
+        const response = await axios.get(`${HH_API_BASE}/vacancies`, axiosConfig);
+
+        const vacancies = response.data.items || [];
+        console.log(`[Parser:HH] 📊 Страница ${page + 1}: получено ${vacancies.length} вакансий (до фильтрации)`);
+
+        if (vacancies.length === 0) {
+          console.log(`[Parser:HH] Вакансии закончились.`);
+          break;
+        }
+
+        let addedThisPage = 0;
+
+        for (const vacancy of vacancies) {
+          // Проверка на стоп-слова (регулярки уже скомпилированы)
+          if (this.hasStopWords(vacancy.name, stopRegexes)) {
+            continue; // Пропускаем вакансию
+          }
+
+          allJobs.push(this.normalizeVacancy(vacancy));
+          addedThisPage++;
+
+          if (allJobs.length >= limit) break;
+        }
+
+        console.log(`[Parser:HH] 📊 Страница ${page + 1}: добавлено ${addedThisPage} валидных вакансий. Всего: ${allJobs.length}/${limit}`);
+
+        if (allJobs.length >= limit) {
+          console.log(`[Parser:HH] Достигнут лимит (${limit}). Остановка.`);
+          break;
+        }
+
+        // Пауза перед следующей страницей
+        if (page < maxPages - 1) {
+          await this.delay(PAGE_DELAY_MS);
+        }
+      } catch (error) {
+        if (error.response && error.response.status === 403) {
+          console.warn(`[Parser:HH] 🛑 Бан по IP или User-Agent от Cloudflare. Нужен RU-прокси или валидный токен.`);
+          break;
+        }
+        throw new Error(`HH API ошибка: ${error.message}`);
       }
-
-      const response = await axios.get(`${HH_API_BASE}/vacancies`, axiosConfig);
-
-      const vacancies = response.data.items || [];
-      console.log(`[Parser:HH] 📊 Страница ${page + 1}: найдено ${vacancies.length} вакансий`);
-
-      if (vacancies.length === 0) break;
-
-      /** Преобразуем каждую вакансию в унифицированный формат */
-      for (const vacancy of vacancies) {
-        allJobs.push(normalizeHHVacancy(vacancy));
-        if (allJobs.length >= limit) break;
-      }
-
-      if (allJobs.length >= limit) break;
-
-      /** Пауза между запросами */
-      if (page < maxPages - 1) {
-        await new Promise((r) => setTimeout(r, PAGE_DELAY_MS));
-      }
-    } catch (error) {
-      /** Если страница не загрузилась — пропускаем и переходим к следующей */
-      if (error.response && error.response.status === 403) {
-        console.warn(`[Parser:HH] 🛑 Бан по IP или User-Agent от Cloudflare. Нужен RU-прокси или валидный токен.`);
-        break;
-      }
-      throw new Error(`HH API ошибка: ${error.message}`);
     }
+
+    // Если включен deepScrape, получаем полные описания
+    if (filters.deepScrape && allJobs.length > 0) {
+      console.log(`[Parser:HH] 🕵️ Начинается глубокий парсинг для ${allJobs.length} вакансий...`);
+      await this.fetchDeepDescriptions(allJobs);
+    }
+
+    console.log(`[Parser:HH] ✅ Итого собрано: ${allJobs.length} вакансий`);
+    return allJobs;
   }
 
-  console.log(`[Parser:HH] ✅ Итого собрано: ${allJobs.length} вакансий`);
-  return allJobs;
-}
+  async fetchDeepDescriptions(jobs) {
+    const fetchFn = async (job) => {
+      try {
+        await this.delay(DEEP_SCRAPE_DELAY_MS); // Пауза перед запросом
+        
+        const axiosConfig = {
+          headers: {
+            'User-Agent': 'JobMarketAnalyzer/1.0',
+            'HH-User-Agent': 'JobMarketAnalyzer/1.0',
+            'Accept': 'application/json'
+          },
+          timeout: 10000,
+        };
+        if (process.env.RU_PROXY) {
+          axiosConfig.httpsAgent = new HttpsProxyAgent(process.env.RU_PROXY);
+        }
 
-/**
- * Преобразует вакансию из формата HH API в унифицированный формат приложения.
- *
- * @param {Object} vacancy — Сырой объект вакансии из HH API.
- * @returns {Object} — Вакансия в унифицированном формате.
- */
-function normalizeHHVacancy(vacancy) {
-  const salary = vacancy.salary || {};
+        const response = await axios.get(`${HH_API_BASE}/vacancies/${job.sourceId}`, axiosConfig);
+        const fullVacancy = response.data;
+        
+        // Заменяем короткое описание на полное (без HTML тегов)
+        if (fullVacancy.description) {
+          // Простая очистка HTML
+          job.description = fullVacancy.description.replace(/<[^>]*>?/gm, '\n').replace(/\n\s*\n/g, '\n').trim();
+        }
+        
+        // Добавляем скиллы, если они есть в полном ответе
+        if (fullVacancy.key_skills && Array.isArray(fullVacancy.key_skills)) {
+          fullVacancy.key_skills.forEach(sk => {
+            if (sk.name && !job.skills.includes(sk.name)) {
+              job.skills.push(sk.name);
+            }
+          });
+        }
+        
+      } catch (error) {
+        console.warn(`[Parser:HH] ⚠️ Ошибка глубокого парсинга для ${job.sourceId}: ${error.message}. Fallback на snippet.`);
+        job.deepScrapeFailed = true;
+      }
+    };
 
-  const workFormat = (vacancy.schedule?.id === 'remote') ? 'Remote' : 'Office';
-  let city = vacancy.area?.name || 'Не указан';
-  if (workFormat === 'Remote' || city === 'Не указан' || city === 'Россия') {
-    city = 'Онлайн';
+    // Ограничение параллелизма до 3 одновременных запросов
+    await this.fetchDeepWithConcurrency(jobs, fetchFn, 3);
   }
 
-  return {
-    source: 'hh',
-    sourceId: vacancy.id,
-    title: vacancy.name || 'Без названия',
-    company: vacancy.employer?.name || 'Не указана',
-    city: city,
-    url: vacancy.alternate_url || '',
-    salary: {
-      min: salary.from || null,
-      max: salary.to || null,
-      currency: mapHHCurrency(salary.currency),
-    },
-    experience: vacancy.experience?.name || 'Не указан',
-    employment: vacancy.employment?.name || 'Не указан',
-    workFormat: workFormat,
-    description: vacancy.snippet?.requirement || vacancy.snippet?.responsibility || '',
-    publishedAt: vacancy.published_at || '',
-    skills: [], // Будут заполнены через Gemini AI
-  };
+  normalizeVacancy(vacancy) {
+    const salary = vacancy.salary || {};
+
+    const workFormat = (vacancy.schedule?.id === 'remote') ? 'Remote' : 'Office';
+    let city = vacancy.area?.name || 'Не указан';
+    if (workFormat === 'Remote' || city === 'Не указан' || city === 'Россия') {
+      city = 'Онлайн';
+    }
+
+    return {
+      source: 'hh',
+      sourceId: vacancy.id,
+      title: vacancy.name || 'Без названия',
+      company: vacancy.employer?.name || 'Не указана',
+      city: city,
+      url: vacancy.alternate_url || '',
+      salary: {
+        min: salary.from || null,
+        max: salary.to || null,
+        currency: this.mapHHCurrency(salary.currency),
+      },
+      experience: vacancy.experience?.name || 'Не указан',
+      employment: vacancy.employment?.name || 'Не указан',
+      workFormat: workFormat,
+      description: vacancy.snippet?.requirement || vacancy.snippet?.responsibility || '',
+      publishedAt: vacancy.published_at || '',
+      skills: [], 
+    };
+  }
+
+  mapHHCurrency(hhCurrency) {
+    const currencyMap = {
+      RUR: 'RUB', RUB: 'RUB', USD: 'USD', EUR: 'EUR',
+      BYR: 'BYN', BYN: 'BYN', KZT: 'KZT', UAH: 'UAH',
+      UZS: 'UZS', GEL: 'GEL', AZN: 'AZN', KGS: 'KGS',
+    };
+    return currencyMap[hhCurrency] || hhCurrency || 'RUB';
+  }
+
+  mapPeriodToDays(period) {
+    const periodMap = {
+      '1day': 1, '3days': 3, '7days': 7, '14days': 14, '30days': 30,
+    };
+    return periodMap[period] || 7;
+  }
 }
 
-/**
- * Конвертирует код валюты HH API в стандартный ISO-код.
- * HH использует нестандартные коды (RUR вместо RUB, BYR вместо BYN).
- *
- * @param {string} hhCurrency — Код валюты из HH API.
- * @returns {string} — ISO-код валюты.
- */
-function mapHHCurrency(hhCurrency) {
-  const currencyMap = {
-    RUR: 'RUB',
-    RUB: 'RUB',
-    USD: 'USD',
-    EUR: 'EUR',
-    BYR: 'BYN',
-    BYN: 'BYN',
-    KZT: 'KZT',
-    UAH: 'UAH',
-    UZS: 'UZS',
-    GEL: 'GEL',
-    AZN: 'AZN',
-    KGS: 'KGS',
-  };
-  return currencyMap[hhCurrency] || hhCurrency || 'RUB';
-}
-
-/**
- * Преобразует строковый период в число дней для API HeadHunter.
- *
- * @param {string} period — Период в текстовом формате ("1day", "3days", "7days", "30days").
- * @returns {number} — Количество дней.
- */
-function mapPeriodToDays(period) {
-  const periodMap = {
-    '1day': 1,
-    '3days': 3,
-    '7days': 7,
-    '14days': 14,
-    '30days': 30,
-  };
-  return periodMap[period] || 7;
-}
-
-module.exports = { parse };
+// Экспортируем инстанс для совместимости или функцию
+const parser = new HhParser();
+module.exports = { parse: parser.parse.bind(parser), HhParser };

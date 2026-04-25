@@ -1,7 +1,6 @@
 .table-card {
   width: 100%;
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
   border-radius: var(--border-radius-lg);
   padding: 24px 28px;

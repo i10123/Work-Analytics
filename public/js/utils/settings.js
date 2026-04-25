@@ -6,6 +6,8 @@ export const DEFAULT_SETTINGS = {
   defaultPeriod: '7days',
   defaultLimit: 50,
   sources: { hh: true, rabotaby: true, habr: true },
+  stopWords: '',
+  deepScrape: false,
 };
 
 /**

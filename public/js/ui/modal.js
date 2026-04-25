@@ -1,24 +1,19 @@
 import { DOM } from '../dom.js';
 import { loadSettings } from '../utils/settings.js';
 import { showScreen } from './common.js';
-import { validateForm } from './ui-premium.js';
+import { validateForm, showValidationTooltip } from './ui-premium.js';
 
-export function openModal() {
+export function openModal(prefillQuery) {
   const settings = loadSettings();
   
   if (DOM.inputQuery) {
-    DOM.inputQuery.value = '';
+    DOM.inputQuery.value = typeof prefillQuery === 'string' ? prefillQuery : '';
     DOM.inputQuery.focus();
   }
   
-  if (DOM.selectPeriod) {
-    DOM.selectPeriod.value = settings.defaultPeriod;
-    // Обновляем визуальное состояние сегментированного контроля
-    const control = document.getElementById('controlPeriod');
-    if (control) {
-      const btns = control.querySelectorAll('.segmented-control__btn');
-      btns.forEach(b => b.classList.toggle('active', b.dataset.value === settings.defaultPeriod));
-    }
+  const periodRadio = document.querySelector(`input[name="period"][value="${settings.defaultPeriod}"]`);
+  if (periodRadio) {
+    periodRadio.checked = true;
   }
   
   if (DOM.inputLimit) {
@@ -36,7 +31,17 @@ export async function handleFormSubmit(e) {
   e.preventDefault();
 
   const query = DOM.inputQuery.value.trim();
-  const period = DOM.selectPeriod.value;
+
+  // Проверка на пустой запрос (пробелы) до HTML5-валидации
+  if (!query) {
+    DOM.inputQuery.value = ''; // Очищаем пробелы, чтобы required сработал визуально
+    showValidationTooltip(DOM.inputQuery);
+    DOM.inputQuery.focus();
+    return;
+  }
+
+  const periodEl = document.querySelector('input[name="period"]:checked');
+  const period = periodEl ? periodEl.value : '7days';
   const limit = parseInt(DOM.inputLimit.value, 10) || 50;
   const settings = loadSettings();
 
@@ -49,7 +54,7 @@ export async function handleFormSubmit(e) {
     const response = await fetch('/api/parse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, period, limit, sources: settings.sources }),
+      body: JSON.stringify({ query, period, limit, sources: settings.sources, stopWords: settings.stopWords, deepScrape: settings.deepScrape }),
     });
 
     const data = await response.json();

@@ -68,7 +68,7 @@ async function extractSkillsFromJobs(jobs) {
     for (let j = 0; j < batch.length; j++) {
       enrichedJobs.push({
         ...batch[j],
-        skills: skillsMap ? (skillsMap[j] || []) : [],
+        skills: skillsMap ? (skillsMap[String(j)] || []) : [],
       });
     }
 
@@ -108,15 +108,14 @@ async function processBatchOpenRouterWithRotation(batch, keys) {
       return await processBatchOpenAI(batch, currentKey, 'https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001');
     } catch (error) {
       const isQuotaError = error.response && (error.response.status === 429 || error.response.status === 403 || error.response.status === 401);
+      currentOpenRouterKeyIndex++;
+      attempts++;
       if (isQuotaError) {
-        console.warn(`[AI] 🔁 Лимит OpenRouter ключа #${currentOpenRouterKeyIndex + 1} исчерпан/ошибка квоты. Переключаюсь...`);
-        currentOpenRouterKeyIndex++;
-        attempts++;
+        console.warn(`[AI] 🔁 Лимит OpenRouter ключа #${(currentOpenRouterKeyIndex) } исчерпан/ошибка квоты. Переключаюсь...`);
         continue;
       }
-      console.warn(`[AI] ⚠️ Сетевая ошибка OpenRouter (не квота): ${error.message}. Ждем 2 сек...`);
+      console.warn(`[AI] ⚠️ Сетевая ошибка OpenRouter (не квота): ${error.message}. Переключаюсь на следующий ключ, ждём 2 сек...`);
       await delay(2000);
-      attempts++;
       continue;
     }
   }
@@ -165,46 +164,42 @@ async function processBatchPuter(batch) {
 
 // --- HELPERS ---
 
+function safeTruncate(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength).replace(/\s\S*$/, '');
+}
+
 function generatePrompt(batch) {
-  const descriptions = batch
-    .map((job, idx) => {
-      const text = (job.description || job.title || '').substring(0, 1500);
-      return `--- Вакансия ${idx + 1} ---\n${text}`;
-    })
-    .join('\n\n');
+  const payload = batch.map((job, idx) => ({
+    id: String(idx),
+    text: safeTruncate(job.description || job.title || '', 1500)
+  }));
 
   return `Проанализируй описания ${batch.length} вакансий. Для КАЖДОЙ извлеки список IT-навыков.
 ПРАВИЛА:
-- Возвращай ТОЛЬКО JSON-массив массивов: [[навыки1], [навыки2], ...]
+- Возвращай ТОЛЬКО JSON-объект, где ключи — это ID вакансии.
+- Пример: { "0": ["React", "Node.js"], "1": ["Python"] }
 - Навыки кратко (1-2 слова): "React", "Python".
 - Если навыков нет — [].
-- Количество внутренних массивов должно быть ровно ${batch.length}.
 
-ОПИСАНИЯ:
-${descriptions}
+ОПИСАНИЯ (JSON):
+${JSON.stringify(payload, null, 2)}
 
-ОТВЕТ (ТОЛЬКО JSON):`;
+ОТВЕТ (ТОЛЬКО JSON-объект):`;
 }
 
 function parseJsonFromAi(rawText, expectedLength) {
   try {
-    const match = rawText.match(/\[\s*\[.*\]\s*\]/s) || rawText.match(/\[.*\]/s);
-    const jsonStr = match ? match[0] : '[]';
-    
-    const parsed = JSON.parse(jsonStr);
-    let result = Array.isArray(parsed) ? parsed : (parsed.skills || parsed.data || []);
-    
-    if (Array.isArray(result) && result.every(Array.isArray)) {
-      return result;
-    }
-    if (Array.isArray(result)) {
-      // Если пришел плоский массив вместо массива массивов
-      return [result];
-    }
-    return new Array(expectedLength).fill([]);
+    const firstBrace = rawText.indexOf('{');
+    const lastBrace = rawText.lastIndexOf('}');
+    const jsonStr = (firstBrace !== -1 && lastBrace > firstBrace)
+      ? rawText.slice(firstBrace, lastBrace + 1)
+      : '{}';
+    return JSON.parse(jsonStr);
   } catch (e) {
     console.error('[AI] ❌ Ошибка парсинга JSON:', e.message);
-    return new Array(expectedLength).fill([]);
+    return {};
   }
 }
 

@@ -52,7 +52,7 @@ function setupCustomValidation() {
 /**
  * Показывает стильный тултип вместо системного.
  */
-function showValidationTooltip(input) {
+export function showValidationTooltip(input) {
   // Удаляем старый, если есть
   hideValidationTooltip(input);
   

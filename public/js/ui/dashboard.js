@@ -1,8 +1,8 @@
 import { DOM } from '../dom.js';
 import { charts, currentCurrency } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
-import { formatSalary } from '../utils/formatters.js';
-import { renderChartSalary, renderChartSources, renderChartSkills, renderChartExperience, renderChartCities, renderChartWorkFormat, renderChartSalaryByFormat } from './charts.js';
+import { formatSalary, escapeHtml } from '../utils/formatters.js';
+import { renderChartSalary, renderChartSources, renderChartSkills, renderChartExperience, renderChartCities, renderChartWorkFormat, renderChartSalaryByFormat, renderChartSalaryExp, renderChartSkillsCorrel, renderChartDynamics } from './charts.js';
 import { renderJobsTable } from './table.js';
 
 export function renderDashboard(report) {
@@ -10,8 +10,9 @@ export function renderDashboard(report) {
   const rates = report.exchangeRates?.rates || { RUB: 1, USD: 93.5, EUR: 100.2, BYN: 28.5 };
 
   if (DOM.dashTitle && DOM.dashSubtitle) {
-    DOM.dashTitle.innerHTML = `<span class="dashboard__title-prefix">Отчёт:</span> ${report.query}`;
-    const dateStr = new Date(report.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    DOM.dashTitle.innerHTML = `<span class="dashboard__title-prefix">Отчёт:</span> ${escapeHtml(report.query)}`;
+    const parsedDate = new Date(report.createdAt);
+    const dateStr = isNaN(parsedDate.getTime()) ? 'Дата неизвестна' : parsedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     DOM.dashSubtitle.textContent = `Сформирован ${dateStr}`;
     
     // Вставляем бейджи
@@ -50,8 +51,70 @@ export function renderDashboard(report) {
   renderChartCities(jobs, charts);
   renderChartWorkFormat(jobs, charts);
   renderChartSalaryByFormat(jobs, rates, charts);
+  
+  // Новые графики
+  renderChartSalaryExp(jobs, rates, charts);
+  renderChartSkillsCorrel(jobs, charts);
+  renderChartDynamics(report, charts);
 
   renderJobsTable(jobs, rates);
+
+  // Обработчик экспорта (удаляем старый, чтобы не плодить)
+  if (DOM.btnExportCsv) {
+    DOM.btnExportCsv.onclick = () => exportToCSV(jobs, report.query);
+  }
+}
+
+function exportToCSV(jobs, query) {
+  if (!jobs || jobs.length === 0) return;
+
+  const BOM = '\uFEFF';
+  const delimiter = ';';
+  const headers = ['Источник', 'ID', 'Должность', 'Компания', 'Город', 'Формат', 'Опыт', 'Занятость', 'Зарплата (мин)', 'Зарплата (макс)', 'Валюта', 'Навыки', 'Ссылка'];
+
+  const escapeCsv = (val) => {
+    if (val === null || val === undefined) return '';
+    let str = String(val);
+    str = str.replace(/"/g, '""');
+    if (str.includes(delimiter) || str.includes('\\n') || str.includes('"')) {
+      return `"${str}"`;
+    }
+    return str;
+  };
+
+  let csvContent = BOM + headers.join(delimiter) + '\\n';
+
+  jobs.forEach(j => {
+    const row = [
+      j.source,
+      j.sourceId,
+      j.title,
+      j.company,
+      j.city,
+      j.workFormat,
+      j.experience,
+      j.employment,
+      j.salary?.min || '',
+      j.salary?.max || '',
+      j.salary?.currency || '',
+      (j.skills || []).join(', '),
+      j.url
+    ];
+    csvContent += row.map(escapeCsv).join(delimiter) + '\\n';
+  });
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  
+  const safeQuery = query.replace(/[^a-z0-9а-яё]/gi, '_').toLowerCase();
+  link.setAttribute('download', `analytics_${safeQuery}_${new Date().toISOString().slice(0, 10)}.csv`);
+  
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function renderKPI(jobs, rates) {

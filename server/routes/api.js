@@ -26,7 +26,7 @@ const { listReports, loadReport, deleteReport, deleteAllReports } = require('../
  * @returns {Object} — { success, task: { id, status, query, filters } }
  */
 router.post('/parse', (req, res) => {
-  const { query, period, limit, sources } = req.body;
+  const { query, period, limit, sources, stopWords, deepScrape } = req.body;
 
   /** Валидация: запрос — обязательное поле */
   if (!query || typeof query !== 'string' || query.trim().length === 0) {
@@ -37,17 +37,37 @@ router.post('/parse', (req, res) => {
     });
   }
 
+  /** Ограничение длины запроса (защита от DOS / 414 URI Too Long) */
+  if (query.trim().length > 200) {
+    console.warn('[API] ⚠️ Слишком длинный запрос:', query.trim().length, 'символов');
+    return res.status(400).json({
+      success: false,
+      error: 'Запрос слишком длинный. Максимум 200 символов.',
+    });
+  }
+
   /** Приводим лимит к числу (минимум 5, максимум 200) */
   const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 5), 200);
 
   console.log(`[API] 🚀 Новый запрос на парсинг: "${query.trim()}", период: ${period || '7days'}, лимит: ${parsedLimit}, источники:`, sources);
 
-  const task = enqueueTask({
-    query: query.trim(),
-    period: period || '7days',
-    limit: parsedLimit,
-    sources,
-  });
+  let task;
+  try {
+    task = enqueueTask({
+      query: query.trim(),
+      period: period || '7days',
+      limit: parsedLimit,
+      sources,
+      stopWords,
+      deepScrape
+    });
+  } catch (err) {
+    console.warn(`[API] ⚠️ Очередь переполнена: ${err.message}`);
+    return res.status(429).json({
+      success: false,
+      error: err.message,
+    });
+  }
 
   return res.status(202).json({
     success: true,
@@ -83,6 +103,10 @@ router.get('/reports', async (req, res) => {
 router.get('/reports/:id', async (req, res) => {
   const { id } = req.params;
 
+  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(id)) {
+    return res.status(400).json({ success: false, error: 'Неверный формат ID отчёта.' });
+  }
+
   try {
     const report = await loadReport(id);
     if (!report) {
@@ -102,6 +126,10 @@ router.get('/reports/:id', async (req, res) => {
  */
 router.delete('/reports/:id', async (req, res) => {
   const { id } = req.params;
+
+  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(id)) {
+    return res.status(400).json({ success: false, error: 'Неверный формат ID отчёта.' });
+  }
 
   try {
     const deleted = await deleteReport(id);
@@ -203,8 +231,7 @@ router.get('/status', (req, res) => {
 
   const maskKey = (key) => {
     if (!key) return null;
-    if (key.length <= 15) return key;
-    return `${key.substring(0, 10)}...${key.substring(key.length - 8)}`;
+    return '***'; // Полностью скрываем ключ для безопасности
   };
 
   return res.json({

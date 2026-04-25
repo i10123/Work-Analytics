@@ -9,6 +9,15 @@ const path = require('path');
 
 /** Абсолютный путь к директории с отчётами */
 const REPORTS_DIR = path.join(__dirname, '..', '..', 'data', 'reports');
+/** Абсолютный путь к файлу индекса */
+const INDEX_FILE = path.join(REPORTS_DIR, 'index.json');
+
+/** In-memory кэш для отчётов (чтобы не читать ФС каждый раз) */
+let reportsCache = null;
+let cacheInitPromise = null;
+
+/** Mutex-очередь для сериализации записей в index.json (защита от Race Condition) */
+let writeLock = Promise.resolve();
 
 /**
  * Создаёт директории data/ и data/reports/, если они ещё не существуют.
@@ -26,18 +35,60 @@ async function ensureDataDirs() {
 }
 
 /**
+ * Сохраняет индексный файл.
+ * Использует promise-based mutex (writeLock) — каждая новая запись
+ * ждёт завершения предыдущей, предотвращая повреждение JSON при
+ * конкурентных вызовах fs.promises.writeFile.
+ */
+async function _saveIndex() {
+  if (reportsCache === null) return;
+
+  // Каждая новая запись ждёт завершения предыдущей!
+  writeLock = writeLock.then(async () => {
+    try {
+      const jsonString = JSON.stringify(reportsCache, null, 2);
+      await fs.promises.writeFile(`${INDEX_FILE}.tmp`, jsonString, 'utf-8');
+      await fs.promises.rename(`${INDEX_FILE}.tmp`, INDEX_FILE);
+    } catch (err) {
+      console.error('[Storage] ❌ Ошибка сохранения index.json:', err.message);
+    }
+  });
+
+  await writeLock;
+}
+
+/**
  * Сохраняет объект отчёта в JSON-файл.
  * Имя файла формируется из поля report.id (например: report_1713360000.json).
  * @param {Object} report — Объект отчёта (должен содержать поле id).
  * @returns {Promise<string>} — Абсолютный путь к сохранённому файлу.
  */
 async function saveReport(report) {
+  if (!report || !/^report_\d+(?:_[a-z0-9]+)?$/.test(report.id)) {
+    throw new Error('Invalid report ID format for saving');
+  }
   const filename = `${report.id}.json`;
   const filepath = path.join(REPORTS_DIR, filename);
 
   try {
     const jsonString = JSON.stringify(report, null, 2);
-    await fs.promises.writeFile(filepath, jsonString, 'utf-8');
+    await fs.promises.writeFile(`${filepath}.tmp`, jsonString, 'utf-8');
+    await fs.promises.rename(`${filepath}.tmp`, filepath);
+    
+    // Обновляем кэш только после успешного сохранения файла
+    if (reportsCache !== null) {
+      reportsCache.unshift({
+        id: report.id,
+        query: report.query,
+        filters: report.filters,
+        status: report.status,
+        createdAt: report.createdAt,
+        stats: report.stats,
+        errors: report.errors || [],
+      });
+      await _saveIndex();
+    }
+    
     console.log(`[Storage] 💾 Отчёт сохранён: ${filename}`);
     return filepath;
   } catch (error) {
@@ -52,6 +103,9 @@ async function saveReport(report) {
  * @returns {Promise<Object|null>} — Распарсенный объект отчёта или null, если файл не найден.
  */
 async function loadReport(reportId) {
+  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(reportId)) {
+    throw new Error('Invalid report ID format for loading');
+  }
   const filepath = path.join(REPORTS_DIR, `${reportId}.json`);
 
   try {
@@ -74,38 +128,67 @@ async function loadReport(reportId) {
  * @returns {Promise<Array<Object>>} — Массив кратких описаний отчётов.
  */
 async function listReports() {
-  try {
-    const files = await fs.promises.readdir(REPORTS_DIR);
-    const jsonFiles = files.filter((f) => f.endsWith('.json'));
+  if (reportsCache !== null) {
+    return reportsCache;
+  }
 
-    console.log(`[Storage] 📋 Найдено отчётов: ${jsonFiles.length}`);
-
-    /** Читаем каждый файл и извлекаем метаданные (без массива jobs — для экономии памяти) */
-    const reports = [];
-    for (const file of jsonFiles) {
+  if (!cacheInitPromise) {
+    cacheInitPromise = (async () => {
       try {
-        const raw = await fs.promises.readFile(path.join(REPORTS_DIR, file), 'utf-8');
-        const report = JSON.parse(raw);
-        reports.push({
-          id: report.id,
-          query: report.query,
-          filters: report.filters,
-          status: report.status,
-          createdAt: report.createdAt,
-          stats: report.stats,
-          errors: report.errors || [],
-        });
-      } catch (err) {
-        console.warn(`[Storage] ⚠️ Не удалось прочитать файл ${file}:`, err.message);
+        // Пробуем прочитать index.json
+        try {
+          const indexRaw = await fs.promises.readFile(INDEX_FILE, 'utf-8');
+          reportsCache = JSON.parse(indexRaw);
+          console.log(`[Storage] 📋 Кэш загружен из index.json (${reportsCache.length} отчётов).`);
+          return reportsCache;
+        } catch (err) {
+          if (err.code !== 'ENOENT') {
+            console.warn(`[Storage] ⚠️ Ошибка чтения index.json, пересобираем:`, err.message);
+          } else {
+            console.log(`[Storage] 📋 index.json не найден. Формируем индекс (холодный старт)...`);
+          }
+        }
+
+        const files = await fs.promises.readdir(REPORTS_DIR);
+        const jsonFiles = files.filter((f) => f.endsWith('.json') && f !== 'index.json');
+
+        console.log(`[Storage] 📋 Чтение отчётов для создания индекса: ${jsonFiles.length}`);
+
+        const reports = [];
+        for (const file of jsonFiles) {
+          try {
+            const raw = await fs.promises.readFile(path.join(REPORTS_DIR, file), 'utf-8');
+            const report = JSON.parse(raw);
+            reports.push({
+              id: report.id,
+              query: report.query,
+              filters: report.filters,
+              status: report.status,
+              createdAt: report.createdAt,
+              stats: report.stats,
+              errors: report.errors || [],
+            });
+          } catch (err) {
+            console.warn(`[Storage] ⚠️ Не удалось прочитать файл ${file}:`, err.message);
+          }
+        }
+
+        reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        reportsCache = reports;
+        await _saveIndex();
+        console.log(`[Storage] 📋 Индекс сохранён в index.json.`);
+        return reportsCache;
+      } catch (error) {
+        console.error('[Storage] ❌ Ошибка инициализации кэша отчётов:', error.message);
+        cacheInitPromise = null; // Очищаем отравленный промис
+        throw error;
       }
-    }
+    })();
+  }
 
-    /** Сортировка: новые отчёты сверху */
-    reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    return reports;
+  try {
+    return await cacheInitPromise;
   } catch (error) {
-    console.error('[Storage] ❌ Ошибка получения списка отчётов:', error.message);
     return [];
   }
 }
@@ -116,15 +199,30 @@ async function listReports() {
  * @returns {Promise<boolean>} — true, если файл удалён, false, если файл не найден.
  */
 async function deleteReport(reportId) {
+  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(reportId)) {
+    throw new Error('Invalid report ID format for deletion');
+  }
   const filepath = path.join(REPORTS_DIR, `${reportId}.json`);
 
   try {
     await fs.promises.unlink(filepath);
+    
+    // Обновляем кэш только после успешного удаления файла
+    if (reportsCache !== null) {
+      reportsCache = reportsCache.filter(r => r.id !== reportId);
+      await _saveIndex();
+    }
+    
     console.log(`[Storage] 🗑️ Отчёт удалён: ${reportId}`);
     return true;
   } catch (error) {
     if (error.code === 'ENOENT') {
       console.warn(`[Storage] ⚠️ Попытка удаления несуществующего отчёта: ${reportId}`);
+      if (reportsCache !== null) {
+        const len = reportsCache.length;
+        reportsCache = reportsCache.filter(r => r.id !== reportId);
+        if (reportsCache.length !== len) await _saveIndex();
+      }
       return false;
     }
     console.error(`[Storage] ❌ Ошибка удаления отчёта ${reportId}:`, error.message);
@@ -139,12 +237,25 @@ async function deleteReport(reportId) {
 async function deleteAllReports() {
   try {
     const files = await fs.promises.readdir(REPORTS_DIR);
-    const jsonFiles = files.filter((f) => f.endsWith('.json'));
+    const jsonFiles = files.filter((f) => f.endsWith('.json') && f !== 'index.json');
 
-    let count = 0;
-    for (const file of jsonFiles) {
-      await fs.promises.unlink(path.join(REPORTS_DIR, file));
-      count++;
+    // Параллельное удаление файлов (Promise.all вместо последовательного await)
+    const results = await Promise.all(
+      jsonFiles.map(file =>
+        fs.promises.unlink(path.join(REPORTS_DIR, file))
+          .then(() => true)
+          .catch(err => {
+            console.warn(`[Storage] ⚠️ Не удалось удалить ${file}:`, err.message);
+            return false;
+          })
+      )
+    );
+    const count = results.filter(Boolean).length;
+
+    // Очищаем кэш после успешного удаления файлов
+    if (reportsCache !== null) {
+      reportsCache = [];
+      await _saveIndex();
     }
 
     console.log(`[Storage] 🗑️ Очистка завершена. Удалено файлов: ${count}`);

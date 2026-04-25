@@ -123,49 +123,73 @@
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
-      <!-- ---- ЭКРАН ПРИВЕТСТВИЯ ---- -->
+      <!-- ---- ЭКРАН ПРИВЕТСТВИЯ (Command Center) ---- -->
       <section class="welcome-screen" id="welcomeScreen">
         <div class="welcome-screen__inner">
-          <div class="welcome-screen__icon">🔍</div>
-          <h2 class="welcome-screen__title">Добро пожаловать в Work Analytics</h2>
-          <p class="welcome-screen__desc">
-            Анализируйте IT-вакансии из трёх источников одновременно.<br />
-            Нажмите <strong>«Новый сбор данных»</strong>, чтобы начать.
-          </p>
-          <div class="welcome-screen__features">
-            <div class="feature-card">
-              <span class="feature-card__icon svg-icon">
-                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          <div class="welcome-screen__header">
+            <div class="welcome-screen__icon">🎯</div>
+            <h2 class="welcome-screen__title">Work Analytics Center</h2>
+            <p class="welcome-screen__desc">
+              Ведите поиск по ключевым словам или выберите быстрый тег
+            </p>
+          </div>
+
+          <div class="welcome-search">
+            <div class="welcome-search__input-wrapper">
+              <svg class="welcome-search__icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" class="welcome-search__input" id="welcomeSearchInput" placeholder="Frontend React" autocomplete="off" />
+              <button class="welcome-search__submit" id="welcomeSearchSubmit" aria-label="Искать">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
                 </svg>
-              </span>
-              <span class="feature-card__text">HH.ru</span>
+              </button>
             </div>
-            <div class="feature-card">
-              <span class="feature-card__icon svg-icon">
-                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="2" y1="12" x2="22" y2="12"></line>
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                  </path>
-                </svg>
-              </span>
-              <span class="feature-card__text">Rabota.by</span>
+            
+            <div class="welcome-tags">
+              <span class="welcome-tags__label">Быстрые теги:</span>
+              <div class="welcome-tags__list" id="welcomeTagsList">
+                <button class="welcome-tag" data-query="Frontend React">🔥 Frontend React</button>
+                <button class="welcome-tag" data-query="Python Backend">🐍 Python Backend</button>
+                <button class="welcome-tag" data-query="DevOps">🚀 DevOps</button>
+                <button class="welcome-tag" data-query="Machine Learning">🧠 Machine Learning</button>
+                <button class="welcome-tag" data-query="Rust">🦀 Rust</button>
+                <button class="welcome-tag" data-query="Go">🐹 Go</button>
+              </div>
             </div>
-            <div class="feature-card">
-              <span class="feature-card__icon svg-icon">
-                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2.5" fill="none"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="16 18 22 12 16 6"></polyline>
-                  <polyline points="8 6 2 12 8 18"></polyline>
-                </svg>
-              </span>
-              <span class="feature-card__text">Хабр Карьера</span>
+          </div>
+
+          <div class="welcome-stats" id="welcomeStats">
+            <div class="welcome-stat-card">
+              <div class="welcome-stat-card__icon">📊</div>
+              <div class="welcome-stat-card__info">
+                <span class="welcome-stat-card__label">Всего отчётов</span>
+                <span class="welcome-stat-card__value" id="welcomeStatReports">—</span>
+              </div>
+            </div>
+            <div class="welcome-stat-card">
+              <div class="welcome-stat-card__icon">💼</div>
+              <div class="welcome-stat-card__info">
+                <span class="welcome-stat-card__label">Всего вакансий</span>
+                <span class="welcome-stat-card__value" id="welcomeStatJobs">—</span>
+              </div>
+            </div>
+            <div class="welcome-stat-card">
+              <div class="welcome-stat-card__icon">🏆</div>
+              <div class="welcome-stat-card__info">
+                <span class="welcome-stat-card__label">Топ технология</span>
+                <span class="welcome-stat-card__value" id="welcomeStatTopTech">—</span>
+              </div>
+            </div>
+            <div class="welcome-stat-card">
+              <div class="welcome-stat-card__icon">💰</div>
+              <div class="welcome-stat-card__info">
+                <span class="welcome-stat-card__label">Средняя ЗП рынка</span>
+                <span class="welcome-stat-card__value" id="welcomeStatAvgSalary" style="font-family: var(--font-family, 'Inter', 'nbrb', sans-serif);">—</span>
+              </div>
             </div>
           </div>
         </div>
@@ -189,21 +213,23 @@
               <div class="form-group">
                 <label class="form-label">Период</label>
                 <div class="segmented-control" id="controlPeriod">
-                  <button type="button" class="segmented-control__btn" data-value="1day">1д</button>
-                  <button type="button" class="segmented-control__btn" data-value="3days">3д</button>
-                  <button type="button" class="segmented-control__btn active" data-value="7days">7д</button>
-                  <button type="button" class="segmented-control__btn" data-value="14days">14д</button>
-                  <button type="button" class="segmented-control__btn" data-value="30days">30д</button>
+                  <input type="radio" name="period" id="period_1d" value="1day" class="sr-only">
+                  <label for="period_1d" class="segmented-control__btn">1д</label>
+                  
+                  <input type="radio" name="period" id="period_3d" value="3days" class="sr-only">
+                  <label for="period_3d" class="segmented-control__btn">3д</label>
+                  
+                  <input type="radio" name="period" id="period_7d" value="7days" class="sr-only" checked>
+                  <label for="period_7d" class="segmented-control__btn">7д</label>
+                  
+                  <input type="radio" name="period" id="period_14d" value="14days" class="sr-only">
+                  <label for="period_14d" class="segmented-control__btn">14д</label>
+                  
+                  <input type="radio" name="period" id="period_30d" value="30days" class="sr-only">
+                  <label for="period_30d" class="segmented-control__btn">30д</label>
+                  
                   <div class="segmented-control__indicator"></div>
                 </div>
-                <!-- Скрытый селект для совместимости с существующим кодом -->
-                <select id="selectPeriod" style="display: none;">
-                  <option value="1day">1 день</option>
-                  <option value="3days">3 дня</option>
-                  <option value="7days" selected>7 дней</option>
-                  <option value="14days">14 дней</option>
-                  <option value="30days">30 дней</option>
-                </select>
               </div>
               <div class="form-group">
                 <label class="form-label" for="inputLimit">Лимит вакансий</label>
@@ -274,6 +300,14 @@
                   </div>
                 </div>
               </div>
+              <button class="btn btn--outline btn--sm" id="btnExportCsv" style="margin-left: 1rem;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                CSV
+              </button>
             </div>
           </div>
           <!-- Переключатель валют -->
@@ -375,6 +409,36 @@
             <h3 class="chart-card__title">Топ-10 городов</h3>
             <div class="chart-card__body">
               <canvas id="chartCities"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Новые графики: ЗП vs Опыт, Корреляция, Динамика -->
+        <div class="charts-grid">
+          <div class="chart-card chart-card--wide">
+            <h3 class="chart-card__title">Средняя зарплата по опыту</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSalaryExp"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-grid charts-grid--triple">
+          <div class="chart-card" style="grid-column: span 2;">
+            <h3 class="chart-card__title">Связки навыков (Топ-10 пар)</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSkillsCorrel"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3 class="chart-card__title">Динамика зарплаты</h3>
+            <div class="chart-card__header-controls" style="margin-bottom: 0.5rem;">
+              <select id="dynamicsQuerySelect" class="form-input form-input--sm" style="width: 100%;">
+                <option value="">Выберите запрос...</option>
+              </select>
+            </div>
+            <div class="chart-card__body">
+              <canvas id="chartDynamics"></canvas>
             </div>
           </div>
         </div>
@@ -553,20 +617,23 @@
               <div class="form-group">
                 <label class="form-label">Период поиска</label>
                 <div class="segmented-control" id="settingsControlPeriod">
-                  <button type="button" class="segmented-control__btn" data-value="1day">1д</button>
-                  <button type="button" class="segmented-control__btn" data-value="3days">3д</button>
-                  <button type="button" class="segmented-control__btn active" data-value="7days">7д</button>
-                  <button type="button" class="segmented-control__btn" data-value="14days">14д</button>
-                  <button type="button" class="segmented-control__btn" data-value="30days">30д</button>
+                  <input type="radio" name="settings_period" id="settings_period_1d" value="1day" class="sr-only">
+                  <label for="settings_period_1d" class="segmented-control__btn">1д</label>
+                  
+                  <input type="radio" name="settings_period" id="settings_period_3d" value="3days" class="sr-only">
+                  <label for="settings_period_3d" class="segmented-control__btn">3д</label>
+                  
+                  <input type="radio" name="settings_period" id="settings_period_7d" value="7days" class="sr-only" checked>
+                  <label for="settings_period_7d" class="segmented-control__btn">7д</label>
+                  
+                  <input type="radio" name="settings_period" id="settings_period_14d" value="14days" class="sr-only">
+                  <label for="settings_period_14d" class="segmented-control__btn">14д</label>
+                  
+                  <input type="radio" name="settings_period" id="settings_period_30d" value="30days" class="sr-only">
+                  <label for="settings_period_30d" class="segmented-control__btn">30д</label>
+                  
                   <div class="segmented-control__indicator"></div>
                 </div>
-                <select id="settingsDefaultPeriod" style="display: none;">
-                  <option value="1day">1 день</option>
-                  <option value="3days">3 дня</option>
-                  <option value="7days" selected>7 дней</option>
-                  <option value="14days">14 дней</option>
-                  <option value="30days">30 дней</option>
-                </select>
               </div>
               <div class="form-group">
                 <label class="form-label" for="settingsDefaultLimit">Лимит вакансий</label>
@@ -613,6 +680,26 @@
                 <input type="checkbox" class="settings-toggle" id="settingsSourceHabr" checked />
                 <span class="settings-toggle-visual"></span>
               </label>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section__title">Тонкая настройка</h3>
+            <div class="settings-form-grid">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label" for="settingsStopWords">Стоп-слова (исключить вакансии, через запятую)</label>
+                <input type="text" id="settingsStopWords" class="form-input" placeholder="Стажер, Преподаватель, Наставник" />
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="settings-source-item" style="padding: 0;">
+                  <div class="settings-source-item__info">
+                    <span class="settings-theme-card__name">Глубокий парсинг (Deep Scrape)</span>
+                    <span class="settings-theme-card__label" style="display:block; margin-top: 4px;">Заходить внутрь каждой вакансии для получения полного описания (медленнее, но точнее)</span>
+                  </div>
+                  <input type="checkbox" class="settings-toggle" id="settingsDeepScrape" />
+                  <span class="settings-toggle-visual"></span>
+                </label>
+              </div>
             </div>
           </div>
         </div>

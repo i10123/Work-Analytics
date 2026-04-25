@@ -14,3 +14,6 @@ export const charts = {
 
 export let baselineSettings = null;
 export function setBaselineSettings(settings) { baselineSettings = settings; }
+
+export let allReports = [];
+export function setAllReports(reports) { allReports = reports; }

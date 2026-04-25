@@ -2,6 +2,7 @@ import { DOM } from '../dom.js';
 import { showScreen } from './common.js';
 import { loadReportById, loadReportsList } from '../api.js';
 import { showErrorModal } from './modal.js';
+import { updateWelcomeStats } from './welcome.js';
 
 export function setupSSE() {
   console.log('[App] 📡 Подключение к SSE...');
@@ -36,11 +37,11 @@ function handleTaskUpdate(task) {
     if (task.reportId) {
       loadReportById(task.reportId);
     }
-    loadReportsList();
+    loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'failed') {
     showScreen('welcome');
     showErrorModal('Ошибка сбора данных', task.error || 'Неизвестная ошибка сервера.');
-    loadReportsList();
+    loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'pending') {
     loadReportsList();
   }

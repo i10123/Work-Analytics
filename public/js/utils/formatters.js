@@ -19,6 +19,10 @@ export function formatSalaryShort(value) {
   return String(value);
 }
 
+const HTML_ENTITIES = {
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+};
+
 /**
  * Экранирует HTML-спецсимволы (защита от XSS).
  * @param {string} text — Исходная строка.
@@ -26,7 +30,5 @@ export function formatSalaryShort(value) {
  */
 export function escapeHtml(text) {
   if (!text) return '';
-  const el = document.createElement('span');
-  el.textContent = text;
-  return el.innerHTML;
+  return String(text).replace(/[&<>'"]/g, tag => HTML_ENTITIES[tag]);
 }

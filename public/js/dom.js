@@ -26,8 +26,13 @@ export const DOM = {
   /* Чарты */
   chartWorkFormat: document.getElementById('chartWorkFormat'),
   chartSalaryByFormat: document.getElementById('chartSalaryByFormat'),
+  chartSalaryExp: document.getElementById('chartSalaryExp'),
+  chartSkillsCorrel: document.getElementById('chartSkillsCorrel'),
+  chartDynamics: document.getElementById('chartDynamics'),
+  dynamicsQuerySelect: document.getElementById('dynamicsQuerySelect'),
 
-  /* Прогресс */
+  /* Дашборд */
+  btnExportCsv: document.getElementById('btnExportCsv'),
   progressTitle: document.getElementById('progressTitle'),
   progressStep: document.getElementById('progressStep'),
 

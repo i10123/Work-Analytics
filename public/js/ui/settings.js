@@ -60,20 +60,21 @@ export function openSettings() {
     btn.classList.toggle('active', btn.dataset.currency === settings.defaultCurrency);
   });
 
-  if (DOM.settingsDefaultPeriod) {
-    DOM.settingsDefaultPeriod.value = settings.defaultPeriod;
-    const control = document.getElementById('settingsControlPeriod');
-    if (control) {
-      control.querySelectorAll('.segmented-control__btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.value === settings.defaultPeriod);
-      });
-    }
+  const periodRadio = document.querySelector(`input[name="settings_period"][value="${settings.defaultPeriod}"]`);
+  if (periodRadio) {
+    periodRadio.checked = true;
   }
   if (DOM.settingsDefaultLimit) DOM.settingsDefaultLimit.value = settings.defaultLimit;
 
   if (DOM.settingsSourceHH) DOM.settingsSourceHH.checked = settings.sources.hh;
   if (DOM.settingsSourceRabotaby) DOM.settingsSourceRabotaby.checked = settings.sources.rabotaby;
   if (DOM.settingsSourceHabr) DOM.settingsSourceHabr.checked = settings.sources.habr;
+
+  const stopWordsInput = document.getElementById('settingsStopWords');
+  if (stopWordsInput) stopWordsInput.value = settings.stopWords || '';
+
+  const deepScrapeCheck = document.getElementById('settingsDeepScrape');
+  if (deepScrapeCheck) deepScrapeCheck.checked = settings.deepScrape || false;
 
   if (DOM.settingsOverlay) DOM.settingsOverlay.style.display = 'flex';
 
@@ -198,13 +199,9 @@ function handleSaveSettings() {
   showToast('Настройки сохранены', 'success');
 
   // Синхронизация полей поиска при сохранении настроек
-  if (DOM.selectPeriod) {
-    DOM.selectPeriod.value = settings.defaultPeriod;
-    const control = document.getElementById('controlPeriod');
-    if (control) {
-      const btns = control.querySelectorAll('.segmented-control__btn');
-      btns.forEach(b => b.classList.toggle('active', b.dataset.value === settings.defaultPeriod));
-    }
+  const mainPeriodRadio = document.querySelector(`input[name="period"][value="${settings.defaultPeriod}"]`);
+  if (mainPeriodRadio) {
+    mainPeriodRadio.checked = true;
   }
   if (DOM.inputLimit) DOM.inputLimit.value = settings.defaultLimit;
 }
@@ -216,13 +213,15 @@ function getSettingsFromUI() {
   return {
     theme: activeThemeCard ? activeThemeCard.dataset.theme : DEFAULT_SETTINGS.theme,
     defaultCurrency: activeCurrencyBtn ? activeCurrencyBtn.dataset.currency : DEFAULT_SETTINGS.defaultCurrency,
-    defaultPeriod: DOM.settingsDefaultPeriod?.value || DEFAULT_SETTINGS.defaultPeriod,
+    defaultPeriod: document.querySelector('input[name="settings_period"]:checked')?.value || DEFAULT_SETTINGS.defaultPeriod,
     defaultLimit: parseInt(DOM.settingsDefaultLimit?.value, 10) || 50,
     sources: {
       hh: DOM.settingsSourceHH?.checked ?? true,
       rabotaby: DOM.settingsSourceRabotaby?.checked ?? true,
       habr: DOM.settingsSourceHabr?.checked ?? true,
     },
+    stopWords: document.getElementById('settingsStopWords')?.value || '',
+    deepScrape: document.getElementById('settingsDeepScrape')?.checked || false,
   };
 }
 
@@ -361,10 +360,9 @@ async function handleResetSettings() {
   if (DOM.inputLimit) DOM.inputLimit.value = DEFAULT_SETTINGS.defaultLimit;
 
   // Обновляем состояние сегментированных контролов в форме поиска
-  const control = document.getElementById('controlPeriod');
-  if (control) {
-    const btns = control.querySelectorAll('.segmented-control__btn');
-    btns.forEach(b => b.classList.toggle('active', b.dataset.value === DEFAULT_SETTINGS.defaultPeriod));
+  const defaultRadio = document.querySelector(`input[name="period"][value="${DEFAULT_SETTINGS.defaultPeriod}"]`);
+  if (defaultRadio) {
+    defaultRadio.checked = true;
   }
 
   openSettings();
@@ -438,6 +436,10 @@ export function setupStepperListeners() {
 
   document.addEventListener('mouseup', stopStepping);
   document.addEventListener('mouseleave', stopStepping);
+  document.addEventListener('mouseout', (e) => {
+    if (!e.relatedTarget) stopStepping();
+  });
+  window.addEventListener('blur', stopStepping);
 
   document.addEventListener('touchstart', (e) => {
     const btn = e.target.closest('[data-stepper]');
@@ -451,37 +453,5 @@ export function setupStepperListeners() {
 }
 
 export function setupSegmentedControlListeners() {
-  const controls = document.querySelectorAll('.segmented-control');
-
-  controls.forEach(control => {
-    const buttons = control.querySelectorAll('.segmented-control__btn');
-    const containerId = control.id;
-    
-    let targetSelect = null;
-    if (containerId === 'controlPeriod') targetSelect = DOM.selectPeriod;
-    if (containerId === 'settingsControlPeriod') targetSelect = DOM.settingsDefaultPeriod;
-
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const val = btn.dataset.value;
-        
-        buttons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        if (targetSelect) {
-          targetSelect.value = val;
-          targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      });
-    });
-
-    if (targetSelect) {
-      const initialVal = targetSelect.value;
-      const initialBtn = control.querySelector(`[data-value="${initialVal}"]`);
-      if (initialBtn) {
-        buttons.forEach(b => b.classList.remove('active'));
-        initialBtn.classList.add('active');
-      }
-    }
-  });
+  // Сегментированные контролы теперь используют нативные radio-inputs и не требуют JS
 }

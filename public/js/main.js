@@ -10,6 +10,7 @@ import { showScreen } from './ui/common.js';
 import { setupSidebarListeners } from './ui/sidebar.js';
 import { setupSettingsListeners, setupStepperListeners, setupSegmentedControlListeners } from './ui/settings.js';
 import { initializePremiumUI } from './ui/ui-premium.js';
+import { setupWelcomeScreen, updateWelcomeStats } from './ui/welcome.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[App] 🚀 Инициализация Work Analytics (Modular)...');
@@ -25,9 +26,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   initializePremiumUI();
   setupEventListeners();
   setupSSE();
+  setupWelcomeScreen();
   
   // Загружаем список отчётов
   await loadReportsList();
+  updateWelcomeStats();
   
   // Обработка начального состояния (URL хеш)
   const hash = window.location.hash;
@@ -89,6 +92,7 @@ function setupEventListeners() {
       if (currentReport) {
         renderDashboard(currentReport);
       }
+      updateWelcomeStats();
     });
   });
 

@@ -6,12 +6,12 @@
  */
 
 const EventEmitter = require('events');
-const { fetchExchangeRates } = require('./currency');
+const { fetchExchangeRates, convertCurrency } = require('./currency');
 const { extractSkillsFromJobs } = require('./ai');
 const { saveReport } = require('./storage');
-const hhParser = require('../parsers/hh');
-const rabotabyParser = require('../parsers/rabotaby');
-const habrParser = require('../parsers/habr');
+const { HhParser } = require('../parsers/hh');
+const { RabotaByParser } = require('../parsers/rabotaby');
+const { HabrParser } = require('../parsers/habr');
 
 /**
  * EventEmitter для SSE-трансляции.
@@ -23,6 +23,9 @@ taskEmitter.setMaxListeners(50);
 
 /** Очередь задач (FIFO) */
 const taskQueue = [];
+
+/** Максимальное количество задач в очереди (защита от OOM) */
+const MAX_QUEUE_SIZE = 50;
 
 /** Флаг: выполняется ли сейчас задача */
 let isProcessing = false;
@@ -38,6 +41,10 @@ let isProcessing = false;
  * @returns {Object} — Объект задачи с id и статусом.
  */
 function enqueueTask(params) {
+  if (taskQueue.length >= MAX_QUEUE_SIZE) {
+    throw new Error('Очередь сервера переполнена. Повторите попытку позже.');
+  }
+
   const taskId = `report_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
   const task = {
@@ -104,7 +111,17 @@ async function processNext() {
     }
 
     // Очистка дубликатов (Дедупликация)
-    allJobs = Array.from(new Map(allJobs.map(job => [`${job.company}-${job.title}-${job.city}`, job])).values());
+    const LEGAL_ENTITIES = new Set(['ооо', 'зао', 'оао', 'пао', 'llc', 'inc', 'ltd', 'ip', 'ип']);
+    const normalize = (str) => {
+      if (!str) return '';
+      return str.toLowerCase()
+                .replace(/[^\p{L}\d]/gu, ' ')
+                .split(/\s+/)
+                .filter(w => w && !LEGAL_ENTITIES.has(w))
+                .sort((a, b) => a.localeCompare(b))
+                .join('');
+    };
+    allJobs = Array.from(new Map(allJobs.map(job => [`${normalize(job.company)}-${normalize(job.title)}-${normalize(job.city)}`, job])).values());
 
     console.log(`[Queue] 📊 Собрано вакансий: ${allJobs.length}. Ошибок источников: ${errors.length}`);
 
@@ -113,6 +130,18 @@ async function processNext() {
     const enrichedJobs = await extractSkillsFromJobs(allJobs);
 
     /** Шаг 5: Формируем итоговый отчёт */
+    let sumSalaryRub = 0;
+    let countSalary = 0;
+    for (const job of enrichedJobs) {
+      if (job.salary && (job.salary.min || job.salary.max)) {
+        const avg = job.salary.min && job.salary.max ? (job.salary.min + job.salary.max) / 2 : job.salary.min || job.salary.max;
+        const inRub = convertCurrency(avg, job.salary.currency, 'RUB', exchangeRates.rates);
+        sumSalaryRub += inRub;
+        countSalary++;
+      }
+    }
+    const avgSalaryNormalized = countSalary > 0 ? Math.round(sumSalaryRub / countSalary) : null;
+
     const status = (errors.length > 0 && allJobs.length > 0) ? 'partial' 
                  : (allJobs.length === 0) ? 'failed' 
                  : 'completed';
@@ -136,6 +165,7 @@ async function processNext() {
       exchangeRates,
       stats: {
         totalFound: enrichedJobs.length,
+        avgSalaryNormalized,
         sources: {
           hh: enrichedJobs.filter((j) => j.source === 'hh').length,
           rabotaby: enrichedJobs.filter((j) => j.source === 'rabotaby').length,
@@ -179,9 +209,9 @@ async function runParsersWithRetry(query, filters) {
   const allowedSources = filters.sources || { hh: true, rabotaby: true, habr: true };
 
   const parsers = [
-    { name: 'hh', fn: hhParser.parse },
-    { name: 'rabotaby', fn: rabotabyParser.parse },
-    { name: 'habr', fn: habrParser.parse },
+    { name: 'hh', fn: (q, f) => new HhParser().parse(q, f) },
+    { name: 'rabotaby', fn: (q, f) => new RabotaByParser().parse(q, f) },
+    { name: 'habr', fn: (q, f) => new HabrParser().parse(q, f) },
   ].filter(p => allowedSources[p.name] === true);
 
   if (parsers.length === 0) {

@@ -6,6 +6,10 @@
 
 require('dotenv').config();
 const express = require('express');
+
+// --- Глобальные обработчики ошибок (защита от молчаливого падения) ---
+process.on('uncaughtException', (err) => console.error('[Fatal] Непойманная ошибка:', err));
+process.on('unhandledRejection', (err) => console.error('[Fatal] Необработанный промис:', err));
 const path = require('path');
 const apiRouter = require('./routes/api');
 const { ensureDataDirs } = require('./services/storage');
@@ -15,8 +19,8 @@ const PORT = process.env.PORT || 3000;
 
 // --- Middleware ---
 
-/** Парсинг JSON-тела запросов */
-app.use(express.json());
+/** Парсинг JSON-тела запросов (лимит 100KB для защиты от DOS) */
+app.use(express.json({ limit: '100kb' }));
 
 /** Раздача статических файлов фронтенда из папки /public */
 app.use(express.static(path.join(__dirname, '..', 'public')));
