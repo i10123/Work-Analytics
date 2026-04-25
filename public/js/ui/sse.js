@@ -1,7 +1,6 @@
 import { DOM } from '../dom.js';
 import { showScreen } from './common.js';
 import { loadReportById, loadReportsList } from '../api.js';
-import { addLogEntry } from './sidebar.js';
 import { showErrorModal } from './modal.js';
 
 export function setupSSE() {
@@ -30,11 +29,9 @@ function handleTaskUpdate(task) {
     if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${task.query || ''}"`;
     if (task.step && DOM.progressStep) {
       DOM.progressStep.textContent = task.step;
-      addLogEntry(task.step, 'info');
     }
   } else if (task.status === 'completed' || task.status === 'partial') {
     const msg = task.status === 'completed' ? 'Сбор успешно завершен' : 'Сбор завершен с ошибками некоторых источников';
-    addLogEntry(`${msg}: ${task.query}`, task.status === 'completed' ? 'success' : 'warning');
     
     if (task.reportId) {
       loadReportById(task.reportId);
@@ -42,11 +39,9 @@ function handleTaskUpdate(task) {
     loadReportsList();
   } else if (task.status === 'failed') {
     showScreen('welcome');
-    addLogEntry(`Ошибка: ${task.error || 'Неизвестная ошибка'}`, 'error');
     showErrorModal('Ошибка сбора данных', task.error || 'Неизвестная ошибка сервера.');
     loadReportsList();
   } else if (task.status === 'pending') {
-    addLogEntry(`Задача в очереди: ${task.query}`, 'info');
     loadReportsList();
   }
 }

@@ -23,18 +23,18 @@ const BATCH_SIZE = 10;
 /** Задержка между батчами (мс) */
 const BATCH_DELAY_MS = 4500;
 
-/** Текущий индекс используемого ключа Gemini */
-let currentGeminiKeyIndex = 0;
+/** Текущий индекс используемого ключа OpenRouter */
+let currentOpenRouterKeyIndex = 0;
 
 async function extractSkillsFromJobs(jobs) {
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.DASHSCOPE_API_KEY;
+  const openRouterKeys = getOpenRouterKeys();
 
-  if (!openrouterKey) {
-    console.warn('[AI] ⚠️ OpenRouter не настроен в .env. Навыки не будут извлечены.');
+  if (!openRouterKeys.length && !puter) {
+    console.warn('[AI] ⚠️ Провайдеры (OpenRouter, Puter) не настроены. Навыки не будут извлечены.');
     return jobs.map((job) => ({ ...job, skills: [] }));
   }
 
-  console.log(`[AI] 🤖 Начинаю извлечение навыков для ${jobs.length} вакансий через OpenRouter...`);
+  console.log(`[AI] 🤖 Начинаю извлечение навыков для ${jobs.length} вакансий...`);
 
   const batches = splitIntoBatches(jobs, BATCH_SIZE);
   const enrichedJobs = [];
@@ -45,19 +45,22 @@ async function extractSkillsFromJobs(jobs) {
 
     let skillsMap = null;
 
-    try {
-      skillsMap = await processBatchOpenAI(batch, openrouterKey, 'https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001');
-    } catch (error) {
-      console.warn(`[AI] ⚠️ Ошибка OpenRouter: ${error.message}`);
-      
-      // Попытка использовать Puter как запасной вариант
-      if (puter) {
-        console.log(`[AI] 🔄 Пробую резервный провайдер: Puter (DeepSeek)...`);
-        try {
-          skillsMap = await processBatchPuter(batch);
-        } catch (puterError) {
-          console.error(`[AI] ❌ Ошибка резервного провайдера (Puter): ${puterError.message}`);
-        }
+    // 1. Попытка через OpenRouter (с ротацией ключей)
+    if (openRouterKeys.length > 0) {
+      try {
+        skillsMap = await processBatchOpenRouterWithRotation(batch, openRouterKeys);
+      } catch (orError) {
+        console.warn(`[AI] ⚠️ Ошибка OpenRouter (все ключи исчерпаны или сбой): ${orError.message}`);
+      }
+    }
+
+    // 2. Попытка через Puter (если OpenRouter не сработал)
+    if (!skillsMap && puter) {
+      console.log(`[AI] 🔄 Пробую резервный провайдер: Puter (DeepSeek)...`);
+      try {
+        skillsMap = await processBatchPuter(batch);
+      } catch (puterError) {
+        console.error(`[AI] ❌ Ошибка резервного провайдера (Puter): ${puterError.message}`);
       }
     }
 
@@ -72,7 +75,7 @@ async function extractSkillsFromJobs(jobs) {
     if (skillsMap) {
       console.log(`[AI] ✅ Батч ${i + 1} обработан.`);
     } else {
-      console.error(`[AI] ❌ Батч ${i + 1} не удалось обработать.`);
+      console.error(`[AI] ❌ Батч ${i + 1} не удалось обработать ни одним провайдером.`);
     }
 
     /** Пауза между батчами */
@@ -87,46 +90,37 @@ async function extractSkillsFromJobs(jobs) {
   return enrichedJobs;
 }
 
-// --- GEMINI LOGIC ---
+// --- OPENROUTER LOGIC ---
 
-function getGeminiKeys() {
-  const keysStr = process.env.GEMINI_API_KEYS || '';
-  return keysStr.split(',').map(k => k.trim()).filter(k => k && !k.startsWith('YOUR_') && !/^key\d*$/.test(k));
+function getOpenRouterKeys() {
+  const keysStr = process.env.OPENROUTER_API_KEY || process.env.DASHSCOPE_API_KEY || '';
+  return keysStr.split(',').map(k => k.trim()).filter(k => k && !k.startsWith('YOUR_'));
 }
 
-async function processBatchGeminiWithRotation(batch, keys) {
+async function processBatchOpenRouterWithRotation(batch, keys) {
   let attempts = 0;
-  const maxAttempts = keys.length; 
+  const maxAttempts = keys.length;
 
   while (attempts < maxAttempts) {
-    const currentKey = keys[currentGeminiKeyIndex % keys.length];
+    const currentKey = keys[currentOpenRouterKeyIndex % keys.length];
     try {
-      return await processBatchGemini(batch, currentKey);
+      // Используем Gemini 2.0 Flash через OpenRouter
+      return await processBatchOpenAI(batch, currentKey, 'https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001');
     } catch (error) {
-      const isQuotaError = error.response && (error.response.status === 429 || error.response.status === 403);
+      const isQuotaError = error.response && (error.response.status === 429 || error.response.status === 403 || error.response.status === 401);
       if (isQuotaError) {
-        console.warn(`[AI] 🔁 Лимит Gemini ключа #${currentGeminiKeyIndex + 1} исчерпан. Переключаюсь...`);
-        currentGeminiKeyIndex++;
+        console.warn(`[AI] 🔁 Лимит OpenRouter ключа #${currentOpenRouterKeyIndex + 1} исчерпан/ошибка квоты. Переключаюсь...`);
+        currentOpenRouterKeyIndex++;
         attempts++;
         continue;
       }
-      throw error;
+      console.warn(`[AI] ⚠️ Сетевая ошибка OpenRouter (не квота): ${error.message}. Ждем 2 сек...`);
+      await delay(2000);
+      attempts++;
+      continue;
     }
   }
-  throw new Error('Gemini quota exhausted');
-}
-
-async function processBatchGemini(batch, apiKey) {
-  const prompt = generatePrompt(batch);
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-  const response = await axios.post(url, {
-    contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
-  }, { timeout: 30000 });
-
-  const rawText = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-  return parseJsonFromAi(rawText, batch.length);
+  throw new Error('OpenRouter quota exhausted or all keys failed');
 }
 
 // --- OPENAI-COMPATIBLE LOGIC (DeepSeek, OpenRouter) ---
@@ -193,9 +187,11 @@ ${descriptions}
 }
 
 function parseJsonFromAi(rawText, expectedLength) {
-  const cleaned = rawText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
   try {
-    const parsed = JSON.parse(cleaned);
+    const match = rawText.match(/\[\s*\[.*\]\s*\]/s) || rawText.match(/\[.*\]/s);
+    const jsonStr = match ? match[0] : '[]';
+    
+    const parsed = JSON.parse(jsonStr);
     let result = Array.isArray(parsed) ? parsed : (parsed.skills || parsed.data || []);
     
     if (Array.isArray(result) && result.every(Array.isArray)) {

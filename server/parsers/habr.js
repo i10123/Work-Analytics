@@ -71,11 +71,6 @@ async function parse(query, filters = {}) {
         timeout: 15000,
       });
 
-      /** Проверка на блокировку/captcha */
-      if (response.status === 429 || response.status === 403) {
-        throw new Error(`Хабр заблокировал запросы (HTTP ${response.status})`);
-      }
-
       const html = response.data;
 
       /** Парсим HTML с помощью cheerio */
@@ -151,7 +146,32 @@ function parseHabrHTML(html) {
       const description = $card.find('.vacancy-card__description, [class*="snippet"]').text().trim();
 
       /** Метаданные */
+      const metaText = $card.find('.vacancy-card__meta').text();
       const city = $card.find('.vacancy-card__meta [class*="location"]').text().trim() || 'Не указан';
+      
+      const publishedAt = $card.find('time.basic-date').attr('datetime') || $card.find('time').attr('datetime') || '';
+      
+      let employment = '';
+      if (metaText.includes('Полный рабочий день')) employment = 'Полная занятость';
+      else if (metaText.includes('Неполный рабочий день')) employment = 'Частичная занятость';
+      else if (metaText.includes('Проектная работа')) employment = 'Проектная работа';
+
+      let experience = '';
+      const lowerMeta = metaText.toLowerCase();
+      if (lowerMeta.includes('стажер') || lowerMeta.includes('стажёр') || lowerMeta.includes('intern')) experience = 'Intern';
+      else if (lowerMeta.includes('junior')) experience = 'Junior';
+      else if (lowerMeta.includes('middle')) experience = 'Middle';
+      else if (lowerMeta.includes('senior')) experience = 'Senior';
+      else if (lowerMeta.includes('lead')) experience = 'Lead';
+
+      // Улучшаем описание для ИИ, если оно короткое, добавляя туда найденные навыки
+      let finalDescription = description;
+      if (!finalDescription || finalDescription.length < 50) {
+        const skillsText = skills.length > 0 ? `Ключевые навыки: ${skills.join(', ')}` : '';
+        finalDescription = [title, finalDescription, skillsText].filter(Boolean).join('\n\n');
+      }
+
+      const workFormat = (city.toLowerCase().includes('удаленно') || city.toLowerCase().includes('удалённо') || skills.some(s => s.toLowerCase().includes('удален')) || lowerMeta.includes('можно удаленно') || lowerMeta.includes('удален')) ? 'Remote' : 'Office';
 
       if (title) {
         jobs.push({
@@ -162,11 +182,11 @@ function parseHabrHTML(html) {
           city,
           url: url.startsWith('http') ? url : `${HABR_BASE}${url}`,
           salary,
-          experience: '',
-          employment: '',
-          workFormat: (city.toLowerCase().includes('удаленно') || city.toLowerCase().includes('удалённо') || skills.some(s => s.toLowerCase().includes('удален'))) ? 'Remote' : 'Office',
-          description: description || title,
-          publishedAt: '',
+          experience,
+          employment,
+          workFormat,
+          description: finalDescription,
+          publishedAt,
           skills, // Навыки из тегов Хабра (дополнительно обогащаются Gemini)
         });
       }

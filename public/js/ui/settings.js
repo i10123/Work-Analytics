@@ -60,7 +60,15 @@ export function openSettings() {
     btn.classList.toggle('active', btn.dataset.currency === settings.defaultCurrency);
   });
 
-  if (DOM.settingsDefaultPeriod) DOM.settingsDefaultPeriod.value = settings.defaultPeriod;
+  if (DOM.settingsDefaultPeriod) {
+    DOM.settingsDefaultPeriod.value = settings.defaultPeriod;
+    const control = document.getElementById('settingsControlPeriod');
+    if (control) {
+      control.querySelectorAll('.segmented-control__btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.value === settings.defaultPeriod);
+      });
+    }
+  }
   if (DOM.settingsDefaultLimit) DOM.settingsDefaultLimit.value = settings.defaultLimit;
 
   if (DOM.settingsSourceHH) DOM.settingsSourceHH.checked = settings.sources.hh;
@@ -313,6 +321,7 @@ async function handleDeleteAllReports() {
 
     if (data.success) {
       setCurrentReport(null);
+      history.replaceState({ type: 'welcome' }, '', window.location.pathname);
       showScreen('welcome');
       loadReportsList();
       loadDataStats();
@@ -395,12 +404,8 @@ export function setupStepperListeners() {
 
     input.value = value;
     
-    const container = input.closest('.number-stepper');
-    if (container) {
-      container.classList.remove('pulse');
-      void container.offsetWidth;
-      container.classList.add('pulse');
-    }
+    // Удаляем вызов forced reflow
+    // Анимация будет воспроизводиться только при первом нажатии
 
     if (accelerationFactor < 10) accelerationFactor += 0.2;
 

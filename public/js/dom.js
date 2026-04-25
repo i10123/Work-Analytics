@@ -8,9 +8,6 @@ export const DOM = {
   reportsSearch: document.getElementById('reportsSearch'),
   queueStatus: document.getElementById('queueStatus'),
   queueText: document.getElementById('queueText'),
-  sidebarLogs: document.getElementById('sidebarLogs'),
-  logsToggle: document.getElementById('logsToggle'),
-  logsContainer: document.getElementById('logsContainer'),
 
   /* Экраны */
   welcomeScreen: document.getElementById('welcomeScreen'),
@@ -35,6 +32,7 @@ export const DOM = {
   progressStep: document.getElementById('progressStep'),
 
   /* Дашборд */
+  btnBackToWelcome: document.getElementById('btnBackToWelcome'),
   dashTitle: document.getElementById('dashTitle'),
   dashSubtitle: document.getElementById('dashSubtitle'),
   alertPartial: document.getElementById('alertPartial'),

@@ -6,6 +6,7 @@
  */
 
 const axios = require('axios');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 
 /** Базовый URL API (тот же HH API, но с фильтром по Беларуси) */
 const API_BASE = 'https://api.hh.ru';
@@ -38,7 +39,7 @@ async function parse(query, filters = {}) {
     console.log(`[Parser:Rabotaby] 📄 Загрузка страницы ${page + 1}/${maxPages}...`);
 
     try {
-      const response = await axios.get(`${API_BASE}/vacancies`, {
+      const axiosConfig = {
         params: {
           text: query,
           period: period,
@@ -48,10 +49,18 @@ async function parse(query, filters = {}) {
           only_with_salary: false,
         },
         headers: {
-          'User-Agent': 'WorkAnalytics/1.0 (student-project@example.com)',
+          'User-Agent': 'JobMarketAnalyzer/1.0 (deniskarakulko90@gmail.com)',
+          'HH-User-Agent': 'JobMarketAnalyzer/1.0 (deniskarakulko90@gmail.com)',
+          'Accept': 'application/json'
         },
         timeout: 15000,
-      });
+      };
+
+      if (process.env.RU_PROXY) {
+        axiosConfig.httpsAgent = new HttpsProxyAgent(process.env.RU_PROXY);
+      }
+
+      const response = await axios.get(`${API_BASE}/vacancies`, axiosConfig);
 
       const vacancies = response.data.items || [];
       console.log(`[Parser:Rabotaby] 📊 Страница ${page + 1}: найдено ${vacancies.length} вакансий`);
@@ -72,7 +81,7 @@ async function parse(query, filters = {}) {
       }
     } catch (error) {
       if (error.response && error.response.status === 403) {
-        console.warn(`[Parser:Rabotaby] ⚠️ Доступ заблокирован (403). Прерываю.`);
+        console.warn(`[Parser:Rabotaby] 🛑 Бан по IP или User-Agent от Cloudflare. Нужен RU-прокси или валидный токен.`);
         break;
       }
       throw new Error(`Rabota.by API ошибка: ${error.message}`);

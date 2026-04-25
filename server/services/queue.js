@@ -38,7 +38,7 @@ let isProcessing = false;
  * @returns {Object} — Объект задачи с id и статусом.
  */
 function enqueueTask(params) {
-  const taskId = `report_${Date.now()}`;
+  const taskId = `report_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
   const task = {
     id: taskId,
@@ -92,7 +92,7 @@ async function processNext() {
     const parserResults = await runParsersWithRetry(task.query, task.filters);
 
     /** Шаг 3: Объединяем результаты всех парсеров */
-    const allJobs = [];
+    let allJobs = [];
     const errors = [];
 
     for (const result of parserResults) {
@@ -102,6 +102,9 @@ async function processNext() {
         errors.push(result.source);
       }
     }
+
+    // Очистка дубликатов (Дедупликация)
+    allJobs = Array.from(new Map(allJobs.map(job => [`${job.company}-${job.title}-${job.city}`, job])).values());
 
     console.log(`[Queue] 📊 Собрано вакансий: ${allJobs.length}. Ошибок источников: ${errors.length}`);
 

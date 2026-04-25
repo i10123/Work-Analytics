@@ -187,11 +187,4 @@ async function deleteReportById(id, query) {
   }
 }
 
-/**
- * Добавляет запись в UI-лог (отключено).
- */
-export function addLogEntry(message, type = 'info') {
-  // Метод оставлен пустым
-}
-
 

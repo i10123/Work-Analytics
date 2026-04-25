@@ -184,30 +184,36 @@ export function renderChartSkills(jobs, charts) {
   if (card) card.style.display = '';
 
   const palette = theme.colors;
-  const bgColors = data.map((_, i) => palette[i % palette.length] + '99');
-  const borderColors = data.map((_, i) => palette[i % palette.length]);
+  const maxCount = Math.max(...data, 1);
+  // Calculate relative sizes for word cloud between 12 and 50
+  const normalizedData = data.map((d) => 12 + (d / maxCount) * 38);
+  const bgColors = data.map((_, i) => palette[i % palette.length]);
 
   charts.skills = new Chart(ctx, {
-    type: 'bar',
+    type: 'wordCloud',
     data: {
       labels,
       datasets: [{
         label: 'Упоминаний',
-        data,
-        backgroundColor: bgColors,
-        borderColor: borderColors,
-        borderWidth: 1,
-        borderRadius: 4,
+        data: data, // Sizes for the words
+        color: bgColors,      // Colors for the words
       }],
     },
     options: {
-      indexAxis: 'y',
+      elements: {
+        word: {
+          size: (context) => 12 + (context.raw / maxCount) * 38
+        }
+      },
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: theme.textSecondary }, grid: { color: theme.grid } },
-        y: { ticks: { color: theme.textMain, font: { size: 11 } }, grid: { display: false } },
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (context) => `Упоминаний: ${data[context.dataIndex]}`
+          }
+        }
       },
     },
   });

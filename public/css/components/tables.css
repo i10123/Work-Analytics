@@ -35,10 +35,7 @@
   font-size: var(--font-size-xl);
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(to right, #fff, var(--color-text-secondary));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--color-text);
   margin-bottom: 0;
 }
 

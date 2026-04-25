@@ -24,8 +24,9 @@ export async function loadReportsList() {
 /**
  * Загружает полный отчёт по ID и отображает дашборд.
  * @param {string} reportId — Идентификатор отчёта.
+ * @param {boolean} skipHistory — Пропустить ли добавление в историю (для popstate).
  */
-export async function loadReportById(reportId) {
+export async function loadReportById(reportId, skipHistory = false) {
   try {
     const response = await fetch(`/api/reports/${reportId}`);
     const data = await response.json();
@@ -33,6 +34,11 @@ export async function loadReportById(reportId) {
     if (data.success) {
       setCurrentReport(data.report);
       localStorage.setItem('lastReportId', reportId);
+      
+      if (!skipHistory) {
+        history.pushState({ type: 'report', id: reportId }, '', `#report=${reportId}`);
+      }
+
       showScreen('dashboard');
       renderDashboard(data.report);
 

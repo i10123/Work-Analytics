@@ -251,19 +251,27 @@
       <section class="dashboard" id="dashboard" style="display: none;">
         <!-- Заголовок и мета -->
         <div class="dashboard__header">
-          <div class="dashboard__info-wrapper">
-            <div class="dashboard__icon-box">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
-                <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+          <div class="dashboard__header-left">
+            <button class="btn btn--back" id="btnBackToWelcome" title="Вернуться на главную">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
               </svg>
-            </div>
-            <div class="dashboard__meta">
-              <h2 class="dashboard__title" id="dashTitle">Загрузка...</h2>
-              <div class="dashboard__subtitle-group">
-                <p class="dashboard__subtitle" id="dashSubtitle">—</p>
-                <div class="dashboard__badges" id="dashBadges">
-                  <!-- Badges will be injected here -->
+            </button>
+            <div class="dashboard__info-wrapper">
+              <div class="dashboard__icon-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                  <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                </svg>
+              </div>
+              <div class="dashboard__meta">
+                <h2 class="dashboard__title" id="dashTitle">Загрузка...</h2>
+                <div class="dashboard__subtitle-group">
+                  <p class="dashboard__subtitle" id="dashSubtitle">—</p>
+                  <div class="dashboard__badges" id="dashBadges">
+                    <!-- Badges will be injected here -->
+                  </div>
                 </div>
               </div>
             </div>
@@ -466,11 +474,11 @@
             <div class="settings-theme-grid" id="settingsThemeGrid">
               <label class="settings-theme-card" data-theme="slate-modernity">
                 <div class="settings-theme-card__preview"
-                  style="background: linear-gradient(135deg, #12181f 0%, #1F2933 40%, #273440 70%, #9CA3AF 100%);">
+                  style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 40%, #e2e8f0 70%, #cbd5e1 100%);">
                   <div class="settings-theme-card__dots">
-                    <span style="background: #9CA3AF;"></span>
-                    <span style="background: #6b7280;"></span>
-                    <span style="background: #4b5563;"></span>
+                    <span style="background: #334155;"></span>
+                    <span style="background: #64748b;"></span>
+                    <span style="background: #94a3b8;"></span>
                   </div>
                 </div>
                 <div class="settings-theme-card__info">
@@ -758,8 +766,8 @@
     </div>
   </div>
 
-  <!-- Chart.js (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-wordcloud@4.4.4/build/index.umd.min.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 

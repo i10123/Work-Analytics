@@ -6,6 +6,7 @@ import { loadReportsList, loadReportById } from './api.js';
 import { setupSSE } from './ui/sse.js';
 import { openModal, closeModal, handleFormSubmit } from './ui/modal.js';
 import { renderDashboard } from './ui/dashboard.js';
+import { showScreen } from './ui/common.js';
 import { setupSidebarListeners } from './ui/sidebar.js';
 import { setupSettingsListeners, setupStepperListeners, setupSegmentedControlListeners } from './ui/settings.js';
 import { initializePremiumUI } from './ui/ui-premium.js';
@@ -25,12 +26,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   setupSSE();
   
-  // Загружаем список и пробуем восстановить последний отчёт
+  // Загружаем список отчётов
   await loadReportsList();
   
-  const lastReportId = localStorage.getItem('lastReportId');
-  if (lastReportId) {
-    loadReportById(lastReportId);
+  // Обработка начального состояния (URL хеш)
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#report=')) {
+    const reportId = hash.replace('#report=', '');
+    loadReportById(reportId, true);
+  } else {
+    showScreen('welcome');
+    // Заменяем текущее состояние в истории на 'welcome'
+    history.replaceState({ type: 'welcome' }, '', window.location.pathname);
   }
 });
 
@@ -50,6 +57,22 @@ function setupEventListeners() {
   });
 
   DOM.btnNewReport?.addEventListener('click', openModal);
+  
+  DOM.btnBackToWelcome?.addEventListener('click', () => {
+    showScreen('welcome');
+    history.pushState({ type: 'welcome' }, '', window.location.pathname);
+    document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+  });
+
+  window.addEventListener('popstate', (event) => {
+    const state = event.state;
+    if (state && state.type === 'report') {
+      loadReportById(state.id, true);
+    } else {
+      showScreen('welcome');
+      document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+    }
+  });
 
   DOM.modalClose?.addEventListener('click', closeModal);
   DOM.modalOverlay?.addEventListener('click', (e) => {

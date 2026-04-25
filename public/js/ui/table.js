@@ -11,6 +11,9 @@ let sortConfig = {
   direction: 'asc'
 };
 
+let currentJobs = [];
+let currentRates = {};
+
 /**
  * Рендерит таблицу всех вакансий.
  * @param {Array} jobs — Массив вакансий.
@@ -19,8 +22,8 @@ let sortConfig = {
 export function renderJobsTable(jobs, rates) {
   if (!DOM.jobsTableBody) return;
   
-  window.currentJobs = jobs;
-  window.currentRates = rates;
+  currentJobs = jobs;
+  currentRates = rates;
   
   // Инициализируем обработчики поиска, если еще не сделано
   initSearch();
@@ -38,15 +41,15 @@ function initSearch() {
     searchInput.dataset.listener = 'true';
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.toLowerCase();
-      const filtered = window.currentJobs.filter(j => 
+      const filtered = currentJobs.filter(j => 
         (j.title || '').toLowerCase().includes(q) || 
         (j.company || '').toLowerCase().includes(q) || 
         (j.city || '').toLowerCase().includes(q) ||
         (j.skills || []).join(' ').toLowerCase().includes(q)
       );
       
-      const sorted = sortConfig.key ? sortData(filtered, window.currentRates) : filtered;
-      renderTableRows(sorted, window.currentRates);
+      const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
+      renderTableRows(sorted, currentRates);
     });
   }
 }
@@ -76,15 +79,15 @@ function initSort() {
       const searchInput = document.getElementById('jobsTableSearch');
       const q = searchInput ? searchInput.value.toLowerCase() : '';
       
-      const filtered = window.currentJobs.filter(j => 
+      const filtered = currentJobs.filter(j => 
         (j.title || '').toLowerCase().includes(q) || 
         (j.company || '').toLowerCase().includes(q) || 
         (j.city || '').toLowerCase().includes(q) ||
         (j.skills || []).join(' ').toLowerCase().includes(q)
       );
 
-      const sorted = sortData(filtered, window.currentRates);
-      renderTableRows(sorted, window.currentRates);
+      const sorted = sortData(filtered, currentRates);
+      renderTableRows(sorted, currentRates);
     });
   });
 }

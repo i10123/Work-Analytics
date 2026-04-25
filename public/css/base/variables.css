@@ -1,31 +1,31 @@
 :root,
 :root[data-theme="slate-modernity"] {
-  --color-bg: #12181f;
-  --color-bg-secondary: #1F2933;
-  --color-bg-tertiary: #273440;
-  --color-surface: #1F2933;
-  --color-surface-hover: #2d3b4a;
-  --color-surface-active: #384959;
-  --color-border: #323d47;
-  --color-border-light: #445463;
+  --color-bg: #f8fafc;
+  --color-bg-secondary: #f1f5f9;
+  --color-bg-tertiary: #e2e8f0;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-active: #e2e8f0;
+  --color-border: #cbd5e1;
+  --color-border-light: #94a3b8;
 
-  --color-primary: #9CA3AF;
-  --color-primary-hover: #ffffff;
-  --color-primary-glow: rgba(156, 163, 175, 0.4);
-  --color-accent: #6b7280;
-  --color-accent-soft: rgba(107, 114, 128, 0.15);
-  --color-accent-glow: rgba(107, 114, 128, 0.3);
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
+  --color-primary: #334155;
+  --color-primary-hover: #0f172a;
+  --color-primary-glow: rgba(51, 65, 85, 0.15);
+  --color-accent: #64748b;
+  --color-accent-soft: rgba(100, 116, 139, 0.1);
+  --color-accent-glow: rgba(100, 116, 139, 0.2);
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
 
-  --color-text: #ffffff;
-  --color-text-secondary: #d1d5db;
-  --color-text-muted: #9CA3AF;
+  --color-text: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748b;
 
-  --chart-c1: #9CA3AF;
-  --chart-c2: #6b7280;
-  --chart-c3: #4b5563;
+  --chart-c1: #334155;
+  --chart-c2: #475569;
+  --chart-c3: #64748b;
   --chart-c4: #f59e0b;
   --chart-c5: #ef4444;
 
@@ -47,14 +47,14 @@
   --transition-base: 220ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
   --shadow-glow: 0 0 20px var(--color-primary-glow);
   --shadow-glow-accent: 0 0 20px var(--color-accent-glow);
 
-  --glass-bg: rgba(30, 34, 53, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(15, 23, 42, 0.08);
 }
 
 :root[data-theme="deep-aqua"] {

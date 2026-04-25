@@ -6,6 +6,7 @@
  */
 
 const axios = require('axios');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 
 /** Базовый URL API HeadHunter */
 const HH_API_BASE = 'https://api.hh.ru';
@@ -38,7 +39,7 @@ async function parse(query, filters = {}) {
     console.log(`[Parser:HH] 📄 Загрузка страницы ${page + 1}/${maxPages}...`);
 
     try {
-      const response = await axios.get(`${HH_API_BASE}/vacancies`, {
+      const axiosConfig = {
         params: {
           text: query,
           period: period,
@@ -48,10 +49,18 @@ async function parse(query, filters = {}) {
           only_with_salary: false,
         },
         headers: {
-          'User-Agent': 'WorkAnalytics/1.0 (student-project@example.com)',
+          'User-Agent': 'JobMarketAnalyzer/1.0 (deniskarakulko90@gmail.com)',
+          'HH-User-Agent': 'JobMarketAnalyzer/1.0 (deniskarakulko90@gmail.com)',
+          'Accept': 'application/json'
         },
         timeout: 15000,
-      });
+      };
+
+      if (process.env.RU_PROXY) {
+        axiosConfig.httpsAgent = new HttpsProxyAgent(process.env.RU_PROXY);
+      }
+
+      const response = await axios.get(`${HH_API_BASE}/vacancies`, axiosConfig);
 
       const vacancies = response.data.items || [];
       console.log(`[Parser:HH] 📊 Страница ${page + 1}: найдено ${vacancies.length} вакансий`);
@@ -73,7 +82,7 @@ async function parse(query, filters = {}) {
     } catch (error) {
       /** Если страница не загрузилась — пропускаем и переходим к следующей */
       if (error.response && error.response.status === 403) {
-        console.warn(`[Parser:HH] ⚠️ Доступ к странице ${page + 1} заблокирован (403). Прерываю.`);
+        console.warn(`[Parser:HH] 🛑 Бан по IP или User-Agent от Cloudflare. Нужен RU-прокси или валидный токен.`);
         break;
       }
       throw new Error(`HH API ошибка: ${error.message}`);
