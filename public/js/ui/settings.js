@@ -244,39 +244,19 @@ async function loadApiStatus() {
       }
     };
 
-    /** Универсальная функция для рендеринга списка ключей */
-    const renderKeys = (container, row, keys) => {
-      if (!container || !row) return;
-      if (keys && keys.length > 0) {
-        container.innerHTML = keys.map(k => `<span class="settings-api-status__key-tag">${k}</span>`).join('');
-        row.style.display = 'flex';
-      } else {
-        row.style.display = 'none';
-      }
-    };
-
     // OpenRouter
     if (data.openrouter) {
-      updateStatus(DOM.dashscopeStatusText, data.openrouter.configured);
-      if (DOM.dashscopeKeyText && DOM.dashscopeKeyRow) {
-        if (data.openrouter.configured) {
-          DOM.dashscopeKeyText.textContent = data.openrouter.key;
-          DOM.dashscopeKeyRow.style.display = 'flex';
-        } else {
-          DOM.dashscopeKeyRow.style.display = 'none';
-        }
-      }
+      updateStatus(DOM.openrouterStatusText, data.openrouter.configured);
     }
 
     // Currency
     if (data.currency) {
-      updateStatus(DOM.currencyStatusText, data.currency.configured);
-      renderKeys(DOM.currencyKeysList, DOM.currencyKeysRow, data.currency.keys);
+      updateStatus(DOM.currencyStatusText, data.currency.configured, 'Настроены', 'Не настроены');
     }
 
   } catch (error) {
     console.error('[Settings] ❌ Ошибка загрузки статуса API:', error);
-    const elements = [DOM.dashscopeStatusText, DOM.currencyStatusText];
+    const elements = [DOM.openrouterStatusText, DOM.currencyStatusText];
     elements.forEach(el => {
       if (el) {
         el.className = 'settings-api-status__value settings-api-status__value--error';
