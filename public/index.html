@@ -127,13 +127,25 @@
       </button>
       <!-- ---- ЭКРАН ПРИВЕТСТВИЯ (Command Center) ---- -->
       <section class="welcome-screen" id="welcomeScreen">
+
         <div class="welcome-screen__inner">
           <div class="welcome-screen__header">
-            <div class="welcome-screen__icon">🎯</div>
-            <h2 class="welcome-screen__title">Work Analytics Center</h2>
-            <p class="welcome-screen__desc">
-              Ведите поиск по ключевым словам или выберите быстрый тег
-            </p>
+            <div class="welcome-screen__icon">
+              <svg viewBox="0 0 24 24" width="64" height="64" stroke="url(#radarGradient)" stroke-width="1.5"
+                fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <defs>
+                  <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--color-primary)" />
+                    <stop offset="100%" stop-color="var(--color-accent)" />
+                  </linearGradient>
+                </defs>
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+                <path d="M12 2v10l5 5"></path>
+              </svg>
+            </div>
+            <h2 class="welcome-screen__title">Work Analytics</h2>
           </div>
 
           <div class="welcome-search">
@@ -143,8 +155,9 @@
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-              <input type="text" class="welcome-search__input" id="welcomeSearchInput" placeholder="Frontend React"
-                autocomplete="off" />
+              <input type="text" class="welcome-search__input" id="welcomeSearchInput"
+                placeholder="Поиск по: Frontend React" autocomplete="off" />
+
               <button class="welcome-search__submit" id="welcomeSearchSubmit" aria-label="Искать">
                 <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"
                   stroke-linecap="round" stroke-linejoin="round">
@@ -155,42 +168,103 @@
             </div>
 
             <div class="welcome-tags">
-              <span class="welcome-tags__label">Быстрые теги:</span>
               <div class="welcome-tags__list" id="welcomeTagsList">
-                <button class="welcome-tag" data-query="Frontend React">🔥 Frontend React</button>
-                <button class="welcome-tag" data-query="Python Backend">🐍 Python Backend</button>
-                <button class="welcome-tag" data-query="DevOps">🚀 DevOps</button>
-                <button class="welcome-tag" data-query="Machine Learning">🧠 Machine Learning</button>
-                <button class="welcome-tag" data-query="Rust">🦀 Rust</button>
-                <button class="welcome-tag" data-query="Go">🐹 Go</button>
+                <button class="welcome-tag" data-query="Frontend React">
+                  <span class="welcome-tag__icon">⚛️</span> Frontend React
+                </button>
+                <button class="welcome-tag" data-query="Python Backend">
+                  <span class="welcome-tag__icon">🐍</span> Python
+                </button>
+                <button class="welcome-tag" data-query="DevOps">
+                  <span class="welcome-tag__icon">🚀</span> DevOps
+                </button>
+                <button class="welcome-tag" data-query="Machine Learning">
+                  <span class="welcome-tag__icon">🧠</span> ML & AI
+                </button>
+                <button class="welcome-tag" data-query="Java Spring">
+                  <span class="welcome-tag__icon">☕</span> Java Spring
+                </button>
+                <button class="welcome-tag" data-query="Node.js">
+                  <span class="welcome-tag__icon">🟢</span> Node.js
+                </button>
+                <button class="welcome-tag" data-query="C# .NET">
+                  <span class="welcome-tag__icon">🔷</span> C# .NET
+                </button>
+                <button class="welcome-tag" data-query="QA Automation">
+                  <span class="welcome-tag__icon">🧪</span> QA Auto
+                </button>
+                <button class="welcome-tag" data-query="Data Analyst">
+                  <span class="welcome-tag__icon">📊</span> Data Analyst
+                </button>
+                <button class="welcome-tag" data-query="Go">
+                  <span class="welcome-tag__icon">🐹</span> Golang
+                </button>
+                <button class="welcome-tag" data-query="iOS Swift">
+                  <span class="welcome-tag__icon">🍏</span> iOS Swift
+                </button>
+                <button class="welcome-tag" data-query="Rust">
+                  <span class="welcome-tag__icon">🦀</span> Rust
+                </button>
               </div>
             </div>
           </div>
 
           <div class="welcome-stats" id="welcomeStats">
             <div class="welcome-stat-card">
-              <div class="welcome-stat-card__icon">📊</div>
+              <svg class="welcome-stat-card__bg-chart" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <path d="M0 40 L10 30 L30 35 L50 20 L70 25 L90 5 L100 10 L100 40 Z" fill="var(--color-primary)"
+                  opacity="0.1" />
+                <path d="M0 40 L10 30 L30 35 L50 20 L70 25 L90 5 L100 10" fill="none" stroke="var(--color-primary)"
+                  stroke-width="2" opacity="0.5" />
+              </svg>
+              <div class="welcome-stat-card__icon">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-primary)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+              </div>
               <div class="welcome-stat-card__info">
                 <span class="welcome-stat-card__label">Всего отчётов</span>
-                <span class="welcome-stat-card__value" id="welcomeStatReports">—</span>
+                <span class="welcome-stat-card__value" id="welcomeStatReports" data-value="0">—</span>
               </div>
             </div>
             <div class="welcome-stat-card">
-              <div class="welcome-stat-card__icon">💼</div>
+              <svg class="welcome-stat-card__bg-chart" viewBox="0 0 100 40" preserveAspectRatio="none">
+                <path d="M0 40 L20 25 L40 30 L60 15 L80 20 L100 5 L100 40 Z" fill="var(--color-accent)" opacity="0.1" />
+                <path d="M0 40 L20 25 L40 30 L60 15 L80 20 L100 5" fill="none" stroke="var(--color-accent)"
+                  stroke-width="2" opacity="0.5" />
+              </svg>
+              <div class="welcome-stat-card__icon">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+              </div>
               <div class="welcome-stat-card__info">
                 <span class="welcome-stat-card__label">Всего вакансий</span>
-                <span class="welcome-stat-card__value" id="welcomeStatJobs">—</span>
+                <span class="welcome-stat-card__value" id="welcomeStatJobs" data-value="0">—</span>
               </div>
             </div>
-            <div class="welcome-stat-card">
-              <div class="welcome-stat-card__icon">🏆</div>
+            <div class="welcome-stat-card welcome-stat-card--glow">
+              <div class="welcome-stat-card__icon">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-primary)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="8" r="7"></circle>
+                  <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                </svg>
+              </div>
               <div class="welcome-stat-card__info">
                 <span class="welcome-stat-card__label">Топ технология</span>
                 <span class="welcome-stat-card__value" id="welcomeStatTopTech">—</span>
               </div>
             </div>
             <div class="welcome-stat-card">
-              <div class="welcome-stat-card__icon">💰</div>
+              <div class="welcome-stat-card__icon">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"></line>
+                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+              </div>
               <div class="welcome-stat-card__info">
                 <span class="welcome-stat-card__label">Средняя ЗП рынка</span>
                 <span class="welcome-stat-card__value" id="welcomeStatAvgSalary"
@@ -198,6 +272,9 @@
               </div>
             </div>
           </div>
+
+
+
         </div>
       </section>
 

@@ -5,11 +5,139 @@ import { getCurrencySymbol, convertCurrency } from '../utils/currency.js';
 import { formatSalary } from '../utils/formatters.js';
 
 export function setupWelcomeScreen() {
+  setupCanvasBackground();
   setupTypewriter();
   setupQuickTags();
   setupSearchInput();
   setupTiltEffect();
   updateWelcomeStats();
+}
+
+/**
+ * Ultra-Premium Data Wave Background
+ */
+function setupCanvasBackground() {
+  const canvas = document.getElementById('welcomeCanvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+
+  let time = 0;
+
+  // Wave configurations
+  const waves = [
+    { amplitude: 40, frequency: 0.003, speed: 0.015, color: 'rgba(0, 150, 255, 0.05)', lineWidth: 1 },
+    { amplitude: 70, frequency: 0.002, speed: 0.01, color: 'rgba(0, 150, 255, 0.08)', lineWidth: 1.5 },
+    { amplitude: 30, frequency: 0.004, speed: 0.02, color: 'rgba(255, 100, 100, 0.05)', lineWidth: 1 },
+    { amplitude: 100, frequency: 0.0015, speed: 0.008, color: 'rgba(0, 200, 255, 0.06)', lineWidth: 2 }
+  ];
+
+  // Mouse interaction
+  let mouseX = 0;
+  let targetMouseX = 0;
+  let mouseY = height / 2;
+  
+  const welcomeScreen = document.getElementById('welcomeScreen');
+  if (welcomeScreen) {
+    welcomeScreen.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      targetMouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+    welcomeScreen.addEventListener('mouseleave', () => {
+      targetMouseX = width / 2;
+      mouseY = height / 2;
+    });
+  }
+
+  targetMouseX = width / 2;
+
+  function drawWave(wave) {
+    ctx.beginPath();
+    // The wave moves across the screen based on time
+    // We add mouse interaction to slightly alter the wave phase
+    
+    // Smooth mouse movement
+    mouseX += (targetMouseX - mouseX) * 0.05;
+    
+    const mouseInfluence = (mouseX / width) * 100;
+    
+    for (let x = 0; x <= width; x += 5) {
+      // Base sine wave
+      let y = Math.sin(x * wave.frequency + time * wave.speed) * wave.amplitude;
+      // Add a secondary wave for more natural flow
+      y += Math.cos(x * wave.frequency * 1.5 + time * wave.speed * 0.8) * (wave.amplitude * 0.5);
+      
+      // Calculate distance to vertical center to taper the waves
+      const distanceFromCenter = Math.abs((height / 2) - y);
+      const taper = 1 - Math.min(distanceFromCenter / (height * 0.8), 1);
+      
+      // Mouse Y influence to shift the wave up/down smoothly
+      const verticalShift = (mouseY - height / 2) * 0.2;
+
+      const finalY = (height / 2) + y * taper + verticalShift;
+
+      if (x === 0) {
+        ctx.moveTo(x, finalY);
+      } else {
+        ctx.lineTo(x, finalY);
+      }
+    }
+
+    ctx.strokeStyle = wave.color;
+    ctx.lineWidth = wave.lineWidth;
+    ctx.stroke();
+
+    // Fill underneath the wave for depth
+    ctx.lineTo(width, height);
+    ctx.lineTo(0, height);
+    ctx.closePath();
+    
+    // Create soft gradient fill
+    const gradient = ctx.createLinearGradient(0, height/2, 0, height);
+    
+    // Extract base color and create a very transparent fill
+    const baseColorMatch = wave.color.match(/rgba\((\d+,\s*\d+,\s*\d+)/);
+    if (baseColorMatch) {
+      const rgb = baseColorMatch[1];
+      gradient.addColorStop(0, `rgba(${rgb}, 0.02)`);
+      gradient.addColorStop(1, `rgba(${rgb}, 0)`);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    }
+  }
+
+  function animate() {
+    if (welcomeScreen && welcomeScreen.style.display === 'none') {
+      requestAnimationFrame(animate);
+      return;
+    }
+
+    ctx.clearRect(0, 0, width, height);
+    
+    // Add a very subtle glowing center
+    const bgGradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width*0.6);
+    bgGradient.addColorStop(0, 'rgba(0, 150, 255, 0.03)');
+    bgGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
+
+    waves.forEach(wave => drawWave(wave));
+
+    time += 1;
+    requestAnimationFrame(animate);
+  }
+
+  animate();
 }
 
 /**
@@ -20,12 +148,16 @@ function setupTypewriter() {
   if (!input) return;
 
   const phrases = [
-    'Frontend React',
-    'Python Backend',
-    'DevOps Engineer',
-    'Machine Learning',
-    'Golang Developer',
-    'Rust Backend'
+    'Поиск по: Frontend React',
+    'Поиск по: Python Backend',
+    'Поиск по: Java Spring',
+    'Поиск по: Machine Learning',
+    'Поиск по: Node.js Developer',
+    'Поиск по: C# .NET',
+    'Поиск по: QA Automation',
+    'Поиск по: DevOps Engineer',
+    'Поиск по: iOS Swift',
+    'Поиск по: Data Analyst'
   ];
   
   let phraseIndex = 0;
@@ -36,12 +168,13 @@ function setupTypewriter() {
 
   input.addEventListener('focus', () => {
     isPaused = true;
-    input.setAttribute('placeholder', '');
+    input.setAttribute('placeholder', 'Введите запрос...');
   });
 
   input.addEventListener('blur', () => {
     isPaused = false;
     if (!input.value) {
+      charIndex = 0; 
       typewriterLoop();
     }
   });
@@ -66,15 +199,15 @@ function setupTypewriter() {
       charIndex++;
     }
 
-    let typeSpeed = isDeleting ? 50 : 100;
+    let typeSpeed = isDeleting ? 30 : 80;
 
     if (!isDeleting && charIndex === currentPhrase.length) {
-      typeSpeed = 2000; // Пауза в конце слова
+      typeSpeed = 2500; 
       isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
       isDeleting = false;
       phraseIndex = (phraseIndex + 1) % phrases.length;
-      typeSpeed = 500; // Пауза перед новым словом
+      typeSpeed = 500; 
     }
 
     clearTimeout(typewriterTimeout);
@@ -98,7 +231,7 @@ function setupQuickTags() {
 }
 
 /**
- * Setup central search input enter key
+ * Setup central search input enter key and global hotkey
  */
 function setupSearchInput() {
   const input = document.getElementById('welcomeSearchInput');
@@ -107,8 +240,14 @@ function setupSearchInput() {
   if (!input || !submitBtn) return;
 
   const handleSearch = () => {
-    const val = input.value.trim() || input.getAttribute('placeholder');
-    if (val) triggerSearch(val);
+    let val = input.value.trim();
+    if (!val) {
+      const ph = input.getAttribute('placeholder');
+      if (ph && ph.startsWith('Поиск по: ')) {
+        val = ph.replace('Поиск по: ', '');
+      }
+    }
+    if (val && val !== 'Введите запрос...') triggerSearch(val);
   };
 
   input.addEventListener('keydown', (e) => {
@@ -119,6 +258,17 @@ function setupSearchInput() {
   });
 
   submitBtn.addEventListener('click', handleSearch);
+
+  // Global Ctrl+K / Cmd+K hotkey (Silent focus)
+  document.addEventListener('keydown', (e) => {
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    if (welcomeScreen && welcomeScreen.style.display !== 'none') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        input.focus();
+      }
+    }
+  });
 }
 
 function triggerSearch(query) {
@@ -140,18 +290,39 @@ function setupTiltEffect() {
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       
-      const rotateX = ((y - centerY) / centerY) * -10; // Max rotation 10deg
+      const rotateX = ((y - centerY) / centerY) * -10; 
       const rotateY = ((x - centerX) / centerX) * 10;
       
-      card.style.setProperty('--rotate-x', `${rotateX}deg`);
-      card.style.setProperty('--rotate-y', `${rotateY}deg`);
+      card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
     });
     
     card.addEventListener('mouseleave', () => {
-      card.style.setProperty('--rotate-x', '0deg');
-      card.style.setProperty('--rotate-y', '0deg');
+      card.style.transform = `rotateX(0deg) rotateY(0deg) translateY(0)`;
     });
   });
+}
+
+/**
+ * Animate Number from 0 to value
+ */
+function animateValue(obj, start, end, duration, formatFn = null) {
+  if (!obj) return;
+  let startTimestamp = null;
+  const step = (timestamp) => {
+    if (!startTimestamp) startTimestamp = timestamp;
+    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+    const easeProgress = 1 - Math.pow(1 - progress, 4);
+    const current = Math.floor(easeProgress * (end - start) + start);
+    
+    obj.textContent = formatFn ? formatFn(current) : current;
+    
+    if (progress < 1) {
+      window.requestAnimationFrame(step);
+    } else {
+      obj.textContent = formatFn ? formatFn(end) : end;
+    }
+  };
+  window.requestAnimationFrame(step);
 }
 
 /**
@@ -173,19 +344,16 @@ export function updateWelcomeStats() {
     return;
   }
 
-  // Общее количество отчётов
-  reportsCountEl.textContent = allReports.length;
+  const reportsCount = allReports.length;
+  animateValue(reportsCountEl, 0, reportsCount, 1500);
 
-  // Общее количество вакансий во всех отчётах
   let totalJobs = 0;
   let allSalaries = [];
 
   allReports.forEach(report => {
-    // 1) ИСПОЛЬЗУЕМ stats.totalFound
     const count = report.stats?.totalFound || report.jobCount || 0;
     totalJobs += count;
 
-    // Сбор зарплат для средней (с конвертацией)
     const rates = report.exchangeRates?.rates || { RUB: 1, USD: 93.5, EUR: 100.2, BYN: 28.5 };
     if (report.jobs && Array.isArray(report.jobs)) {
       report.jobs.forEach(j => {
@@ -200,19 +368,18 @@ export function updateWelcomeStats() {
     }
   });
 
-  jobsCountEl.textContent = totalJobs;
+  animateValue(jobsCountEl, 0, totalJobs, 2000);
 
   if (avgSalaryEl) {
     if (allSalaries.length > 0) {
       const globalAvg = Math.round(allSalaries.reduce((a, b) => a + b, 0) / allSalaries.length);
       const sym = getCurrencySymbol(currentCurrency);
-      avgSalaryEl.textContent = `${formatSalary(globalAvg)} ${sym}`;
+      animateValue(avgSalaryEl, 0, globalAvg, 2000, (val) => `${formatSalary(val)} ${sym}`);
     } else {
       avgSalaryEl.textContent = '—';
     }
   }
 
-  // Топ технология (частота query с учетом регистра)
   const queryCounts = {};
   allReports.forEach(report => {
     if (report.query) {
@@ -231,4 +398,5 @@ export function updateWelcomeStats() {
   }
 
   topTechEl.textContent = topQuery;
+  topTechEl.title = topQuery;
 }
