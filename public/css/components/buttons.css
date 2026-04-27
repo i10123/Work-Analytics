@@ -83,9 +83,17 @@
 }
 
 @keyframes shimmer {
-  0% { left: -100%; }
-  20% { left: 200%; }
-  100% { left: 200%; }
+  0% {
+    left: -100%;
+  }
+
+  20% {
+    left: 200%;
+  }
+
+  100% {
+    left: 200%;
+  }
 }
 
 .new-report-btn:hover {
@@ -100,7 +108,7 @@
 }
 
 .absolute-toggle {
-  position: absolute;
+  position: fixed;
   top: 18px;
   left: 20px;
   background: var(--glass-bg);
@@ -114,8 +122,12 @@
   justify-content: center;
   cursor: pointer;
   z-index: 100;
-  transition: all var(--transition-base);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--shadow-sm);
+}
+
+.sidebar:not(.collapsed)~.main-content .absolute-toggle {
+  left: calc(var(--sidebar-width) + 20px);
 }
 
 .absolute-toggle:hover {
@@ -125,7 +137,9 @@
 }
 
 @media (max-width: 768px) {
-  .absolute-toggle { display: none; }
+  .absolute-toggle {
+    display: none;
+  }
 }
 
 .sidebar__settings-btn {

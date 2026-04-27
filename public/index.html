@@ -218,7 +218,8 @@
                   stroke-width="2" opacity="0.5" />
               </svg>
               <div class="welcome-stat-card__icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-primary)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-primary)" stroke-width="2"
+                  fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="20" x2="18" y2="10"></line>
                   <line x1="12" y1="20" x2="12" y2="4"></line>
                   <line x1="6" y1="20" x2="6" y2="14"></line>
@@ -236,7 +237,8 @@
                   stroke-width="2" opacity="0.5" />
               </svg>
               <div class="welcome-stat-card__icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2"
+                  fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
                   <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                 </svg>
@@ -246,9 +248,10 @@
                 <span class="welcome-stat-card__value" id="welcomeStatJobs" data-value="0">—</span>
               </div>
             </div>
-            <div class="welcome-stat-card welcome-stat-card--glow">
+            <div class="welcome-stat-card">
               <div class="welcome-stat-card__icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-primary)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-primary)" stroke-width="2"
+                  fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="8" r="7"></circle>
                   <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
                 </svg>
@@ -260,7 +263,8 @@
             </div>
             <div class="welcome-stat-card">
               <div class="welcome-stat-card__icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2"
+                  fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" y1="1" x2="12" y2="23"></line>
                   <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                 </svg>
@@ -273,6 +277,23 @@
             </div>
           </div>
 
+          <!-- Виджеты интеграции -->
+          <div class="welcome-widgets" style="margin-top: 32px; width: 100%;">
+            <!-- Карточка HH.ru -->
+            <div class="chart-card chart-card--wide">
+              <h3 class="chart-card__title">Горячие вакансии (HH.ru)</h3>
+              <div class="chart-card__body widget-container">
+                <div class="widget-light">
+                  <script type="module"
+                    class="widgetHhScript">import initVacanciesWidget from 'https://widgets.hh.ru/vacanciesWidget/vacanciesWidget.js'; initVacanciesWidget({ "country": "RU", "searchParams": { "professionalRole": ["30", "165", "96", "156", "160", "150"], "employment": ["full", "part", "probation", "project"], "schedule": ["fullDay", "shift", "flexible", "remote"], "host": "hh.ru", "locale": "RU", "perPage": 20 }, "settings": { "locale": "RU", "theme": "LIGHT", "size": { "height": 480, "width": 808 }, "elementsOrder": "NAME_SALARY_AREA_EMPLOYER", "isLogoVisible": true, "isRegionVisible": true, "isRegionSearchEnabled": true, "isProfRolesSearchEnabled": false, "isSalaryVisible": true }, "version": "1" });</script>
+                </div>
+                <div class="widget-dark">
+                  <script type="module"
+                    class="widgetHhScript">import initVacanciesWidget from 'https://widgets.hh.ru/vacanciesWidget/vacanciesWidget.js'; initVacanciesWidget({ "country": "RU", "searchParams": { "professionalRole": ["30", "165", "96", "156", "160", "150"], "employment": ["full", "part", "probation", "project"], "schedule": ["fullDay", "shift", "flexible", "remote"], "host": "hh.ru", "locale": "RU", "perPage": 20 }, "settings": { "locale": "RU", "theme": "DARK", "size": { "height": 480, "width": 808 }, "elementsOrder": "NAME_SALARY_AREA_EMPLOYER", "isLogoVisible": true, "isRegionVisible": true, "isRegionSearchEnabled": true, "isProfRolesSearchEnabled": false, "isSalaryVisible": true }, "version": "1" });</script>
+                </div>
+              </div>
+            </div>
+          </div>
 
 
         </div>
@@ -528,6 +549,8 @@
             </div>
           </div>
         </div>
+
+
 
         <!-- Таблица вакансий -->
         <div class="table-card">

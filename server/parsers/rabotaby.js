@@ -1,18 +1,14 @@
 /**
  * @file rabotaby.js — Парсер вакансий с Rabota.by.
- * @description Рефакторинг с использованием ООП. Наследует HhParser.
+ * @description Наследует HhParser. Вся логика ротации прокси, UA, токенов
+ * и ретраев наследуется автоматически из hh.js.
  */
 
 const { HhParser } = require('./hh');
-const axios = require('axios');
-const { HttpsProxyAgent } = require('https-proxy-agent');
-
-const API_BASE = 'https://api.hh.ru';
-const PAGE_DELAY_MS = 500;
 
 class RabotaByParser extends HhParser {
   constructor() {
-    super(16);
+    super(16); // area = 16 (Беларусь)
     this.name = 'Rabota.by';
   }
 

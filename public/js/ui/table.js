@@ -16,14 +16,14 @@ const TableManager = (() => {
       searchListenerAdded = true;
       searchInput.addEventListener('input', (e) => {
         const q = e.target.value.toLowerCase();
-        
-        const filtered = currentJobs.filter(j => 
-          (j.title || '').toLowerCase().includes(q) || 
-          (j.company || '').toLowerCase().includes(q) || 
+
+        const filtered = currentJobs.filter(j =>
+          (j.title || '').toLowerCase().includes(q) ||
+          (j.company || '').toLowerCase().includes(q) ||
           (j.city || '').toLowerCase().includes(q) ||
           (j.skills || []).join(' ').toLowerCase().includes(q)
         );
-        
+
         const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
         renderTableRows(sorted, currentRates);
       });
@@ -41,7 +41,7 @@ const TableManager = (() => {
       if (!table) return; // убеждаемся, что клик в нашей таблице
 
       const key = th.dataset.sort;
-      
+
       if (sortConfig.key === key) {
         sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
       } else {
@@ -57,10 +57,10 @@ const TableManager = (() => {
       // Получаем текущие отфильтрованные данные
       const searchInput = document.getElementById('jobsTableSearch');
       const q = searchInput ? searchInput.value.toLowerCase() : '';
-      
-      const filtered = currentJobs.filter(j => 
-        (j.title || '').toLowerCase().includes(q) || 
-        (j.company || '').toLowerCase().includes(q) || 
+
+      const filtered = currentJobs.filter(j =>
+        (j.title || '').toLowerCase().includes(q) ||
+        (j.company || '').toLowerCase().includes(q) ||
         (j.city || '').toLowerCase().includes(q) ||
         (j.skills || []).join(' ').toLowerCase().includes(q)
       );
@@ -97,10 +97,10 @@ const TableManager = (() => {
 
   function getSalarySortValue(job, rates) {
     if (!job.salary) return 0;
-    
+
     const min = job.salary.min ? convertCurrency(job.salary.min, job.salary.currency, currentCurrency, rates) : null;
     const max = job.salary.max ? convertCurrency(job.salary.max, job.salary.currency, currentCurrency, rates) : null;
-    
+
     if (min && max) return (min + max) / 2;
     if (min) return min;
     if (max) return max;
@@ -164,10 +164,10 @@ const TableManager = (() => {
       if (!DOM.jobsTableBody) return;
       const table = document.getElementById('jobsTable');
       if (!table) return;
-      
+
       currentJobs = jobs;
       currentRates = rates;
-      
+
       initSearch();
       initSort();
 

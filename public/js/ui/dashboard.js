@@ -76,13 +76,15 @@ function exportToCSV(jobs, query) {
     if (val === null || val === undefined) return '';
     let str = String(val);
     str = str.replace(/"/g, '""');
-    if (str.includes(delimiter) || str.includes('\\n') || str.includes('"')) {
+    // Исправлено: проверяем реальный перенос строки, а не экранированный
+    if (str.includes(delimiter) || str.includes('\n') || str.includes('"')) {
       return `"${str}"`;
     }
     return str;
   };
 
-  let csvContent = BOM + headers.join(delimiter) + '\\n';
+  // Исправлено: используем \r\n для правильного переноса строк в Excel
+  let csvContent = BOM + headers.join(delimiter) + '\r\n';
 
   jobs.forEach(j => {
     const row = [
@@ -100,7 +102,8 @@ function exportToCSV(jobs, query) {
       (j.skills || []).join(', '),
       j.url
     ];
-    csvContent += row.map(escapeCsv).join(delimiter) + '\\n';
+    // Исправлено: используем \r\n
+    csvContent += row.map(escapeCsv).join(delimiter) + '\r\n';
   });
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

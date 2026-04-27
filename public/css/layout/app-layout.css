@@ -9,10 +9,9 @@
 .main-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 32px; /* Base padding */
+  padding: 24px 32px 24px 80px; /* Base padding + space for toggle button on the left */
   position: relative;
-  /* Добавляем верхний отступ для кнопки переключения, чтобы она не налегала на контент */
-  padding-top: 80px; 
+  padding-top: 24px; /* We can reduce top padding now that the button has horizontal space */
 }
 
 .bg-shape {
