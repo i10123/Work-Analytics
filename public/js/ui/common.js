@@ -9,6 +9,11 @@ export function showScreen(screen) {
   if (DOM.welcomeScreen) DOM.welcomeScreen.style.display = screen === 'welcome' ? 'flex' : 'none';
   if (DOM.progressSection) DOM.progressSection.style.display = screen === 'progress' ? 'flex' : 'none';
   if (DOM.dashboard) DOM.dashboard.style.display = screen === 'dashboard' ? 'block' : 'none';
+  
+  const mainContent = document.getElementById('mainContent');
+  if (mainContent) {
+    mainContent.scrollTop = 0;
+  }
 }
 
 /**

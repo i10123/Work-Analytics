@@ -6,10 +6,13 @@ export function setCurrentCurrency(currency) { currentCurrency = currency; }
 
 export const charts = {
   salary: null,
-  sources: null,
   skills: null,
-  experience: null,
-  cities: null,
+  salaryVsExp: null,
+  workFormatDoughnut: null,
+  workFormatBar: null,
+  englishSalary: null,
+  techCategory: null,
+  dynamics: null,
 };
 
 export let baselineSettings = null;

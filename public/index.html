@@ -12,6 +12,15 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet" />
+  <link href="https://fonts.cdnfonts.com/css/anurati" rel="stylesheet">
+  <script>
+    (function() {
+      try {
+        var theme = localStorage.getItem('app-theme') || 'slate-modernity';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="css/main.css" />
 </head>
 
@@ -93,6 +102,14 @@
         </div>
       </div>
 
+
+      <!-- Очередь задач -->
+      <div class="sidebar__section-header" id="queueSectionHeader" style="display: none;">
+        <div class="sidebar__section-title">Очередь задач</div>
+      </div>
+      <div class="sidebar__queue-list" id="queueList" style="display: none;">
+        <!-- Динамически заполняется через JS -->
+      </div>
 
       <!-- Статус очереди -->
       <div class="sidebar__queue-status" id="queueStatus" style="display: none;">
@@ -472,72 +489,60 @@
           </div>
         </div>
 
-        <!-- Графики: Круговые (3 колонки) -->
-        <div class="charts-grid charts-grid--triple">
-          <div class="chart-card">
-            <h3 class="chart-card__title">Вакансии по источникам</h3>
-            <div class="chart-card__body">
-              <canvas id="chartSources"></canvas>
-            </div>
-          </div>
-          <div class="chart-card">
-            <h3 class="chart-card__title">Удаленка vs Офис</h3>
-            <div class="chart-card__body">
-              <canvas id="chartWorkFormat"></canvas>
-            </div>
-          </div>
-          <div class="chart-card">
-            <h3 class="chart-card__title">Требуемый опыт</h3>
-            <div class="chart-card__body">
-              <canvas id="chartExperience"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Графики: Аналитика по формату -->
+        <!-- 2. Топ-15 Hard Skills + Категории -->
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
-            <h3 class="chart-card__title">Средняя зарплата по форматам</h3>
-            <div class="chart-card__body">
-              <canvas id="chartSalaryByFormat"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Графики: Навыки и Города -->
-        <div class="charts-grid">
-          <div class="chart-card chart-card--wide">
-            <h3 class="chart-card__title">Топ-15 востребованных навыков</h3>
+            <h3 class="chart-card__title">Топ-15 Hard Skills</h3>
             <div class="chart-card__body">
               <canvas id="chartSkills"></canvas>
             </div>
           </div>
           <div class="chart-card">
-            <h3 class="chart-card__title">Топ-10 городов</h3>
+            <h3 class="chart-card__title">Категории специалистов</h3>
             <div class="chart-card__body">
-              <canvas id="chartCities"></canvas>
+              <canvas id="chartTechCategory"></canvas>
             </div>
           </div>
         </div>
 
-        <!-- Новые графики: ЗП vs Опыт, Корреляция, Динамика -->
+        <!-- 3. Зарплата vs Опыт -->
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
-            <h3 class="chart-card__title">Средняя зарплата по опыту</h3>
+            <h3 class="chart-card__title">Зарплата vs Опыт</h3>
             <div class="chart-card__body">
-              <canvas id="chartSalaryExp"></canvas>
+              <canvas id="chartSalaryVsExp"></canvas>
             </div>
           </div>
         </div>
 
-        <div class="charts-grid charts-grid--triple">
-          <div class="chart-card" style="grid-column: span 2;">
-            <h3 class="chart-card__title">Связки навыков (Топ-10 пар)</h3>
-            <div class="chart-card__body">
-              <canvas id="chartSkillsCorrel"></canvas>
+        <!-- 4. Формат работы (Combo: Doughnut + Bar) -->
+        <div class="charts-grid">
+          <div class="chart-card chart-card--wide">
+            <h3 class="chart-card__title">Формат работы и зарплата</h3>
+            <div class="chart-card__body chart-card__body--combo">
+              <div class="chart-combo-half">
+                <canvas id="chartWorkFormatDoughnut"></canvas>
+              </div>
+              <div class="chart-combo-half">
+                <canvas id="chartWorkFormatBar"></canvas>
+              </div>
             </div>
           </div>
-          <div class="chart-card">
+        </div>
+
+        <!-- 5. Влияние английского на зарплату -->
+        <div class="charts-grid">
+          <div class="chart-card chart-card--wide">
+            <h3 class="chart-card__title">Влияние английского на зарплату</h3>
+            <div class="chart-card__body">
+              <canvas id="chartEnglishSalary"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. Динамика ЗП -->
+        <div class="charts-grid">
+          <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Динамика зарплаты</h3>
             <div class="chart-card__header-controls" style="margin-bottom: 0.5rem;">
               <select id="dynamicsQuerySelect" class="form-input form-input--sm" style="width: 100%;">
@@ -579,6 +584,11 @@
           </div>
         </div>
       </section>
+
+      <!-- Footer Signature -->
+      <footer class="footer-signature">
+        create by NIFRANCHIN
+      </footer>
     </main>
   </div>
 

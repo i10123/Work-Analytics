@@ -230,7 +230,7 @@ class HhParser extends BaseParser {
    * @param {string|null} token — OAuth2 токен.
    * @returns {Promise<import('axios').AxiosResponse>}
    */
-  async _requestWithRetry(url, params, token) {
+  async _requestWithRetry(url, params, token, cancelFlag) {
     let lastError = null;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -240,6 +240,11 @@ class HhParser extends BaseParser {
           headers: this._buildHeaders(token),
           timeout: 15000,
         };
+
+        // Прокидываем abort signal для мгновенной отмены сетевых запросов
+        if (cancelFlag?.abortController?.signal) {
+          config.signal = cancelFlag.abortController.signal;
+        }
 
         const agent = this._getCurrentProxyAgent();
         if (agent) {
@@ -286,7 +291,7 @@ class HhParser extends BaseParser {
    * @param {object} filters — Фильтры (limit, period, stopWords, deepScrape).
    * @returns {Promise<object[]>} — Массив нормализованных вакансий.
    */
-  async parse(query, filters = {}) {
+  async parse(query, filters = {}, cancelFlag = null) {
     const limit = filters.limit || 50;
     const period = this.mapPeriodToDays(filters.period);
     const perPage = 20;
@@ -307,6 +312,12 @@ class HhParser extends BaseParser {
     const stopRegexes = this.compileStopWords(filters.stopWords || '');
 
     for (let page = 0; page < maxPages; page++) {
+      // Проверка флага отмены
+      if (cancelFlag?.isStopped) {
+        console.log(`[Parser:HH] 🛑 Задача остановлена. Прерываем парсинг.`);
+        break;
+      }
+
       console.log(`[Parser:HH] 📄 Загрузка страницы ${page + 1}/${maxPages}...`);
 
       try {
@@ -320,7 +331,7 @@ class HhParser extends BaseParser {
         };
 
         // Запрос с ретраями, ротацией прокси и backoff
-        const response = await this._requestWithRetry(`${HH_API_BASE}/vacancies`, params, token);
+        const response = await this._requestWithRetry(`${HH_API_BASE}/vacancies`, params, token, cancelFlag);
 
         const vacancies = response.data.items || [];
         console.log(`[Parser:HH] 📊 Страница ${page + 1}: получено ${vacancies.length} вакансий (до фильтрации)`);
@@ -372,9 +383,9 @@ class HhParser extends BaseParser {
     }
 
     // Если включен deepScrape, получаем полные описания
-    if (filters.deepScrape && allJobs.length > 0) {
+    if (filters.deepScrape && allJobs.length > 0 && !cancelFlag?.isStopped) {
       console.log(`[Parser:HH] 🕵️ Начинается глубокий парсинг для ${allJobs.length} вакансий...`);
-      await this.fetchDeepDescriptions(allJobs, token);
+      await this.fetchDeepDescriptions(allJobs, token, cancelFlag);
     }
 
     console.log(`[Parser:HH] ✅ Итого собрано: ${allJobs.length} вакансий`);
@@ -392,8 +403,11 @@ class HhParser extends BaseParser {
    * @param {object[]} jobs — Массив вакансий.
    * @param {string|null} token — OAuth2 токен.
    */
-  async fetchDeepDescriptions(jobs, token = null) {
+  async fetchDeepDescriptions(jobs, token = null, cancelFlag = null) {
     const fetchFn = async (job) => {
+      // Проверка отмены перед каждым запросом
+      if (cancelFlag?.isStopped) return;
+
       try {
         // Рандомизированная пауза перед запросом (human-like)
         const deepDelay = this._getRandomDelay(1000, 2000);
@@ -402,7 +416,8 @@ class HhParser extends BaseParser {
         const response = await this._requestWithRetry(
           `${HH_API_BASE}/vacancies/${job.sourceId}`,
           {},
-          token
+          token,
+          cancelFlag
         );
         const fullVacancy = response.data;
 

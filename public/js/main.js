@@ -7,7 +7,7 @@ import { setupSSE } from './ui/sse.js';
 import { openModal, closeModal, handleFormSubmit } from './ui/modal.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { showScreen } from './ui/common.js';
-import { setupSidebarListeners } from './ui/sidebar.js';
+import { setupSidebarListeners, loadQueueUI } from './ui/sidebar.js';
 import { setupSettingsListeners, setupStepperListeners, setupSegmentedControlListeners } from './ui/settings.js';
 import { initializePremiumUI } from './ui/ui-premium.js';
 import { setupWelcomeScreen, updateWelcomeStats } from './ui/welcome.js';
@@ -28,9 +28,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSSE();
   setupWelcomeScreen();
   
+  // F5-синхронизация: подхватываем текущий прогресс очереди
+  try {
+    const queueRes = await fetch('/api/queue');
+    const queueData = await queueRes.json();
+    if (queueData.success && queueData.currentTask && queueData.currentTask.status === 'processing') {
+      console.log('[App] 🔄 Обнаружена активная задача после F5:', queueData.currentTask.id);
+      showScreen('progress');
+      if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${queueData.currentTask.query || ''}"`;
+    }
+  } catch (e) {
+    console.warn('[App] ⚠️ Не удалось проверить состояние очереди:', e.message);
+  }
+
   // Загружаем список отчётов
   await loadReportsList();
   updateWelcomeStats();
+  
+  // Загружаем UI очереди
+  await loadQueueUI();
   
   // Обработка начального состояния (URL хеш)
   const hash = window.location.hash;

@@ -5,6 +5,7 @@
 @import url('./layout/app-layout.css');
 @import url('./layout/sidebar.css');
 @import url('./layout/mobile-topbar.css');
+@import url('./layout/footer.css');
 
 @import url('./components/buttons.css');
 @import url('./components/modals.css');

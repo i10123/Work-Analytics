@@ -1,0 +1,28 @@
+.footer-signature {
+    font-family: 'Anurati', sans-serif;
+    text-align: center;
+    padding: 2.5rem 0 1.5rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.35rem;
+    color: var(--color-text-muted);
+    opacity: 0.5;
+    transition: all var(--transition-base);
+    text-transform: uppercase;
+    user-select: none;
+    width: 100%;
+}
+
+.footer-signature:hover {
+    opacity: 0.9;
+    color: var(--color-primary);
+    letter-spacing: 0.5rem;
+    text-shadow: 0 0 15px var(--color-primary-glow);
+}
+
+@media (max-width: 768px) {
+    .footer-signature {
+        padding: 2rem 0 1rem;
+        font-size: 0.65rem;
+        letter-spacing: 0.25rem;
+    }
+}

@@ -187,4 +187,136 @@ async function deleteReportById(id, query) {
   }
 }
 
+// ────────────────────────────────────────────────
+//  UI ОЧЕРЕДИ ЗАДАЧ
+// ────────────────────────────────────────────────
 
+/**
+ * Загружает состояние очереди и рендерит UI.
+ */
+export async function loadQueueUI() {
+  try {
+    const response = await fetch('/api/queue');
+    const data = await response.json();
+    if (data.success) {
+      renderQueueList(data.queue || []);
+    }
+  } catch (e) {
+    console.warn('[Sidebar] ⚠️ Не удалось загрузить очередь:', e.message);
+  }
+}
+
+/**
+ * Рендерит список задач очереди в сайдбаре.
+ * @param {Array} queue — Массив задач из /api/queue
+ */
+export function renderQueueList(queue) {
+  const container = document.getElementById('queueList');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!queue || queue.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+
+  queue.forEach(task => {
+    const div = document.createElement('div');
+    div.className = `queue-item queue-item--${task.status}`;
+    div.dataset.id = task.id;
+
+    const statusLabels = {
+      pending: '⏳ Ожидание',
+      processing: '⚙️ Выполняется',
+      stopped: '⏸️ Остановлена',
+      completed: '✅ Готово',
+      failed: '❌ Ошибка',
+    };
+
+    const statusLabel = statusLabels[task.status] || task.status;
+
+    div.innerHTML = `
+      <div class="queue-item__info">
+        <span class="queue-item__query">${escapeHtml(task.query)}</span>
+        <span class="queue-item__status">${statusLabel}</span>
+      </div>
+      <div class="queue-item__actions">
+        ${task.status === 'stopped' ? '<button class="queue-btn queue-btn--start" title="Перезапустить">▶️</button>' : ''}
+        ${task.status === 'processing' ? '<button class="queue-btn queue-btn--stop" title="Остановить">⏸️</button>' : ''}
+        ${task.status === 'pending' ? '<button class="queue-btn queue-btn--priority" title="В начало очереди">⬆️</button>' : ''}
+        ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--edit" title="Редактировать">✏️</button>' : ''}
+        <button class="queue-btn queue-btn--delete" title="Удалить">❌</button>
+      </div>
+    `;
+
+    // Event listeners
+    const startBtn = div.querySelector('.queue-btn--start');
+    const stopBtn = div.querySelector('.queue-btn--stop');
+    const priorityBtn = div.querySelector('.queue-btn--priority');
+    const editBtn = div.querySelector('.queue-btn--edit');
+    const deleteBtn = div.querySelector('.queue-btn--delete');
+
+    startBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'start'); });
+    stopBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'stop'); });
+    priorityBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'priority'); });
+    editBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueEdit(task); });
+    deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'delete'); });
+
+    container.appendChild(div);
+  });
+}
+
+/**
+ * Выполняет действие над задачей в очереди.
+ */
+async function queueAction(id, action) {
+  try {
+    const response = await fetch(`/api/queue/${id}/${action}`, { method: 'POST' });
+    const data = await response.json();
+    if (data.success) {
+      loadQueueUI();
+    }
+  } catch (e) {
+    console.error(`[Sidebar] ❌ Ошибка ${action} задачи:`, e);
+  }
+}
+
+/**
+ * Открывает диалог редактирования параметров задачи (запрос, лимит).
+ * Отправляет PUT /api/queue/:id.
+ * @param {Object} task — Объект задачи { id, query, filters }.
+ */
+async function queueEdit(task) {
+  const newQuery = prompt('Ключевое слово:', task.query);
+  if (newQuery === null) return; // Отмена
+
+  const currentLimit = task.filters?.limit || 50;
+  const newLimitStr = prompt('Лимит вакансий (5–200):', String(currentLimit));
+  if (newLimitStr === null) return; // Отмена
+
+  const newLimit = parseInt(newLimitStr, 10);
+  if (isNaN(newLimit) || newLimit < 5 || newLimit > 200) {
+    const { showToast } = await import('./common.js');
+    showToast('Лимит должен быть от 5 до 200', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/queue/${task.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: newQuery.trim() || task.query, limit: newLimit }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      const { showToast } = await import('./common.js');
+      showToast('Параметры задачи обновлены', 'success');
+      loadQueueUI();
+    }
+  } catch (e) {
+    console.error('[Sidebar] ❌ Ошибка редактирования задачи:', e);
+  }
+}

@@ -13,7 +13,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { enqueueTask, getQueueStatus, taskEmitter } = require('../services/queue');
+const { enqueueTask, getQueueStatus, getFullQueueState, stopTask, restartTask, deleteTask, prioritizeTask, updateTask, taskEmitter } = require('../services/queue');
 const { listReports, loadReport, deleteReport, deleteAllReports } = require('../services/storage');
 
 /**
@@ -205,8 +205,59 @@ router.get('/events', (req, res) => {
  * GET /api/queue — Текущее состояние очереди задач.
  */
 router.get('/queue', (req, res) => {
-  const status = getQueueStatus();
-  return res.json({ success: true, ...status });
+  const state = getFullQueueState();
+  return res.json({ success: true, ...state });
+});
+
+/**
+ * POST /api/queue/:id/stop — Остановка задачи.
+ */
+router.post('/queue/:id/stop', (req, res) => {
+  const { id } = req.params;
+  const ok = stopTask(id);
+  if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена или не может быть остановлена.' });
+  return res.json({ success: true, message: 'Задача остановлена.' });
+});
+
+/**
+ * POST /api/queue/:id/start — Перезапуск остановленной задачи (ставит pending).
+ */
+router.post('/queue/:id/start', (req, res) => {
+  const { id } = req.params;
+  const ok = restartTask(id);
+  if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена или не может быть перезапущена.' });
+  return res.json({ success: true, message: 'Задача перезапущена.' });
+});
+
+/**
+ * POST /api/queue/:id/delete — Удаление задачи из очереди.
+ */
+router.post('/queue/:id/delete', (req, res) => {
+  const { id } = req.params;
+  const ok = deleteTask(id);
+  if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена.' });
+  return res.json({ success: true, message: 'Задача удалена.' });
+});
+
+/**
+ * POST /api/queue/:id/priority — Перемещение задачи в начало очереди.
+ */
+router.post('/queue/:id/priority', (req, res) => {
+  const { id } = req.params;
+  const ok = prioritizeTask(id);
+  if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена или не может быть приоритизирована.' });
+  return res.json({ success: true, message: 'Задача перемещена в начало очереди.' });
+});
+
+/**
+ * PUT /api/queue/:id — Изменение параметров задачи (если не processing).
+ */
+router.put('/queue/:id', (req, res) => {
+  const { id } = req.params;
+  const { query, limit, period, sources } = req.body;
+  const ok = updateTask(id, { query, limit, period, sources });
+  if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена или выполняется.' });
+  return res.json({ success: true, message: 'Параметры задачи обновлены.' });
 });
 
 /**

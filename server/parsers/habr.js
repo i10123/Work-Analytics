@@ -24,7 +24,7 @@ class HabrParser extends BaseParser {
     super('Хабр Карьера');
   }
 
-  async parse(query, filters = {}) {
+  async parse(query, filters = {}, cancelFlag = null) {
     const limit = filters.limit || 50;
     // Компилируем стоп-слова ОДИН РАЗ до начала цикла
     const stopRegexes = this.compileStopWords(filters.stopWords || '');
@@ -38,6 +38,12 @@ class HabrParser extends BaseParser {
     const allJobs = [];
 
     for (let page = 1; page <= maxPages; page++) {
+      // Проверка флага отмены
+      if (cancelFlag?.isStopped) {
+        console.log(`[Parser:Habr] 🛑 Задача остановлена. Прерываем парсинг.`);
+        break;
+      }
+
       console.log(`[Parser:Habr] 📄 Загрузка страницы ${page}/${maxPages}...`);
 
       try {
@@ -56,6 +62,7 @@ class HabrParser extends BaseParser {
             'Connection': 'keep-alive',
           },
           timeout: 15000,
+          signal: cancelFlag?.abortController?.signal || undefined,
         });
 
         const html = response.data;
@@ -99,9 +106,9 @@ class HabrParser extends BaseParser {
       }
     }
 
-    if (filters.deepScrape && allJobs.length > 0) {
+    if (filters.deepScrape && allJobs.length > 0 && !cancelFlag?.isStopped) {
       console.log(`[Parser:Habr] 🕵️ Начинается глубокий парсинг для ${allJobs.length} вакансий...`);
-      await this.fetchDeepDescriptions(allJobs);
+      await this.fetchDeepDescriptions(allJobs, cancelFlag);
     }
 
     console.log(`[Parser:Habr] ✅ Итого собрано: ${allJobs.length} вакансий`);
@@ -211,8 +218,10 @@ class HabrParser extends BaseParser {
     return jobs;
   }
 
-  async fetchDeepDescriptions(jobs) {
+  async fetchDeepDescriptions(jobs, cancelFlag = null) {
     const fetchFn = async (job) => {
+      if (cancelFlag?.isStopped) return;
+
       try {
         await this.delay(DEEP_SCRAPE_DELAY_MS);
         
@@ -222,6 +231,7 @@ class HabrParser extends BaseParser {
             'Accept': 'text/html,application/xhtml+xml',
           },
           timeout: 15000,
+          signal: cancelFlag?.abortController?.signal || undefined,
         });
         
         const $ = cheerio.load(response.data);

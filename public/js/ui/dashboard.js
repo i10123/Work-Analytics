@@ -2,7 +2,17 @@ import { DOM } from '../dom.js';
 import { charts, currentCurrency } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
 import { formatSalary, escapeHtml } from '../utils/formatters.js';
-import { renderChartSalary, renderChartSources, renderChartSkills, renderChartExperience, renderChartCities, renderChartWorkFormat, renderChartSalaryByFormat, renderChartSalaryExp, renderChartSkillsCorrel, renderChartDynamics } from './charts.js';
+import {
+  renderChartSalary,
+  renderChartSkills,
+  renderChartSalaryVsExperience,
+  renderChartWorkFormatDoughnut,
+  renderChartWorkFormatBar,
+  renderChartEnglishSalary,
+  renderChartTechCategory,
+  renderChartDynamics,
+  destroyAllCharts,
+} from './charts.js';
 import { renderJobsTable } from './table.js';
 
 export function renderDashboard(report) {
@@ -44,18 +54,27 @@ export function renderDashboard(report) {
 
   renderKPI(jobs, rates);
 
-  renderChartSalary(jobs, rates, charts);
-  renderChartSources(report, charts);
-  renderChartSkills(jobs, charts);
-  renderChartExperience(jobs, charts);
-  renderChartCities(jobs, charts);
-  renderChartWorkFormat(jobs, charts);
-  renderChartSalaryByFormat(jobs, rates, charts);
-  
-  // Новые графики
-  renderChartSalaryExp(jobs, rates, charts);
-  renderChartSkillsCorrel(jobs, charts);
-  renderChartDynamics(report, charts);
+  // Уничтожаем старые графики перед рендером новых
+  destroyAllCharts();
+
+  // Рендерим все графики
+  renderChartSalary(jobs, rates, currentCurrency);
+  renderChartSkills(jobs);
+  renderChartSalaryVsExperience(jobs, rates, currentCurrency);
+  renderChartWorkFormatDoughnut(jobs);
+  renderChartWorkFormatBar(jobs, rates, currentCurrency);
+  renderChartEnglishSalary(jobs, rates, currentCurrency);
+  renderChartTechCategory(jobs);
+
+  // Динамика — подгружаем все отчёты для сравнения
+  fetch('/api/reports')
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.reports) {
+        renderChartDynamics(data.reports, currentCurrency, rates);
+      }
+    })
+    .catch(() => {});
 
   renderJobsTable(jobs, rates);
 

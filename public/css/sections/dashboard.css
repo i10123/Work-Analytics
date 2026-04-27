@@ -321,6 +321,19 @@
   height: 320px;
 }
 
+/* Combo chart: two charts side-by-side */
+.chart-card__body--combo {
+  display: flex;
+  gap: 16px;
+  height: 300px;
+}
+
+.chart-combo-half {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
 /* PROGRESS */
 .progress-section {
   display: flex;

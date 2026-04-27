@@ -24,7 +24,7 @@ export function setupSSE() {
   };
 }
 
-function handleTaskUpdate(task) {
+async function handleTaskUpdate(task) {
   if (task.status === 'processing') {
     showScreen('progress');
     if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${task.query || ''}"`;
@@ -41,6 +41,11 @@ function handleTaskUpdate(task) {
   } else if (task.status === 'failed') {
     showScreen('welcome');
     showErrorModal('Ошибка сбора данных', task.error || 'Неизвестная ошибка сервера.');
+    loadReportsList().then(() => updateWelcomeStats());
+  } else if (task.status === 'stopped') {
+    showScreen('welcome');
+    const { showToast } = await import('./common.js');
+    showToast('Задача остановлена', 'success');
     loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'pending') {
     loadReportsList();

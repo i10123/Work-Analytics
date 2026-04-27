@@ -1,6 +1,7 @@
 /**
  * @file ai.js — Модуль интеграции с ИИ-провайдерами (Gemini, DeepSeek, OpenRouter).
- * @description Извлекает IT-навыки из текстовых описаний вакансий.
+ * @description Извлекает структурированные метаданные из текстовых описаний вакансий:
+ *              skills, softSkills, workFormat, experience, englishLevel, techCategory, education.
  *              Поддерживает ротацию ключей Gemini и резервные провайдеры (DeepSeek, OpenRouter).
  */
 
@@ -17,8 +18,8 @@ try {
   console.warn('[AI] ⚠️ Модуль @heyputer/puter.js не загружен. Резервный провайдер (Puter) отключен.');
 }
 
-/** Количество вакансий в одном батче */
-const BATCH_SIZE = 10;
+/** Количество вакансий в одном батче (уменьшено для стабильности — 7 полей на вакансию) */
+const BATCH_SIZE = 5;
 
 /** Задержка между батчами (мс) */
 const BATCH_DELAY_MS = 4500;
@@ -26,16 +27,47 @@ const BATCH_DELAY_MS = 4500;
 /** Текущий индекс используемого ключа OpenRouter */
 let currentOpenRouterKeyIndex = 0;
 
-async function extractSkillsFromJobs(jobs) {
+/**
+ * Значения по умолчанию для AI-метаданных.
+ * Используются, когда ИИ не вернул конкретное поле.
+ */
+const DEFAULT_METADATA = {
+  skills: [],
+  softSkills: [],
+  workFormat: 'Не указано',
+  experience: 'Не указано',
+  englishLevel: 'Не указано',
+  techCategory: 'Другое',
+  education: 'Не указано',
+};
+
+/**
+ * Извлекает структурированные метаданные из массива вакансий через AI.
+ * Результат содержит все 7 полей для каждой вакансии.
+ * Данные AI полностью перезаписывают данные HTML-парсера.
+ *
+ * @param {Array<Object>} jobs — Массив вакансий с полем description.
+ * @returns {Promise<Array<Object>>} — Обогащённые вакансии с AI-метаданными.
+ */
+async function extractMetadataFromJobs(jobs) {
   const openRouterKeys = getOpenRouterKeys();
 
   if (!openRouterKeys.length && !puter) {
-    console.warn('[AI] ⚠️ Провайдеры (OpenRouter, Puter) не настроены. Навыки не будут извлечены.');
-    // Сохраняем навыки, которые уже собрал парсер HTML
-    return jobs.map((job) => ({ ...job, skills: job.skills || [] }));
+    console.warn('[AI] ⚠️ Провайдеры (OpenRouter, Puter) не настроены. Метаданные не будут извлечены.');
+    // Проставляем дефолтные значения, сохраняя навыки парсера
+    return jobs.map((job) => ({
+      ...job,
+      skills: job.skills || [],
+      softSkills: [],
+      workFormat: job.workFormat || 'Не указано',
+      experience: job.experience || 'Не указано',
+      englishLevel: 'Не указано',
+      techCategory: 'Другое',
+      education: 'Не указано',
+    }));
   }
 
-  console.log(`[AI] 🤖 Начинаю извлечение навыков для ${jobs.length} вакансий...`);
+  console.log(`[AI] 🤖 Начинаю извлечение метаданных для ${jobs.length} вакансий...`);
 
   const batches = splitIntoBatches(jobs, BATCH_SIZE);
   const enrichedJobs = [];
@@ -44,38 +76,34 @@ async function extractSkillsFromJobs(jobs) {
     const batch = batches[i];
     console.log(`[AI] 📦 Обработка батча ${i + 1}/${batches.length}...`);
 
-    let skillsMap = null;
+    let metadataMap = null;
 
     // 1. Попытка через OpenRouter (с ротацией ключей)
     if (openRouterKeys.length > 0) {
       try {
-        skillsMap = await processBatchOpenRouterWithRotation(batch, openRouterKeys);
+        metadataMap = await processBatchOpenRouterWithRotation(batch, openRouterKeys);
       } catch (orError) {
         console.warn(`[AI] ⚠️ Ошибка OpenRouter (все ключи исчерпаны или сбой): ${orError.message}`);
       }
     }
 
     // 2. Попытка через Puter (если OpenRouter не сработал)
-    if (!skillsMap && puter) {
+    if (!metadataMap && puter) {
       console.log(`[AI] 🔄 Пробую резервный провайдер: Puter (DeepSeek)...`);
       try {
-        skillsMap = await processBatchPuter(batch);
+        metadataMap = await processBatchPuter(batch);
       } catch (puterError) {
         console.error(`[AI] ❌ Ошибка резервного провайдера (Puter): ${puterError.message}`);
       }
     }
 
-    /** Присваиваем навыки (или пустые массивы при фиаско) */
+    /** Присваиваем метаданные (или дефолтные при фиаско) */
     for (let j = 0; j < batch.length; j++) {
-      const aiSkills = skillsMap ? (skillsMap[String(j)] || []) : [];
-      enrichedJobs.push({
-        ...batch[j],
-        // Если ИИ нашел навыки - используем их. Иначе оставляем те, что нашел HTML-парсер
-        skills: aiSkills.length > 0 ? aiSkills : (batch[j].skills || []),
-      });
+      const aiData = metadataMap ? (metadataMap[String(j)] || {}) : {};
+      enrichedJobs.push(mergeAiMetadata(batch[j], aiData));
     }
 
-    if (skillsMap) {
+    if (metadataMap) {
       console.log(`[AI] ✅ Батч ${i + 1} обработан.`);
     } else {
       console.error(`[AI] ❌ Батч ${i + 1} не удалось обработать ни одним провайдером.`);
@@ -91,6 +119,43 @@ async function extractSkillsFromJobs(jobs) {
   console.log(`[AI] 🏁 Извлечение завершено. Найдено навыков: ${totalSkills}`);
 
   return enrichedJobs;
+}
+
+/**
+ * Объединяет данные вакансии с AI-метаданными.
+ * AI-данные полностью перезаписывают данные HTML-парсера,
+ * ЕСЛИ ИИ вернул непустое значение.
+ *
+ * @param {Object} job — Исходная вакансия.
+ * @param {Object} aiData — Метаданные от ИИ.
+ * @returns {Object} — Обогащённая вакансия.
+ */
+function mergeAiMetadata(job, aiData) {
+  return {
+    ...job,
+    // Hard Skills: AI полностью перезаписывает, если вернул непустой массив
+    skills: (Array.isArray(aiData.skills) && aiData.skills.length > 0)
+      ? aiData.skills
+      : (job.skills || DEFAULT_METADATA.skills),
+    // Soft Skills: новое поле, только от AI
+    softSkills: Array.isArray(aiData.softSkills)
+      ? aiData.softSkills
+      : DEFAULT_METADATA.softSkills,
+    // Формат работы: AI перезаписывает
+    workFormat: (aiData.workFormat && aiData.workFormat !== 'Не указано')
+      ? aiData.workFormat
+      : (job.workFormat || DEFAULT_METADATA.workFormat),
+    // Опыт: AI перезаписывает
+    experience: (aiData.experience && aiData.experience !== 'Не указано')
+      ? aiData.experience
+      : (job.experience || DEFAULT_METADATA.experience),
+    // Уровень английского: только от AI
+    englishLevel: aiData.englishLevel || DEFAULT_METADATA.englishLevel,
+    // Техническая категория: только от AI
+    techCategory: aiData.techCategory || DEFAULT_METADATA.techCategory,
+    // Образование: только от AI
+    education: aiData.education || DEFAULT_METADATA.education,
+  };
 }
 
 // --- OPENROUTER LOGIC ---
@@ -133,7 +198,7 @@ async function processBatchOpenAI(batch, apiKey, url, model) {
   const response = await axios.post(url, {
     model: model,
     messages: [
-      { role: 'system', content: 'Ты — эксперт по IT-навыкам. Возвращай ТОЛЬКО JSON.' },
+      { role: 'system', content: 'Ты — эксперт по анализу IT-вакансий. Возвращай ТОЛЬКО JSON.' },
       { role: 'user', content: prompt }
     ],
     temperature: 0.1,
@@ -143,10 +208,10 @@ async function processBatchOpenAI(batch, apiKey, url, model) {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json'
     },
-    timeout: 45000
+    timeout: 60000
   });
 
-  const rawText = response.data?.choices?.[0]?.message?.content || '[]';
+  const rawText = response.data?.choices?.[0]?.message?.content || '{}';
   return parseJsonFromAi(rawText, batch.length);
 }
 
@@ -161,7 +226,7 @@ async function processBatchPuter(batch) {
     model: 'deepseek/deepseek-v3.2'
   });
 
-  const rawText = response.message?.content || '[]';
+  const rawText = response.message?.content || '{}';
   return parseJsonFromAi(rawText, batch.length);
 }
 
@@ -179,12 +244,40 @@ function generatePrompt(batch) {
     text: safeTruncate(job.description || job.title || '', 1500)
   }));
 
-  return `Проанализируй описания ${batch.length} вакансий. Для КАЖДОЙ извлеки список IT-навыков.
+  return `Проанализируй описания ${batch.length} вакансий. Для КАЖДОЙ извлеки структурированные метаданные.
+
 ПРАВИЛА:
-- Возвращай ТОЛЬКО JSON-объект, где ключи — это ID вакансии.
-- Пример: { "0": ["React", "Node.js"], "1": ["Python"] }
-- Навыки кратко (1-2 слова): "React", "Python".
-- Если навыков нет — [].
+- Возвращай ТОЛЬКО JSON-объект, где ключи — это ID вакансии (строки "0", "1", ...).
+- Каждое значение — объект с РОВНО 7 полями:
+  1. "skills": массив Hard Skills (["React", "Node.js"]). Навыки кратко (1-2 слова). Если нет — [].
+  2. "softSkills": массив Soft Skills (["Коммуникабельность", "Работа в команде"]). Если нет — [].
+  3. "workFormat": СТРОГО одно из: "Remote", "Office", "Hybrid", "Не указано".
+  4. "experience": СТРОГО одно из: "Intern", "Junior", "Middle", "Senior", "Lead", "Не указано".
+  5. "englishLevel": СТРОГО одно из: "Нет", "A1", "A2", "B1", "B2", "C1", "C2", "Не указано".
+  6. "techCategory": СТРОГО одно из: "Frontend", "Backend", "Fullstack", "QA", "DevOps", "Mobile", "Data Science", "Другое".
+  7. "education": СТРОГО одно из: "Высшее", "Среднее", "Не требуется", "Не указано".
+
+Пример ответа:
+{
+  "0": {
+    "skills": ["React", "TypeScript", "Node.js"],
+    "softSkills": ["Работа в команде"],
+    "workFormat": "Remote",
+    "experience": "Middle",
+    "englishLevel": "B2",
+    "techCategory": "Frontend",
+    "education": "Не указано"
+  },
+  "1": {
+    "skills": ["Python", "Django"],
+    "softSkills": [],
+    "workFormat": "Office",
+    "experience": "Senior",
+    "englishLevel": "Не указано",
+    "techCategory": "Backend",
+    "education": "Высшее"
+  }
+}
 
 ОПИСАНИЯ (JSON):
 ${JSON.stringify(payload, null, 2)}
@@ -219,5 +312,7 @@ function delay(ms) {
 }
 
 module.exports = {
-  extractSkillsFromJobs,
+  extractMetadataFromJobs,
+  // Обратная совместимость
+  extractSkillsFromJobs: extractMetadataFromJobs,
 };
