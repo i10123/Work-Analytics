@@ -54,6 +54,8 @@ function enqueueTask(params) {
       period: params.period || '7days',
       limit: params.limit || 50,
       sources: params.sources || { hh: true, rabotaby: true, habr: true },
+      stopWords: params.stopWords || '',
+      deepScrape: params.deepScrape || false,
     },
     status: 'pending',
     createdAt: new Date().toISOString(),
@@ -111,15 +113,9 @@ async function processNext() {
     }
 
     // Очистка дубликатов (Дедупликация)
-    const LEGAL_ENTITIES = new Set(['ооо', 'зао', 'оао', 'пао', 'llc', 'inc', 'ltd', 'ip', 'ип']);
     const normalize = (str) => {
       if (!str) return '';
-      return str.toLowerCase()
-                .replace(/[^\p{L}\d]/gu, ' ')
-                .split(/\s+/)
-                .filter(w => w && !LEGAL_ENTITIES.has(w))
-                .sort((a, b) => a.localeCompare(b))
-                .join('');
+      return str.toLowerCase().replace(/[^\p{L}\d]/gu, '').trim();
     };
     allJobs = Array.from(new Map(allJobs.map(job => [`${normalize(job.company)}-${normalize(job.title)}-${normalize(job.city)}`, job])).values());
 

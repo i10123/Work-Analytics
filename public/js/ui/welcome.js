@@ -365,6 +365,9 @@ export function updateWelcomeStats() {
           if (inCurrent > 0) allSalaries.push(inCurrent);
         }
       });
+    } else if (report.stats && report.stats.avgSalaryNormalized) {
+      const inCurrent = convertCurrency(report.stats.avgSalaryNormalized, 'RUB', currentCurrency, rates);
+      if (inCurrent > 0) allSalaries.push(inCurrent);
     }
   });
 

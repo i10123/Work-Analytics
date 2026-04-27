@@ -36,6 +36,10 @@ const MAX_RETRIES = 3;
  */
 const BASE_BACKOFF_MS = 2000;
 
+let sharedToken = null;
+let sharedTokenExpiresAt = null;
+let sharedTokenPromise = null;
+
 class HhParser extends BaseParser {
   /**
    * @param {number} area — ID региона HH.ru (113 = Россия, 16 = Беларусь).
@@ -43,12 +47,6 @@ class HhParser extends BaseParser {
   constructor(area = 113) {
     super('HH.ru');
     this.area = area;
-
-    /** @type {string|null} — Кэшированный OAuth2 access_token */
-    this._cachedToken = null;
-
-    /** @type {number|null} — Timestamp истечения токена (ms) */
-    this._tokenExpiresAt = null;
 
     /** @type {number} — Текущий индекс User-Agent для ротации */
     this._uaIndex = 0;
@@ -97,40 +95,51 @@ class HhParser extends BaseParser {
     }
 
     // Если токен ещё жив — возвращаем из кэша
-    if (this._cachedToken && this._tokenExpiresAt && Date.now() < this._tokenExpiresAt) {
-      return this._cachedToken;
+    if (sharedToken && sharedTokenExpiresAt && Date.now() < sharedTokenExpiresAt) {
+      return sharedToken;
     }
 
-    console.log(`[Parser:HH] 🔑 Запрос нового OAuth2 access_token...`);
-
-    try {
-      const response = await axios.post(
-        `${HH_API_BASE}/token`,
-        new URLSearchParams({
-          grant_type: 'client_credentials',
-          client_id: clientId,
-          client_secret: clientSecret,
-        }).toString(),
-        {
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          timeout: 10000,
-        }
-      );
-
-      this._cachedToken = response.data.access_token;
-
-      // expires_in приходит в секундах, вычитаем 60 сек для безопасности
-      const expiresInMs = (response.data.expires_in || 1209600) * 1000;
-      this._tokenExpiresAt = Date.now() + expiresInMs - 60000;
-
-      console.log(`[Parser:HH] ✅ Токен получен, истекает через ${Math.round(expiresInMs / 3600000)} ч.`);
-      return this._cachedToken;
-    } catch (error) {
-      console.warn(`[Parser:HH] ⚠️ Не удалось получить токен: ${error.message}. Работаем анонимно.`);
-      this._cachedToken = null;
-      this._tokenExpiresAt = null;
-      return null;
+    // Если токен уже запрашивается другим потоком/экземпляром — ждем
+    if (sharedTokenPromise) {
+      return sharedTokenPromise;
     }
+
+    sharedTokenPromise = (async () => {
+      console.log(`[Parser:HH] 🔑 Запрос нового OAuth2 access_token...`);
+
+      try {
+        const response = await axios.post(
+          `${HH_API_BASE}/token`,
+          new URLSearchParams({
+            grant_type: 'client_credentials',
+            client_id: clientId,
+            client_secret: clientSecret,
+          }).toString(),
+          {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            timeout: 10000,
+          }
+        );
+
+        sharedToken = response.data.access_token;
+
+        // expires_in приходит в секундах, вычитаем 60 сек для безопасности
+        const expiresInMs = (response.data.expires_in || 1209600) * 1000;
+        sharedTokenExpiresAt = Date.now() + expiresInMs - 60000;
+
+        console.log(`[Parser:HH] ✅ Токен получен, истекает через ${Math.round(expiresInMs / 3600000)} ч.`);
+        return sharedToken;
+      } catch (error) {
+        console.warn(`[Parser:HH] ⚠️ Не удалось получить токен: ${error.message}. Работаем анонимно.`);
+        sharedToken = null;
+        sharedTokenExpiresAt = null;
+        return null;
+      } finally {
+        sharedTokenPromise = null;
+      }
+    })();
+
+    return sharedTokenPromise;
   }
 
   // ────────────────────────────────────────────────

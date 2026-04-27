@@ -178,7 +178,13 @@ class HabrParser extends BaseParser {
           finalDescription = [title, finalDescription, skillsText].filter(Boolean).join('\n\n');
         }
 
-        const workFormat = (city.toLowerCase().includes('удаленно') || city.toLowerCase().includes('удалённо') || skills.some(s => s.toLowerCase().includes('удален')) || lowerMeta.includes('можно удаленно') || lowerMeta.includes('удален')) ? 'Remote' : 'Office';
+        const isRemote = city.toLowerCase().includes('удаленно') || 
+                         city.toLowerCase().includes('удалённо') || 
+                         lowerMeta.includes('удаленно') || 
+                         lowerMeta.includes('удалённо') || 
+                         lowerMeta.includes('remote') ||
+                         skills.some(s => s.toLowerCase() === 'remote' || s.toLowerCase() === 'удаленная работа');
+        const workFormat = isRemote ? 'Remote' : 'Office';
 
         if (title) {
           jobs.push({
@@ -256,7 +262,8 @@ class HabrParser extends BaseParser {
     const hasTo = text.toLowerCase().includes('до');
 
     if (cleanedNumbers.length >= 2) {
-      return { min: cleanedNumbers[0], max: cleanedNumbers[1], currency };
+      const sorted = [...cleanedNumbers].sort((a, b) => a - b);
+      return { min: sorted[0], max: sorted[sorted.length - 1], currency };
     }
     if (hasFrom) {
       return { min: cleanedNumbers[0], max: null, currency };
