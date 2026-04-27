@@ -122,8 +122,10 @@ class HabrParser extends BaseParser {
         const url = $card.find('.vacancy-card__title a').attr('href') ||
                     $card.find('[class*="title"] a').attr('href') || '';
         
-        const company = $card.find('.vacancy-card__company-title a').text().trim() ||
-                        $card.find('[class*="company"] a').text().trim() || 'Не указана';
+        let company = $card.find('.vacancy-card__company-title a').text().trim() ||
+                      $card.find('[class*="company"] a').text().trim() || 'Не указана';
+        // Убираем прилипший рейтинг компании (например "VK4.0" -> "VK")
+        company = company.replace(/\d+\.\d+[\s\u200B]*$/, '').trim();
 
         const salaryText = $card.find('.vacancy-card__salary, [class*="salary"]').text().trim();
         const salary = this.parseSalaryText(salaryText);
@@ -136,23 +138,39 @@ class HabrParser extends BaseParser {
 
         const description = $card.find('.vacancy-card__description, [class*="snippet"]').text().trim();
 
-        const metaText = $card.find('.vacancy-card__meta').text();
-        const city = $card.find('.vacancy-card__meta [class*="location"]').text().trim() || 'Не указан';
-        
-        const publishedAt = $card.find('time.basic-date').attr('datetime') || $card.find('time').attr('datetime') || '';
-        
-        let employment = '';
-        if (metaText.includes('Полный рабочий день')) employment = 'Полная занятость';
-        else if (metaText.includes('Неполный рабочий день')) employment = 'Частичная занятость';
-        else if (metaText.includes('Проектная работа')) employment = 'Проектная работа';
-
-        let experience = '';
+        // Собираем все мета-данные из нового формата Хабра
+        const metaNodes = [];
+        $card.find('.vacancy-card__meta .inline-list > *').each((_, el) => {
+          metaNodes.push($(el).text().trim());
+        });
+        const metaText = metaNodes.join(' | ') || $card.find('.vacancy-card__meta').text().trim();
         const lowerMeta = metaText.toLowerCase();
-        if (lowerMeta.includes('стажер') || lowerMeta.includes('стажёр') || lowerMeta.includes('intern')) experience = 'Intern';
-        else if (lowerMeta.includes('junior')) experience = 'Junior';
-        else if (lowerMeta.includes('middle')) experience = 'Middle';
-        else if (lowerMeta.includes('senior')) experience = 'Senior';
-        else if (lowerMeta.includes('lead')) experience = 'Lead';
+
+        const publishedAt = $card.find('time.basic-date').attr('datetime') || $card.find('time').attr('datetime') || '';
+
+        // Опыт
+        let experience = '';
+        if (lowerMeta.match(/стажер|стажёр|intern/)) experience = 'Intern';
+        else if (lowerMeta.match(/junior|младший/)) experience = 'Junior';
+        else if (lowerMeta.match(/middle|средний/)) experience = 'Middle';
+        else if (lowerMeta.match(/senior|старший/)) experience = 'Senior';
+        else if (lowerMeta.match(/lead|ведущий/)) experience = 'Lead';
+
+        // Занятость
+        let employment = '';
+        if (lowerMeta.match(/полн/)) employment = 'Полная занятость';
+        else if (lowerMeta.match(/неполн|частичн/)) employment = 'Частичная занятость';
+        else if (lowerMeta.match(/проект/)) employment = 'Проектная работа';
+
+        // Город (обычно это слово в мете, которое не является квалификацией или типом работы)
+        let city = 'Не указан';
+        const cityCandidate = metaNodes.find(n => !n.toLowerCase().match(/(полн|частичн|проект|junior|middle|senior|lead|стажер|младший|средний|старший|ведущий)/));
+        if (cityCandidate) {
+          city = cityCandidate;
+        } else {
+          // Fallback
+          city = $card.find('.vacancy-card__meta [class*="location"]').text().trim() || 'Не указан';
+        }
 
         let finalDescription = description;
         if (!finalDescription || finalDescription.length < 50) {

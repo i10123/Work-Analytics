@@ -89,7 +89,7 @@ function exportToCSV(jobs, query) {
   jobs.forEach(j => {
     const row = [
       j.source,
-      j.sourceId,
+      `="${j.sourceId}"`,
       j.title,
       j.company,
       j.city,

@@ -31,7 +31,8 @@ async function extractSkillsFromJobs(jobs) {
 
   if (!openRouterKeys.length && !puter) {
     console.warn('[AI] ⚠️ Провайдеры (OpenRouter, Puter) не настроены. Навыки не будут извлечены.');
-    return jobs.map((job) => ({ ...job, skills: [] }));
+    // Сохраняем навыки, которые уже собрал парсер HTML
+    return jobs.map((job) => ({ ...job, skills: job.skills || [] }));
   }
 
   console.log(`[AI] 🤖 Начинаю извлечение навыков для ${jobs.length} вакансий...`);
@@ -66,9 +67,11 @@ async function extractSkillsFromJobs(jobs) {
 
     /** Присваиваем навыки (или пустые массивы при фиаско) */
     for (let j = 0; j < batch.length; j++) {
+      const aiSkills = skillsMap ? (skillsMap[String(j)] || []) : [];
       enrichedJobs.push({
         ...batch[j],
-        skills: skillsMap ? (skillsMap[String(j)] || []) : [],
+        // Если ИИ нашел навыки - используем их. Иначе оставляем те, что нашел HTML-парсер
+        skills: aiSkills.length > 0 ? aiSkills : (batch[j].skills || []),
       });
     }
 
