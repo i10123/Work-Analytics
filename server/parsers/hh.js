@@ -148,13 +148,38 @@ class HhParser extends BaseParser {
 
   /**
    * Парсит строку прокси из env в массив.
-   * Формат: "http://user:pass@ip1:port, http://user:pass@ip2:port"
+   * Поддерживает:
+   * 1. Формат URL: "http://user:pass@ip:port"
+   * 2. Формат таблицы: "45.8.211.242 80 HTTP ..."
+   * Разделители: запятые или новые строки.
    * @returns {string[]}
    */
   _parseProxies() {
     const raw = process.env.RU_PROXY;
     if (!raw) return [];
-    return raw.split(',').map(p => p.trim()).filter(Boolean);
+    
+    // Разделяем по запятым или переносам строк
+    const entries = raw.split(/,|\n/).map(p => p.trim()).filter(Boolean);
+    
+    return entries.map(entry => {
+      // Если это уже URL (http/https), возвращаем как есть
+      if (entry.toLowerCase().startsWith('http')) {
+        return entry;
+      }
+      
+      // Иначе пробуем распарсить как строку таблицы: "IP Port Type ..."
+      const parts = entry.split(/\s+/);
+      if (parts.length >= 2) {
+        const ip = parts[0];
+        const port = parts[1];
+        // Проверяем, что порт — это число, а IP содержит точки
+        if (ip.includes('.') && !isNaN(parseInt(port))) {
+          return `http://${ip}:${port}`;
+        }
+      }
+      
+      return entry; // Возвращаем как есть, если не распознали
+    }).filter(Boolean);
   }
 
   /**

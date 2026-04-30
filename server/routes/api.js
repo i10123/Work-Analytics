@@ -266,19 +266,12 @@ router.put('/queue/:id', (req, res) => {
  * без раскрытия самих ключей (безопасность).
  */
 router.get('/status', (req, res) => {
-  /** Gemini API */
-  const geminiKeysStr = process.env.GEMINI_API_KEYS || '';
-  const geminiKeys = geminiKeysStr.split(',').map((k) => k.trim()).filter(Boolean);
-
   /** Currency API */
   const currencyKeysStr = process.env.EXCHANGE_RATE_API_KEYS || '';
   const currencyKeys = currencyKeysStr.split(',').map((k) => k.trim()).filter(Boolean);
 
-  /** DeepSeek API */
-  const deepseekKey = process.env.DEEPSEEK_API_KEY || '';
-
-  /** DashScope / OpenRouter API */
-  const openrouterKey = process.env.OPENROUTER_API_KEY || process.env.DASHSCOPE_API_KEY || '';
+  /** OpenRouter API */
+  const openrouterKey = process.env.OPENROUTER_API_KEY || '';
 
   const maskKey = (key) => {
     if (!key) return null;
@@ -287,23 +280,17 @@ router.get('/status', (req, res) => {
 
   return res.json({
     success: true,
-    gemini: {
-      configured: geminiKeys.length > 0,
-      keysCount: geminiKeys.length,
-      keys: geminiKeys.map(maskKey),
-    },
     currency: {
       configured: currencyKeys.length > 0,
       keys: currencyKeys.map(maskKey),
-    },
-    deepseek: {
-      configured: !!deepseekKey,
-      key: maskKey(deepseekKey),
     },
     openrouter: {
       configured: !!openrouterKey,
       key: maskKey(openrouterKey),
     },
+    puter: {
+      configured: !!process.env.PUTER_AUTH_TOKEN,
+    }
   });
 });
 

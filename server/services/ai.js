@@ -161,7 +161,7 @@ function mergeAiMetadata(job, aiData) {
 // --- OPENROUTER LOGIC ---
 
 function getOpenRouterKeys() {
-  const keysStr = process.env.OPENROUTER_API_KEY || process.env.DASHSCOPE_API_KEY || '';
+  const keysStr = process.env.OPENROUTER_API_KEY || '';
   return keysStr.split(',').map(k => k.trim()).filter(k => k && !k.startsWith('YOUR_'));
 }
 
