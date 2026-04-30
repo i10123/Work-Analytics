@@ -1,21 +1,6 @@
 # 📊 Work-Analytics
 
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
-[![Framework: Express](https://img.shields.io/badge/Framework-Express-lightgrey.svg)](https://expressjs.com/)
-[![Cloud: Puter](https://img.shields.io/badge/Cloud-Puter-orange.svg)](https://puter.com/)
-
 **Work-Analytics** — это современное веб-приложение для автоматизированного сбора, агрегации и интеллектуального анализа данных об IT-вакансиях. Инструмент помогает отслеживать тренды рынка труда, анализировать требования работодателей и визуализировать статистику по ключевым навыкам.
-
----
-
-## ✨ Основные возможности
-
-- 🚀 **Мультиплатформенный парсинг**: Сбор данных из ведущих агрегаторов вакансий.
-- 🔍 **Умные фильтры**: Поиск и фильтрация вакансий по технологическому стеку, региону и уровню заработной платы.
-- 📊 **Аналитическая отчетность**: Генерация детальных отчетов о востребованности технологий.
-- ⚡ **Real-time мониторинг**: Отслеживание процесса парсинга в реальном времени с индикацией прогресса.
-- ☁️ **Cloud Native**: Полная интеграция с платформой Puter для развертывания и хранения данных.
 
 ---
 
@@ -31,11 +16,11 @@
 
 ## 🌐 Поддерживаемые платформы
 
-| Платформа | Статус | Тип доступа |
+| Платформа | Статус | Метод сбора данных |
 | :--- | :---: | :--- |
-| **HeadHunter (hh.ru)** | ✅ | API / Web |
-| **Habr Career** | ✅ | Web Scraping |
-| **Rabota.by** | ✅ | Web Scraping |
+| **HeadHunter (hh.ru)** | ✅ | **Official API** (OAuth2 / JSON) |
+| **Habr Career** | ✅ | **Web Scraping** (HTML / Cheerio) |
+| **Rabota.by** | ✅ | **Official API** (HH Network / JSON) |
 
 ---
 
@@ -53,12 +38,26 @@ npm install
 ```
 
 ### 3. Настройка окружения
-Создайте файл `.env` в корневой директории и добавьте необходимые ключи:
+Создайте файл `.env` в корневой директории и настройте следующие параметры:
 ```env
+# Основные настройки
 PORT=3000
-HH_CLIENT_ID=your_id
-HH_CLIENT_SECRET=your_secret
-# Другие настройки прокси и API
+
+# HeadHunter API (регистрация на dev.hh.ru)
+HH_CLIENT_ID=ваш_client_id
+HH_CLIENT_SECRET=ваш_client_secret
+
+# Прокси для обхода блокировок (формат: "IP Port Type" или "http://user:pass@ip:port")
+RU_PROXY=x.x.x.x 80 HTTP
+
+# Курсы валют (Exchange Rate API) — для конвертации зарплат
+EXCHANGE_RATE_API_KEYS=ваш_ключ_1,ваш_ключ_2
+
+# AI Интеграция (OpenRouter) — для анализа вакансий через LLM
+OPENROUTER_API_KEY=ваш_ключ_openrouter
+
+# Облачная платформа Puter (опционально)
+PUTER_AUTH_TOKEN=ваш_токен_puter
 ```
 
 ### 4. Запуск приложения
@@ -69,23 +68,3 @@ npm run dev
 # Продакшн запуск
 npm start
 ```
-
----
-
-## 📅 Дорожная карта (Roadmap)
-
-- [ ] **AI Integration**: Использование LLM для автоматического формирования "портрета идеального кандидата".
-- [ ] **Advanced Visualization**: Интерактивные дашборды с графиками динамики зарплат.
-- [ ] **Notification System**: Уведомления в Telegram о завершении сбора данных.
-- [ ] **WebSockets**: Переход на сокеты для более гибкого управления задачами парсинга.
-
----
-
-## 📄 Лицензия
-
-Распространяется под лицензией [ISC](LICENSE).
-
----
-<p align="center">
-  Сделано с ❤️ для IT-сообщества
-</p>
