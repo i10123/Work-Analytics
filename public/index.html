@@ -280,10 +280,11 @@
             </div>
             <div class="welcome-stat-card">
               <div class="welcome-stat-card__icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2"
-                  fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="1" x2="12" y2="23"></line>
-                  <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 11c0-2-2-4-5-4V3H10v4C7 7 5 9 5 11c0 3 2 6 6 7.5V21h2v-2.5c4-1.5 6-4.5 6-7.5z"></path>
+                  <path d="M10 7h4"></path>
+                  <path d="M10 11h2.5a1.5 1.5 0 1 0 0 3h-2.5"></path>
+                  <line x1="11.5" y1="10" x2="11.5" y2="15"></line>
                 </svg>
               </div>
               <div class="welcome-stat-card__info">
@@ -387,6 +388,7 @@
             <div class="progress-card__spinner"></div>
             <h3 class="progress-card__title" id="progressTitle">Сбор данных...</h3>
             <p class="progress-card__step" id="progressStep">Инициализация...</p>
+            <p class="progress-card__time" id="progressTime" style="font-size: 1.1rem; color: var(--color-primary); font-weight: 600; margin-top: 0.5rem;"></p>
             <div class="progress-bar">
               <div class="progress-bar__fill" id="progressFill"></div>
             </div>
@@ -423,15 +425,6 @@
                   </div>
                 </div>
               </div>
-              <button class="btn btn--outline btn--sm" id="btnExportCsv" style="margin-left: 1rem;">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" y1="15" x2="12" y2="3"></line>
-                </svg>
-                CSV
-              </button>
             </div>
           </div>
           <!-- Переключатель валют -->
@@ -561,8 +554,18 @@
         <div class="table-card">
           <div class="table-card__header">
             <h3 class="table-card__title">Все вакансии</h3>
-            <input type="text" id="jobsTableSearch" class="form-input" placeholder="Поиск по таблице..."
-              style="max-width: 300px;">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+              <button class="btn btn--export-csv" id="btnExportCsv" title="Экспорт в CSV">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Экспорт CSV</span>
+              </button>
+              <input type="text" id="jobsTableSearch" class="form-input" placeholder="Поиск по таблице..."
+                style="max-width: 300px;">
+            </div>
           </div>
           <div class="table-wrapper">
             <table class="data-table" id="jobsTable">

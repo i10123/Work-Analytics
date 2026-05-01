@@ -162,7 +162,18 @@ function groupReportsByDate(reports) {
  * Удаляет отчёт по ID с подтверждением.
  */
 async function deleteReportById(id, query) {
-  if (!confirm(`Удалить отчёт по запросу "${query}"?`)) return;
+  const { showConfirm } = await import('./settings.js');
+  const confirmed = await showConfirm({
+    title: 'Удалить отчёт?',
+    text: `Удалить отчёт по запросу "${query}"? Это действие необратимо.`,
+    icon: '🗑️',
+    buttons: [
+      { text: 'Да, удалить', type: 'primary', value: true },
+      { text: 'Отмена', type: 'outline', value: false }
+    ]
+  });
+
+  if (!confirmed) return;
 
   try {
     const response = await fetch(`/api/reports/${id}`, { method: 'DELETE' });
@@ -200,17 +211,36 @@ export async function loadQueueUI() {
     const data = await response.json();
     if (data.success) {
       renderQueueList(data.queue || []);
+
+      if (DOM.queueStatus && DOM.queueText) {
+        const totalActive = (data.isProcessing ? 1 : 0) + (data.queueLength || 0);
+        if (totalActive >= 2) {
+          DOM.queueStatus.style.display = 'block';
+          DOM.queueText.textContent = data.isProcessing
+            ? `Обработка... (в очереди: ${data.queueLength})`
+            : `В очереди: ${data.queueLength}`;
+        } else {
+          DOM.queueStatus.style.display = 'none';
+        }
+      }
     }
   } catch (e) {
     console.warn('[Sidebar] ⚠️ Не удалось загрузить очередь:', e.message);
   }
 }
 
+let queueTimer = null;
+
 /**
  * Рендерит список задач очереди в сайдбаре.
  * @param {Array} queue — Массив задач из /api/queue
  */
 export function renderQueueList(queue) {
+  if (queueTimer) {
+    clearInterval(queueTimer);
+    queueTimer = null;
+  }
+
   const container = document.getElementById('queueList');
   if (!container) return;
 
@@ -236,7 +266,11 @@ export function renderQueueList(queue) {
       failed: '❌ Ошибка',
     };
 
-    const statusLabel = statusLabels[task.status] || task.status;
+    let statusLabel = statusLabels[task.status] || task.status;
+    if (task.status === 'processing' && task.startedAt) {
+      const elapsed = Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000);
+      statusLabel = `⚙️ Выполняется (${elapsed} сек.)`;
+    }
 
     div.innerHTML = `
       <div class="queue-item__info">
@@ -244,23 +278,27 @@ export function renderQueueList(queue) {
         <span class="queue-item__status">${statusLabel}</span>
       </div>
       <div class="queue-item__actions">
-        ${task.status === 'stopped' ? '<button class="queue-btn queue-btn--start" title="Перезапустить">▶️</button>' : ''}
-        ${task.status === 'processing' ? '<button class="queue-btn queue-btn--stop" title="Остановить">⏸️</button>' : ''}
         ${task.status === 'pending' ? '<button class="queue-btn queue-btn--priority" title="В начало очереди">⬆️</button>' : ''}
         ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--edit" title="Редактировать">✏️</button>' : ''}
-        <button class="queue-btn queue-btn--delete" title="Удалить">❌</button>
+        ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--delete" title="Удалить">❌</button>' : ''}
       </div>
     `;
 
+    if (task.status === 'processing' && task.startedAt) {
+      queueTimer = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000);
+        const statusEl = div.querySelector('.queue-item__status');
+        if (statusEl) {
+          statusEl.textContent = `⚙️ Выполняется (${elapsed} сек.)`;
+        }
+      }, 1000);
+    }
+
     // Event listeners
-    const startBtn = div.querySelector('.queue-btn--start');
-    const stopBtn = div.querySelector('.queue-btn--stop');
     const priorityBtn = div.querySelector('.queue-btn--priority');
     const editBtn = div.querySelector('.queue-btn--edit');
     const deleteBtn = div.querySelector('.queue-btn--delete');
 
-    startBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'start'); });
-    stopBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'stop'); });
     priorityBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'priority'); });
     editBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueEdit(task); });
     deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'delete'); });

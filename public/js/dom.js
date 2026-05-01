@@ -35,6 +35,7 @@ export const DOM = {
   btnExportCsv: document.getElementById('btnExportCsv'),
   progressTitle: document.getElementById('progressTitle'),
   progressStep: document.getElementById('progressStep'),
+  progressTime: document.getElementById('progressTime'),
 
   /* Дашборд */
   btnBackToWelcome: document.getElementById('btnBackToWelcome'),

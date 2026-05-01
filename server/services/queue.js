@@ -102,6 +102,7 @@ async function processNext() {
   task.cancelFlag.abortController = new AbortController();
 
   task.status = 'processing';
+  task.startedAt = new Date().toISOString();
 
   console.log(`[Queue] ⚙️ Начинаю обработку: ${task.id}`);
   emitUpdate(task);
@@ -451,6 +452,7 @@ function getFullQueueState() {
       filters: t.filters,
       status: t.status,
       createdAt: t.createdAt,
+      startedAt: t.startedAt,
     })),
     currentTask: currentTask ? {
       id: currentTask.id,
@@ -458,6 +460,7 @@ function getFullQueueState() {
       filters: currentTask.filters,
       status: currentTask.status,
       createdAt: currentTask.createdAt,
+      startedAt: currentTask.startedAt,
     } : null,
     isProcessing,
     queueLength: taskQueue.filter(t => t.status === 'pending').length,

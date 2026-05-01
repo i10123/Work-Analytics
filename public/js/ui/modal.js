@@ -2,6 +2,7 @@ import { DOM } from '../dom.js';
 import { loadSettings } from '../utils/settings.js';
 import { showScreen } from './common.js';
 import { validateForm, showValidationTooltip } from './ui-premium.js';
+import { loadQueueUI } from './sidebar.js';
 
 export function openModal(prefillQuery) {
   const settings = loadSettings();
@@ -66,6 +67,7 @@ export async function handleFormSubmit(e) {
       
       if(DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${query}"`;
       if(DOM.progressStep) DOM.progressStep.textContent = 'Задача добавлена в очередь...';
+      loadQueueUI();
     } else {
       showErrorModal('Ошибка запуска', data.error);
     }

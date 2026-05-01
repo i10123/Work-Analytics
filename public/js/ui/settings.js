@@ -118,7 +118,7 @@ function showConfirmModal() {
   });
 }
 
-function showConfirm(options) {
+export function showConfirm(options) {
   return new Promise((resolve) => {
     const { title, text, icon = '⚠️', buttons = [] } = options;
     
@@ -161,6 +161,7 @@ function showConfirm(options) {
     };
   });
 }
+
 
 function switchSettingsTab(tabName) {
   DOM.settingsTabs?.querySelectorAll('.settings-tab').forEach((t) => {

@@ -3,6 +3,7 @@ import { showScreen } from './common.js';
 import { loadReportById, loadReportsList } from '../api.js';
 import { showErrorModal } from './modal.js';
 import { updateWelcomeStats } from './welcome.js';
+import { loadQueueUI } from './sidebar.js';
 
 export function setupSSE() {
   console.log('[App] 📡 Подключение к SSE...');
@@ -24,6 +25,9 @@ export function setupSSE() {
   };
 }
 
+let progressTimerInterval = null;
+let progressStartTime = null;
+
 async function handleTaskUpdate(task) {
   if (task.status === 'processing') {
     showScreen('progress');
@@ -31,18 +35,53 @@ async function handleTaskUpdate(task) {
     if (task.step && DOM.progressStep) {
       DOM.progressStep.textContent = task.step;
     }
-  } else if (task.status === 'completed' || task.status === 'partial') {
-    const msg = task.status === 'completed' ? 'Сбор успешно завершен' : 'Сбор завершен с ошибками некоторых источников';
     
+    if (!progressTimerInterval) {
+      progressStartTime = task.startedAt ? new Date(task.startedAt).getTime() : Date.now();
+      if (DOM.progressTime) {
+        DOM.progressTime.textContent = `Прошло времени: 0 сек.`;
+      }
+      progressTimerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - progressStartTime) / 1000);
+        if (DOM.progressTime) DOM.progressTime.textContent = `Прошло времени: ${elapsed} сек.`;
+      }, 1000);
+    }
+  } else if (task.status === 'completed' || task.status === 'partial') {
+    if (progressTimerInterval) {
+      clearInterval(progressTimerInterval);
+      progressTimerInterval = null;
+    }
+    const totalSeconds = progressStartTime ? Math.floor((Date.now() - progressStartTime) / 1000) : 0;
+    progressStartTime = null;
+
+    const msg = task.status === 'completed' 
+      ? `Сбор успешно завершен за ${totalSeconds} сек.` 
+      : `Сбор завершен с ошибками некоторых источников за ${totalSeconds} сек.`;
+    
+    const { showToast } = await import('./common.js');
+    showToast(msg, 'success');
+
     if (task.reportId) {
       loadReportById(task.reportId);
     }
     loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'failed') {
+    if (progressTimerInterval) {
+      clearInterval(progressTimerInterval);
+      progressTimerInterval = null;
+    }
+    progressStartTime = null;
+
     showScreen('welcome');
     showErrorModal('Ошибка сбора данных', task.error || 'Неизвестная ошибка сервера.');
     loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'stopped') {
+    if (progressTimerInterval) {
+      clearInterval(progressTimerInterval);
+      progressTimerInterval = null;
+    }
+    progressStartTime = null;
+
     showScreen('welcome');
     const { showToast } = await import('./common.js');
     showToast('Задача остановлена', 'success');
@@ -50,11 +89,13 @@ async function handleTaskUpdate(task) {
   } else if (task.status === 'pending') {
     loadReportsList();
   }
+  loadQueueUI();
 }
 
 function updateQueueBadge(status) {
   if (!DOM.queueStatus || !DOM.queueText) return;
-  if (status.isProcessing || status.queueLength > 0) {
+  const totalActive = (status.isProcessing ? 1 : 0) + (status.queueLength || 0);
+  if (totalActive >= 2) {
     DOM.queueStatus.style.display = 'block';
     DOM.queueText.textContent = status.isProcessing
       ? `Обработка... (в очереди: ${status.queueLength})`
