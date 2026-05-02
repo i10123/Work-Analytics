@@ -4,6 +4,7 @@ import { loadReportById, loadReportsList } from '../api.js';
 import { showErrorModal } from './modal.js';
 import { updateWelcomeStats } from './welcome.js';
 import { loadQueueUI } from './sidebar.js';
+import { formatDuration } from '../utils/formatters.js';
 
 export function setupSSE() {
   console.log('[App] 📡 Подключение к SSE...');
@@ -42,8 +43,8 @@ async function handleTaskUpdate(task) {
         DOM.progressTime.textContent = `Прошло времени: 0 сек.`;
       }
       progressTimerInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - progressStartTime) / 1000);
-        if (DOM.progressTime) DOM.progressTime.textContent = `Прошло времени: ${elapsed} сек.`;
+        const elapsed = Math.max(0, Math.floor((Date.now() - progressStartTime) / 1000));
+        if (DOM.progressTime) DOM.progressTime.textContent = `Прошло времени: ${formatDuration(elapsed)}`;
       }, 1000);
     }
   } else if (task.status === 'completed' || task.status === 'partial') {
@@ -51,12 +52,12 @@ async function handleTaskUpdate(task) {
       clearInterval(progressTimerInterval);
       progressTimerInterval = null;
     }
-    const totalSeconds = progressStartTime ? Math.floor((Date.now() - progressStartTime) / 1000) : 0;
+    const totalSeconds = progressStartTime ? Math.max(0, Math.floor((Date.now() - progressStartTime) / 1000)) : 0;
     progressStartTime = null;
 
     const msg = task.status === 'completed' 
-      ? `Сбор успешно завершен за ${totalSeconds} сек.` 
-      : `Сбор завершен с ошибками некоторых источников за ${totalSeconds} сек.`;
+      ? `Сбор успешно завершен за ${formatDuration(totalSeconds)}` 
+      : `Сбор завершен с ошибками некоторых источников за ${formatDuration(totalSeconds)}`;
     
     const { showToast } = await import('./common.js');
     showToast(msg, 'success');
@@ -70,10 +71,12 @@ async function handleTaskUpdate(task) {
       clearInterval(progressTimerInterval);
       progressTimerInterval = null;
     }
+    const totalSeconds = progressStartTime ? Math.max(0, Math.floor((Date.now() - progressStartTime) / 1000)) : 0;
     progressStartTime = null;
 
     showScreen('welcome');
-    showErrorModal('Ошибка сбора данных', task.error || 'Неизвестная ошибка сервера.');
+    const errorMsg = task.error || 'Неизвестная ошибка сервера.';
+    showErrorModal('Ошибка сбора данных', `${errorMsg}\n\nСбор прерван через: ${formatDuration(totalSeconds)}`);
     loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'stopped') {
     if (progressTimerInterval) {

@@ -32,3 +32,16 @@ export function escapeHtml(text) {
   if (!text) return '';
   return String(text).replace(/[&<>'"]/g, tag => HTML_ENTITIES[tag]);
 }
+
+/**
+ * Форматирует продолжительность в секундах в читабельный вид (минуты и секунды).
+ * @param {number} seconds — Время в секундах.
+ * @returns {string} — Отформатированная строка (например: "2 мин 5 сек" или "45 сек").
+ */
+export function formatDuration(seconds) {
+  if (seconds < 0) seconds = 0;
+  if (seconds < 60) return `${seconds} сек.`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m} мин. ${s} сек.`;
+}

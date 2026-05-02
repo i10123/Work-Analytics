@@ -1,5 +1,5 @@
 import { DOM } from '../dom.js';
-import { escapeHtml } from '../utils/formatters.js';
+import { escapeHtml, formatDuration } from '../utils/formatters.js';
 
 let cachedReports = [];
 
@@ -229,17 +229,15 @@ export async function loadQueueUI() {
   }
 }
 
-let queueTimer = null;
+let queueTimers = [];
 
 /**
  * Рендерит список задач очереди в сайдбаре.
  * @param {Array} queue — Массив задач из /api/queue
  */
 export function renderQueueList(queue) {
-  if (queueTimer) {
-    clearInterval(queueTimer);
-    queueTimer = null;
-  }
+  queueTimers.forEach(clearInterval);
+  queueTimers = [];
 
   const container = document.getElementById('queueList');
   if (!container) return;
@@ -268,13 +266,16 @@ export function renderQueueList(queue) {
 
     let statusLabel = statusLabels[task.status] || task.status;
     if (task.status === 'processing' && task.startedAt) {
-      const elapsed = Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000);
-      statusLabel = `⚙️ Выполняется (${elapsed} сек.)`;
+      const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
+      statusLabel = `⚙️ Выполняется (${formatDuration(elapsed)})`;
     }
 
     div.innerHTML = `
       <div class="queue-item__info">
         <span class="queue-item__query">${escapeHtml(task.query)}</span>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 2px; margin-bottom: 2px;">
+          Лимит: ${task.filters?.limit || 50}
+        </div>
         <span class="queue-item__status">${statusLabel}</span>
       </div>
       <div class="queue-item__actions">
@@ -285,13 +286,14 @@ export function renderQueueList(queue) {
     `;
 
     if (task.status === 'processing' && task.startedAt) {
-      queueTimer = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000);
+      const timerId = setInterval(() => {
+        const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
         const statusEl = div.querySelector('.queue-item__status');
         if (statusEl) {
-          statusEl.textContent = `⚙️ Выполняется (${elapsed} сек.)`;
+          statusEl.textContent = `⚙️ Выполняется (${formatDuration(elapsed)})`;
         }
       }, 1000);
+      queueTimers.push(timerId);
     }
 
     // Event listeners
