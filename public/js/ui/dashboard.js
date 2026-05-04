@@ -1,7 +1,7 @@
 import { DOM } from '../dom.js';
 import { charts, currentCurrency } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
-import { formatSalary, escapeHtml } from '../utils/formatters.js';
+import { formatSalary, escapeHtml, parseMarkdown } from '../utils/formatters.js';
 import {
   renderChartSalary,
   renderChartSkills,
@@ -53,6 +53,7 @@ export function renderDashboard(report) {
   }
 
   renderKPI(jobs, rates);
+  renderAiSummary(report);
 
   // Уничтожаем старые графики перед рендером новых
   destroyAllCharts();
@@ -81,6 +82,48 @@ export function renderDashboard(report) {
   // Обработчик экспорта (удаляем старый, чтобы не плодить)
   if (DOM.btnExportCsv) {
     DOM.btnExportCsv.onclick = () => exportToCSV(jobs, report.query);
+  }
+}
+
+function renderAiSummary(report) {
+  if (!DOM.aiSummaryCard || !DOM.btnGenerateAiSummary || !DOM.aiSummaryContent || !DOM.aiSummaryLoader) return;
+
+  // Сброс состояния
+  DOM.aiSummaryLoader.style.display = 'none';
+  DOM.aiSummaryContent.style.display = 'none';
+  DOM.aiSummaryContent.innerHTML = '';
+  
+  if (report.aiSummary) {
+    DOM.aiSummaryContent.innerHTML = parseMarkdown(report.aiSummary);
+    DOM.aiSummaryContent.style.display = 'block';
+    DOM.btnGenerateAiSummary.style.display = 'none';
+  } else {
+    DOM.btnGenerateAiSummary.style.display = 'inline-flex';
+    DOM.btnGenerateAiSummary.onclick = async () => {
+      DOM.btnGenerateAiSummary.style.display = 'none';
+      DOM.aiSummaryLoader.style.display = 'flex';
+      
+      try {
+        const res = await fetch(`/api/reports/${report.id}/summary`, { method: 'POST' });
+        const data = await res.json();
+        
+        DOM.aiSummaryLoader.style.display = 'none';
+        if (data.success) {
+          report.aiSummary = data.summary; // обновляем локальный объект отчёта
+          DOM.aiSummaryContent.innerHTML = parseMarkdown(data.summary);
+          DOM.aiSummaryContent.style.display = 'block';
+        } else {
+          DOM.aiSummaryContent.innerHTML = `<div class="alert alert--warning" style="margin-top:10px;"><span class="alert__icon">❌</span> <span class="alert__text">${escapeHtml(data.error || 'Ошибка при генерации')}</span></div>`;
+          DOM.aiSummaryContent.style.display = 'block';
+          DOM.btnGenerateAiSummary.style.display = 'inline-flex';
+        }
+      } catch (err) {
+        DOM.aiSummaryLoader.style.display = 'none';
+        DOM.aiSummaryContent.innerHTML = `<div class="alert alert--warning" style="margin-top:10px;"><span class="alert__icon">❌</span> <span class="alert__text">Сетевая ошибка: не удалось подключиться к серверу.</span></div>`;
+        DOM.aiSummaryContent.style.display = 'block';
+        DOM.btnGenerateAiSummary.style.display = 'inline-flex';
+      }
+    };
   }
 }
 

@@ -311,8 +311,98 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Генерирует "Портрет идеального кандидата" (AI Сводка) по отчёту.
+ * @param {Object} report - Отчёт с массивом jobs.
+ * @returns {Promise<string>} - Markdown строка.
+ */
+async function generateCandidateProfile(report) {
+  const jobs = report.jobs || [];
+  if (!jobs.length) return "Нет данных для анализа.";
+
+  const skillsCount = {};
+  const formats = {};
+  const experiences = {};
+  let validSalaries = 0;
+  let sumSalaries = 0;
+
+  jobs.forEach(j => {
+    (j.skills || []).forEach(s => {
+      skillsCount[s] = (skillsCount[s] || 0) + 1;
+    });
+    if (j.workFormat) formats[j.workFormat] = (formats[j.workFormat] || 0) + 1;
+    if (j.experience) experiences[j.experience] = (experiences[j.experience] || 0) + 1;
+    
+    if (j.salary && (j.salary.min || j.salary.max)) {
+      const avg = j.salary.min && j.salary.max ? (j.salary.min + j.salary.max) / 2 : (j.salary.min || j.salary.max);
+      // Для простоты просто суммируем, не конвертируя валюты, чтобы дать ИИ примерное представление
+      // Или лучше просто не передавать среднюю, а передать массив
+    }
+  });
+
+  const topSkills = Object.entries(skillsCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15)
+    .map(e => `${e[0]} (${e[1]} вакансий)`)
+    .join(', ');
+
+  const topFormat = Object.entries(formats).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Неизвестно';
+  const topExp = Object.entries(experiences).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Неизвестно';
+
+  const prompt = `Ты — экспертный IT-рекрутер и аналитик рынка труда.
+Я собрал данные по вакансиям по запросу "${report.query}".
+Всего вакансий: ${jobs.length}.
+Топ востребованных навыков: ${topSkills}.
+Самый частый формат работы: ${topFormat}.
+Самый частый требуемый опыт: ${topExp}.
+
+На основе этих данных, составь краткий и красивый "Портрет идеального кандидата" в формате Markdown.
+Структура ответа должна включать:
+1. **Резюме** — кто этот специалист на рынке сейчас.
+2. **Ключевые компетенции** (Hard & Soft skills).
+3. **Требования рынка** (ожидания по опыту и формату работы).
+4. **Рекомендации кандидату** (на что сделать упор при поиске и развитии).
+
+Пиши профессионально, ёмко, используй эмодзи и Markdown (жирный текст, списки). Не выводи никаких JSON, только красивый текст.`;
+
+  return await generateTextFromAI(prompt);
+}
+
+async function generateTextFromAI(prompt) {
+  const openRouterKeys = getOpenRouterKeys();
+  if (openRouterKeys.length > 0) {
+    try {
+      const apiKey = openRouterKeys[0]; // Берем первый доступный ключ
+      const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+        model: 'google/gemini-2.0-flash-001',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7
+      }, {
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        timeout: 60000
+      });
+      return response.data?.choices?.[0]?.message?.content || "Не удалось сгенерировать сводку.";
+    } catch (e) {
+      console.warn('[AI] Ошибка генерации текста через OpenRouter:', e.message);
+    }
+  }
+
+  if (puter) {
+    try {
+      const response = await puter.ai.chat(prompt, { model: 'deepseek/deepseek-v3.2' });
+      return response.message?.content || "Не удалось сгенерировать сводку.";
+    } catch (e) {
+      console.error('[AI] Ошибка генерации текста через Puter:', e.message);
+    }
+  }
+
+  return "Ошибка: Не настроен AI провайдер (OpenRouter или Puter) для генерации сводки.";
+}
+
 module.exports = {
   extractMetadataFromJobs,
   // Обратная совместимость
   extractSkillsFromJobs: extractMetadataFromJobs,
+  generateCandidateProfile,
 };
+

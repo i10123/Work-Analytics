@@ -96,6 +96,33 @@ function safeCreateChart(chartKey, canvasId, config) {
 }
 
 /**
+ * Скрывает или показывает родительскую карточку графика.
+ */
+function toggleChartCardVisibility(canvasId, show) {
+  const canvas = document.getElementById(canvasId);
+  if (canvas) {
+    const card = canvas.closest('.chart-card');
+    if (card) {
+      card.style.display = show ? '' : 'none';
+    }
+  }
+}
+
+/**
+ * Маппит сырой опыт парсеров (например, "От 1 года до 3 лет") в стандартные грейды.
+ */
+function mapExperienceToLevel(exp) {
+  if (!exp) return null;
+  const l = exp.toLowerCase();
+  if (['intern', 'junior', 'middle', 'senior', 'lead'].includes(exp)) return exp;
+  if (l.includes('нет опыта')) return 'Junior'; // Intern/Junior
+  if (l.includes('от 1 года') || l.includes('1-3')) return 'Middle'; // Обычно 1-3 года это Middle
+  if (l.includes('от 3 до 6') || l.includes('3-6')) return 'Senior';
+  if (l.includes('более 6')) return 'Lead';
+  return null;
+}
+
+/**
  * Общие опции для графиков.
  */
 function commonOptions(opts = {}) {
@@ -153,7 +180,11 @@ function formatNumber(n) {
  */
 export function renderChartSalary(jobs, rates, currency) {
   const withSalary = jobs.filter(j => j.salary && (j.salary.min || j.salary.max));
-  if (withSalary.length === 0) return;
+  if (withSalary.length === 0) {
+    toggleChartCardVisibility('chartSalary', false);
+    return;
+  }
+  toggleChartCardVisibility('chartSalary', true);
 
   const salaries = withSalary.map(j => {
     const avg = j.salary.min && j.salary.max ? (j.salary.min + j.salary.max) / 2 : (j.salary.min || j.salary.max);
@@ -203,25 +234,36 @@ export function renderChartSkills(jobs) {
     }
   }
 
-  const sorted = Object.entries(skillCount).sort((a, b) => b[1] - a[1]).slice(0, 15);
-  if (sorted.length === 0) return;
+  const sorted = Object.entries(skillCount).sort((a, b) => b[1] - a[1]).slice(0, 30); // Берем топ 30 для облака
+  if (sorted.length === 0) {
+    toggleChartCardVisibility('chartSkills', false);
+    return;
+  }
+  toggleChartCardVisibility('chartSkills', true);
 
+  // Используем wordCloud, так как библиотека подключена в index.html
   safeCreateChart('skills', 'chartSkills', {
-    type: 'bar',
+    type: 'wordCloud',
     data: {
       labels: sorted.map(e => e[0]),
       datasets: [{
         label: 'Упоминаний',
-        data: sorted.map(e => e[1]),
-        backgroundColor: PALETTE.slice(0, sorted.length),
-        borderRadius: 6,
-        borderSkipped: false,
+        data: sorted.map(e => e[1] * 10), // Увеличиваем вес для размера
+        color: PALETTE.slice(0, sorted.length),
       }],
     },
-    options: commonOptions({
-      legend: false,
-      extra: { indexAxis: 'y' },
-    }),
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.raw / 10} упоминаний`,
+          }
+        }
+      }
+    }
   });
 }
 
@@ -230,16 +272,23 @@ export function renderChartSkills(jobs) {
  * Группирует по experience, считает среднюю ЗП. Исключает "Не указано".
  */
 export function renderChartSalaryVsExperience(jobs, rates, currency) {
-  const levels = ['Intern', 'Junior', 'Middle', 'Senior', 'Lead'];
-  const valid = filterValid(jobs, 'experience');
+  const levels = ['Junior', 'Middle', 'Senior', 'Lead'];
+  
+  // Добавляем нормализованный опыт каждому джобу для агрегации
+  const normalizedJobs = jobs.map(j => ({ ...j, mappedExp: mapExperienceToLevel(j.experience) }));
+  const valid = normalizedJobs.filter(j => j.mappedExp);
 
   const data = levels.map(level => {
-    const group = valid.filter(j => j.experience === level);
+    const group = valid.filter(j => j.mappedExp === level);
     return avgSalary(group, rates, currency);
   }).map(v => v || 0);
 
   // Если все нули — не рендерим
-  if (data.every(v => v === 0)) return;
+  if (data.every(v => v === 0)) {
+    toggleChartCardVisibility('chartSalaryVsExp', false);
+    return;
+  }
+  toggleChartCardVisibility('chartSalaryVsExp', true);
 
   const colors = [
     'rgba(34, 197, 94, 0.8)',    // Intern - green
@@ -281,7 +330,11 @@ export function renderChartSalaryVsExperience(jobs, rates, currency) {
  */
 export function renderChartWorkFormatDoughnut(jobs) {
   const valid = filterValid(jobs, 'workFormat');
-  if (valid.length === 0) return;
+  if (valid.length === 0) {
+    toggleChartCardVisibility('chartWorkFormatDoughnut', false);
+    return;
+  }
+  toggleChartCardVisibility('chartWorkFormatDoughnut', true);
 
   const counts = {};
   for (const j of valid) {
@@ -341,7 +394,11 @@ export function renderChartWorkFormatBar(jobs, rates, currency) {
     return avgSalary(group, rates, currency);
   });
 
-  if (data.every(v => v === 0)) return;
+  if (data.every(v => v === 0)) {
+    toggleChartCardVisibility('chartWorkFormatBar', false);
+    return;
+  }
+  toggleChartCardVisibility('chartWorkFormatBar', true);
 
   const colorMap = {
     'Remote': 'rgba(34, 197, 94, 0.8)',
@@ -398,7 +455,11 @@ export function renderChartEnglishSalary(jobs, rates, currency) {
     }
   });
 
-  if (filteredData.length === 0) return;
+  if (filteredData.length === 0) {
+    toggleChartCardVisibility('chartEnglishSalary', false);
+    return;
+  }
+  toggleChartCardVisibility('chartEnglishSalary', true);
 
   // Градиент от зелёного к фиолетовому
   const gradientColors = filteredLabels.map((_, i) => {
@@ -441,7 +502,11 @@ export function renderChartEnglishSalary(jobs, rates, currency) {
  */
 export function renderChartTechCategory(jobs) {
   const valid = filterValid(jobs, 'techCategory');
-  if (valid.length === 0) return;
+  if (valid.length === 0 || valid.every(j => j.techCategory === 'Другое')) {
+    toggleChartCardVisibility('chartTechCategory', false);
+    return;
+  }
+  toggleChartCardVisibility('chartTechCategory', true);
 
   const counts = {};
   for (const j of valid) {
@@ -488,7 +553,11 @@ export function renderChartTechCategory(jobs) {
  */
 export function renderChartDynamics(reports, currency, rates) {
   const select = document.getElementById('dynamicsQuerySelect');
-  if (!select || !reports || reports.length === 0) return;
+  if (!select || !reports || reports.length === 0) {
+    toggleChartCardVisibility('chartDynamics', false);
+    return;
+  }
+  toggleChartCardVisibility('chartDynamics', true);
 
   // Получаем уникальные запросы
   const queries = [...new Set(reports.map(r => r.query))].filter(Boolean);

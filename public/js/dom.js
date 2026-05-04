@@ -44,6 +44,13 @@ export const DOM = {
   alertPartial: document.getElementById('alertPartial'),
   alertPartialText: document.getElementById('alertPartialText'),
 
+  /* AI Сводка */
+  aiSummaryCard: document.getElementById('aiSummaryCard'),
+  btnGenerateAiSummary: document.getElementById('btnGenerateAiSummary'),
+  aiSummaryContent: document.getElementById('aiSummaryContent'),
+  aiSummaryLoader: document.getElementById('aiSummaryLoader'),
+
+
   /* KPI */
   kpiTotal: document.getElementById('kpiTotal'),
   kpiAvgSalary: document.getElementById('kpiAvgSalary'),

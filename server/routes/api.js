@@ -14,7 +14,8 @@
 const express = require('express');
 const router = express.Router();
 const { enqueueTask, getQueueStatus, getFullQueueState, stopTask, restartTask, deleteTask, prioritizeTask, updateTask, taskEmitter } = require('../services/queue');
-const { listReports, loadReport, deleteReport, deleteAllReports } = require('../services/storage');
+const { listReports, loadReport, deleteReport, deleteAllReports, saveReport } = require('../services/storage');
+const { generateCandidateProfile } = require('../services/ai');
 
 /**
  * POST /api/parse — Запуск нового сбора данных.
@@ -118,6 +119,39 @@ router.get('/reports/:id', async (req, res) => {
   } catch (error) {
     console.error(`[API] ❌ Ошибка загрузки отчёта ${id}:`, error.message);
     return res.status(500).json({ success: false, error: 'Ошибка чтения отчёта.' });
+  }
+});
+
+/**
+ * POST /api/reports/:id/summary — Генерация AI сводки для отчёта.
+ */
+router.post('/reports/:id/summary', async (req, res) => {
+  const { id } = req.params;
+
+  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(id)) {
+    return res.status(400).json({ success: false, error: 'Неверный формат ID отчёта.' });
+  }
+
+  try {
+    const report = await loadReport(id);
+    if (!report) {
+      return res.status(404).json({ success: false, error: 'Отчёт не найден.' });
+    }
+
+    if (report.aiSummary) {
+      return res.json({ success: true, summary: report.aiSummary });
+    }
+
+    console.log(`[API] ✨ Генерация AI сводки для отчёта: ${id}`);
+    const summary = await generateCandidateProfile(report);
+    
+    report.aiSummary = summary;
+    await saveReport(report);
+
+    return res.json({ success: true, summary });
+  } catch (error) {
+    console.error(`[API] ❌ Ошибка генерации сводки для ${id}:`, error.message);
+    return res.status(500).json({ success: false, error: 'Ошибка генерации сводки.' });
   }
 });
 

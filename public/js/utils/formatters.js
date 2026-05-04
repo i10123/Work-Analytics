@@ -45,3 +45,35 @@ export function formatDuration(seconds) {
   const s = seconds % 60;
   return `${m} мин. ${s} сек.`;
 }
+
+/**
+ * Простой парсер Markdown в HTML для AI-сводки.
+ * @param {string} md — Текст в формате Markdown.
+ * @returns {string} — HTML строка.
+ */
+export function parseMarkdown(md) {
+  if (!md) return '';
+  
+  let html = escapeHtml(md);
+
+  // Жирный текст: **text**
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Курсив: *text*
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+  // Заголовки: ### Header
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+  // Неупорядоченные списки: - item или * item
+  html = html.replace(/^\s*[-*]\s+(.*)$/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>'); // Оборачиваем группы li в ul (очень простой вариант)
+  
+  // Переносы строк
+  html = html.replace(/\n$/gim, '<br />');
+
+  return html;
+}
+
