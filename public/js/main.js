@@ -16,11 +16,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('[App] 🚀 Инициализация Work Analytics (Modular)...');
 
   initializeTheme();
-  
-  if (window.Chart) {
-    const rootStyles = getComputedStyle(document.documentElement);
-    Chart.defaults.font.family = rootStyles.getPropertyValue('--font-family').trim() || "'Outfit', 'nbrb', sans-serif";
-  }
 
   initializeSettings();
   initializePremiumUI();
@@ -28,6 +23,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSSE();
   setupWelcomeScreen();
   
+  let isRestoredProgress = false;
+
   // F5-синхронизация: подхватываем текущий прогресс очереди
   try {
     const queueRes = await fetch('/api/queue');
@@ -36,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       console.log('[App] 🔄 Обнаружена активная задача после F5:', queueData.currentTask.id);
       showScreen('progress');
       if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${queueData.currentTask.query || ''}"`;
+      isRestoredProgress = true;
     }
   } catch (e) {
     console.warn('[App] ⚠️ Не удалось проверить состояние очереди:', e.message);
@@ -49,14 +47,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadQueueUI();
   
   // Обработка начального состояния (URL хеш)
-  const hash = window.location.hash;
-  if (hash && hash.startsWith('#report=')) {
-    const reportId = hash.replace('#report=', '');
-    loadReportById(reportId, true);
-  } else {
-    showScreen('welcome');
-    // Заменяем текущее состояние в истории на 'welcome'
-    history.replaceState({ type: 'welcome' }, '', window.location.pathname);
+  if (!isRestoredProgress) {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#report=')) {
+      const reportId = hash.replace('#report=', '');
+      loadReportById(reportId, true);
+    } else {
+      showScreen('welcome');
+      // Заменяем текущее состояние в истории на 'welcome'
+      history.replaceState({ type: 'welcome' }, '', window.location.pathname);
+    }
   }
 });
 

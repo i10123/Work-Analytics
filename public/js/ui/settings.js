@@ -176,6 +176,15 @@ function switchSettingsTab(tabName) {
 function handleSaveSettings() {
   const settings = getSettingsFromUI();
 
+  const stopWordsInput = document.getElementById('settingsStopWords');
+  if (stopWordsInput && stopWordsInput.value) {
+    const isValid = /^[\p{L}0-9\s,]*$/u.test(stopWordsInput.value);
+    if (!isValid) {
+      showToast('Стоп-слова могут содержать только буквы, цифры, пробелы и запятые', 'error');
+      return;
+    }
+  }
+
   if (!settings.sources.hh && !settings.sources.rabotaby && !settings.sources.habr) {
     showToast('Выберите хотя бы один источник данных', 'error');
     return;
@@ -245,18 +254,29 @@ async function loadApiStatus() {
       }
     };
 
+    let hasApiError = false;
+
     // OpenRouter
     if (data.openrouter) {
       updateStatus(DOM.openrouterStatusText, data.openrouter.configured);
+      if (!data.openrouter.configured) hasApiError = true;
+    } else {
+      hasApiError = true;
     }
 
     // Currency
     if (data.currency) {
       updateStatus(DOM.currencyStatusText, data.currency.configured, 'Настроены', 'Не настроены');
+      if (!data.currency.configured) hasApiError = true;
+    } else {
+      hasApiError = true;
     }
+
+    updateApiTabIndicator(hasApiError);
 
   } catch (error) {
     console.error('[Settings] ❌ Ошибка загрузки статуса API:', error);
+    updateApiTabIndicator(true);
     const elements = [DOM.openrouterStatusText, DOM.currencyStatusText];
     elements.forEach(el => {
       if (el) {
@@ -264,6 +284,22 @@ async function loadApiStatus() {
         el.innerHTML = '<span class="settings-api-status__dot"></span>Недоступен';
       }
     });
+  }
+}
+
+function updateApiTabIndicator(hasError) {
+  const apiTab = document.querySelector('.settings-tab[data-tab="api"]');
+  if (!apiTab) return;
+
+  let dot = apiTab.querySelector('.settings-tab__status-dot');
+  if (hasError) {
+    if (!dot) {
+      dot = document.createElement('span');
+      dot.className = 'settings-tab__status-dot';
+      apiTab.appendChild(dot);
+    }
+  } else {
+    if (dot) dot.remove();
   }
 }
 

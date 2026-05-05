@@ -16,9 +16,8 @@ const INDEX_FILE = path.join(REPORTS_DIR, 'index.json');
 let reportsCache = null;
 let cacheInitPromise = null;
 
-/** Mutex-очередь для сериализации записей в index.json (защита от Race Condition) */
-let isWriting = false;
-let writeQueue = false;
+/** Promise-based queue для сериализации записей в index.json (защита от Race Condition) */
+let saveIndexQueue = Promise.resolve();
 
 /**
  * Создаёт директории data/ и data/reports/, если они ещё не существуют.
@@ -37,29 +36,24 @@ async function ensureDataDirs() {
 
 /**
  * Сохраняет индексный файл.
- * Использует очередь из флагов вместо бесконечной цепочки промисов
- * для предотвращения утечки памяти.
+ * Использует Promise-queue для предотвращения гонок и обеспечения
+ * правильного ожидания (await) завершения записи вызывающим кодом.
  */
 async function _saveIndex() {
   if (reportsCache === null) return;
-  if (isWriting) {
-    writeQueue = true;
-    return;
-  }
-  isWriting = true;
-  try {
-    const jsonString = JSON.stringify(reportsCache, null, 2);
-    await fs.promises.writeFile(`${INDEX_FILE}.tmp`, jsonString, 'utf-8');
-    await fs.promises.rename(`${INDEX_FILE}.tmp`, INDEX_FILE);
-  } catch (err) {
-    console.error('[Storage] ❌ Ошибка сохранения index.json:', err.message);
-  } finally {
-    isWriting = false;
-    if (writeQueue) {
-      writeQueue = false;
-      _saveIndex(); // Запускаем отложенное сохранение
+  
+  const currentWrite = saveIndexQueue.then(async () => {
+    try {
+      const jsonString = JSON.stringify(reportsCache, null, 2);
+      await fs.promises.writeFile(`${INDEX_FILE}.tmp`, jsonString, 'utf-8');
+      await fs.promises.rename(`${INDEX_FILE}.tmp`, INDEX_FILE);
+    } catch (err) {
+      console.error('[Storage] ❌ Ошибка сохранения index.json:', err.message);
     }
-  }
+  });
+  
+  saveIndexQueue = currentWrite.catch(() => {});
+  return currentWrite;
 }
 
 /**
@@ -266,7 +260,8 @@ async function deleteAllReports() {
 
     // Очищаем кэш после успешного удаления файлов
     if (reportsCache !== null) {
-      reportsCache = [];
+      const deletedIds = new Set(jsonFiles.map(f => f.replace('.json', '')));
+      reportsCache = reportsCache.filter(r => !deletedIds.has(r.id));
       await _saveIndex();
     }
 

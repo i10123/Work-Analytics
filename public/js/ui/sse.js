@@ -23,6 +23,9 @@ export function setupSSE() {
 
   eventSource.onerror = () => {
     console.warn('[App] ⚠️ SSE-соединение потеряно. Переподключение...');
+    import('./common.js').then(({ showToast }) => {
+      showToast('Соединение с сервером потеряно. Переподключение...', 'warning');
+    });
   };
 }
 

@@ -116,6 +116,7 @@ async function processNext() {
     // Проверка остановки после каждого шага
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} удалена во время получения курсов валют. Прерываем.`);
+      removeTaskFromQueue(task.id);
       return;
     }
 
@@ -128,6 +129,7 @@ async function processNext() {
     // === ЗАЩИТА: проверка isStopped СРАЗУ после возврата из парсеров ===
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} удалена после парсинга. Данные выброшены.`);
+      removeTaskFromQueue(task.id);
       return; // НЕ вызываем AI и saveReport
     }
 
@@ -155,16 +157,20 @@ async function processNext() {
     // Ещё одна проверка остановки
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} удалена после дедупликации. Данные выброшены.`);
+      removeTaskFromQueue(task.id);
       return;
     }
 
     /** Шаг 4: Извлечение метаданных через AI (навыки, опыт, формат, категория и др.) */
     emitUpdate({ ...task, step: 'AI-анализ вакансий...' });
-    const enrichedJobs = await extractMetadataFromJobs(allJobs);
+    const enrichedJobs = await extractMetadataFromJobs(allJobs, (current, total) => {
+      emitUpdate({ ...task, step: `AI-анализ вакансий: батч ${current} из ${total}...` });
+    });
 
     // Проверка остановки после AI
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} удалена после AI-анализа. Данные выброшены.`);
+      removeTaskFromQueue(task.id);
       return;
     }
 
@@ -232,6 +238,7 @@ async function processNext() {
     // Если задача была остановлена и axios выбросил AbortError — не считаем это критической ошибкой
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} прервана (abort). Данные выброшены.`);
+      removeTaskFromQueue(task.id);
     } else {
       task.status = 'failed';
       console.error(`[Queue] ❌ Критическая ошибка при обработке ${task.id}:`, error.message);

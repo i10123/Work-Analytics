@@ -17,7 +17,14 @@ export function setAppTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('app-theme', theme);
 
-  if (currentReport) {
-    renderDashboard(currentReport);
-  }
+  setTimeout(() => {
+    if (window.Chart) {
+      const rootStyles = getComputedStyle(document.documentElement);
+      Chart.defaults.font.family = rootStyles.getPropertyValue('--font-family').trim() || "'Outfit', 'nbrb', sans-serif";
+    }
+
+    if (currentReport) {
+      renderDashboard(currentReport);
+    }
+  }, 10);
 }

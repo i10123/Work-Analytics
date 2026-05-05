@@ -49,7 +49,7 @@ const DEFAULT_METADATA = {
  * @param {Array<Object>} jobs — Массив вакансий с полем description.
  * @returns {Promise<Array<Object>>} — Обогащённые вакансии с AI-метаданными.
  */
-async function extractMetadataFromJobs(jobs) {
+async function extractMetadataFromJobs(jobs, onProgress = null) {
   const openRouterKeys = getOpenRouterKeys();
 
   if (!openRouterKeys.length && !puter) {
@@ -75,6 +75,7 @@ async function extractMetadataFromJobs(jobs) {
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
     console.log(`[AI] 📦 Обработка батча ${i + 1}/${batches.length}...`);
+    if (onProgress) onProgress(i + 1, batches.length);
 
     let metadataMap = null;
 
@@ -131,12 +132,15 @@ async function extractMetadataFromJobs(jobs) {
  * @returns {Object} — Обогащённая вакансия.
  */
 function mergeAiMetadata(job, aiData) {
+  const mergedSkills = Array.from(new Set([
+    ...(job.skills || []),
+    ...(Array.isArray(aiData.skills) ? aiData.skills : [])
+  ]));
+
   return {
     ...job,
-    // Hard Skills: AI полностью перезаписывает, если вернул непустой массив
-    skills: (Array.isArray(aiData.skills) && aiData.skills.length > 0)
-      ? aiData.skills
-      : (job.skills || DEFAULT_METADATA.skills),
+    // Hard Skills: AI skills are merged with parser skills using a Set
+    skills: mergedSkills.length > 0 ? mergedSkills : DEFAULT_METADATA.skills,
     // Soft Skills: новое поле, только от AI
     softSkills: Array.isArray(aiData.softSkills)
       ? aiData.softSkills
@@ -175,7 +179,7 @@ async function processBatchOpenRouterWithRotation(batch, keys) {
       // Используем Gemini 2.0 Flash через OpenRouter
       return await processBatchOpenAI(batch, currentKey, 'https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001');
     } catch (error) {
-      const isQuotaError = error.response && (error.response.status === 429 || error.response.status === 403 || error.response.status === 401);
+      const isQuotaError = error.response && [401, 402, 403, 429].includes(error.response.status);
       currentOpenRouterKeyIndex++;
       attempts++;
       if (isQuotaError) {
@@ -363,20 +367,35 @@ async function generateCandidateProfile(report) {
 async function generateTextFromAI(prompt) {
   const openRouterKeys = getOpenRouterKeys();
   if (openRouterKeys.length > 0) {
-    try {
-      const apiKey = openRouterKeys[0]; // Берем первый доступный ключ
-      const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-        model: 'google/gemini-2.0-flash-001',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7
-      }, {
-        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        timeout: 60000
-      });
-      return response.data?.choices?.[0]?.message?.content || "Не удалось сгенерировать сводку.";
-    } catch (e) {
-      console.warn('[AI] Ошибка генерации текста через OpenRouter:', e.message);
+    let attempts = 0;
+    const maxAttempts = openRouterKeys.length;
+
+    while (attempts < maxAttempts) {
+      const apiKey = openRouterKeys[currentOpenRouterKeyIndex % openRouterKeys.length];
+      try {
+        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+          model: 'google/gemini-2.0-flash-001',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7
+        }, {
+          headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          timeout: 60000
+        });
+        return response.data?.choices?.[0]?.message?.content || "Не удалось сгенерировать сводку.";
+      } catch (error) {
+        const isQuotaError = error.response && [401, 402, 403, 429].includes(error.response.status);
+        currentOpenRouterKeyIndex++;
+        attempts++;
+        if (isQuotaError) {
+          console.warn(`[AI] 🔁 Лимит OpenRouter ключа исчерпан/ошибка квоты (генерация сводки). Переключаюсь...`);
+          continue;
+        }
+        console.warn(`[AI] ⚠️ Ошибка генерации текста через OpenRouter: ${error.message}. Переключаюсь...`);
+        await delay(2000);
+        continue;
+      }
     }
+    console.warn('[AI] ❌ Все ключи OpenRouter исчерпаны или недоступны для генерации сводки. Пробую резервный провайдер...');
   }
 
   if (puter) {

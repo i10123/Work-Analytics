@@ -24,17 +24,10 @@ class RabotaByParser extends HhParser {
     }
     job.city = city;
     
-    job.salary.currency = this.mapCurrency(vacancy.salary?.currency);
+    job.salary.currency = this.mapCurrency(vacancy.salary?.currency, 'BYN');
     return job;
   }
 
-  mapCurrency(currency) {
-    const map = {
-      RUR: 'RUB', RUB: 'RUB', USD: 'USD', EUR: 'EUR',
-      BYR: 'BYN', BYN: 'BYN', KZT: 'KZT', UAH: 'UAH',
-    };
-    return map[currency] || currency || 'BYN';
-  }
 }
 
 const parser = new RabotaByParser();

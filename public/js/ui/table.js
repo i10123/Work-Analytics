@@ -9,6 +9,7 @@ const TableManager = (() => {
   let currentRates = {};
   let searchListenerAdded = false;
   let globalSortListenerAdded = false;
+  let globalTableBodyListenerAdded = false;
 
   function initSearch() {
     const searchInput = document.getElementById('jobsTableSearch');
@@ -67,6 +68,20 @@ const TableManager = (() => {
 
       const sorted = sortData(filtered, currentRates);
       renderTableRows(sorted, currentRates);
+    });
+  }
+
+  function initTableBodyDelegation() {
+    if (globalTableBodyListenerAdded || !DOM.jobsTableBody) return;
+    globalTableBodyListenerAdded = true;
+
+    DOM.jobsTableBody.addEventListener('click', (e) => {
+      // Future interactive elements inside table rows can be handled here via event delegation.
+      // Currently, the only interactive element is a standard <a> tag which works natively.
+      const btn = e.target.closest('button');
+      if (btn) {
+        // e.g. e.stopPropagation();
+      }
     });
   }
 
@@ -170,6 +185,7 @@ const TableManager = (() => {
 
       initSearch();
       initSort();
+      initTableBodyDelegation();
 
       const dataToRender = sortConfig.key ? sortData(jobs, rates) : jobs;
       renderTableRows(dataToRender, rates);

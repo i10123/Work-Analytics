@@ -163,8 +163,8 @@ function exportToCSV(jobs, query) {
     return str;
   };
 
-  // Исправлено: используем \r\n для правильного переноса строк в Excel
-  let csvContent = BOM + headers.join(delimiter) + '\r\n';
+  // Исправлено: используем \r\n для правильного переноса строк в Excel и sep=; для совместимости
+  let csvContent = 'sep=;\r\n' + BOM + headers.join(delimiter) + '\r\n';
 
   jobs.forEach(j => {
     const row = [

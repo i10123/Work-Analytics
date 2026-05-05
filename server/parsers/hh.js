@@ -311,7 +311,7 @@ class HhParser extends BaseParser {
       salary: {
         min: salary.from || null,
         max: salary.to || null,
-        currency: this.mapHHCurrency(salary.currency),
+        currency: this.mapCurrency(salary.currency, 'RUB'),
       },
       experience: vacancy.experience?.name || 'Не указан',
       employment: vacancy.employment?.name || 'Не указан',
@@ -320,15 +320,6 @@ class HhParser extends BaseParser {
       publishedAt: vacancy.published_at || '',
       skills:[],
     };
-  }
-
-  mapHHCurrency(hhCurrency) {
-    const currencyMap = {
-      RUR: 'RUB', RUB: 'RUB', USD: 'USD', EUR: 'EUR',
-      BYR: 'BYN', BYN: 'BYN', KZT: 'KZT', UAH: 'UAH',
-      UZS: 'UZS', GEL: 'GEL', AZN: 'AZN', KGS: 'KGS',
-    };
-    return currencyMap[hhCurrency] || hhCurrency || 'RUB';
   }
 
   mapPeriodToDays(period) {

@@ -35,7 +35,12 @@ class BaseParser {
     const executing = new Set();
 
     for (const item of items) {
-      const promise = fetchFn(item)
+      const fetchPromise = fetchFn(item);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Таймаут парсинга (15с)')), 15000);
+      });
+
+      const promise = Promise.race([fetchPromise, timeoutPromise])
         .catch(err => {
           console.warn(`[BaseParser] Ошибка элемента: ${err.message}`);
           return null;
@@ -63,6 +68,7 @@ class BaseParser {
     if (!stopWordsStr) return [];
     return stopWordsStr.split(',').map(w => w.trim()).filter(Boolean)
       .map(w => {
+        // Экранируем специальные символы для предотвращения Regex Injection
         const safeWord = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         return new RegExp(`(?<=^|[^\\p{L}])${safeWord}(?=[^\\p{L}]|$)`, 'iu');
       });
@@ -77,6 +83,21 @@ class BaseParser {
   hasStopWords(title, compiledRegexes) {
     if (!compiledRegexes || compiledRegexes.length === 0) return false;
     return compiledRegexes.some(regex => regex.test(title));
+  }
+
+  /**
+   * Приводит валюту к единому стандарту.
+   * @param {string} currency 
+   * @param {string} fallback 
+   * @returns {string}
+   */
+  mapCurrency(currency, fallback = 'RUB') {
+    const map = {
+      RUR: 'RUB', RUB: 'RUB', USD: 'USD', EUR: 'EUR',
+      BYR: 'BYN', BYN: 'BYN', KZT: 'KZT', UAH: 'UAH',
+      UZS: 'UZS', GEL: 'GEL', AZN: 'AZN', KGS: 'KGS',
+    };
+    return map[currency] || currency || fallback;
   }
 }
 

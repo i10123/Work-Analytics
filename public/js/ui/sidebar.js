@@ -2,15 +2,59 @@ import { DOM } from '../dom.js';
 import { escapeHtml, formatDuration } from '../utils/formatters.js';
 
 let cachedReports = [];
+let cachedQueue = [];
 
-/**
- * Инициализирует слушатели для сайдбара.
- */
 export function setupSidebarListeners() {
   DOM.reportsSearch?.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     filterAndRenderReports(query);
   });
+
+  DOM.reportsList?.addEventListener('click', async (e) => {
+    const deleteBtn = e.target.closest('.report-item__delete');
+    if (deleteBtn) {
+      e.stopPropagation();
+      const reportItem = deleteBtn.closest('.report-item');
+      if (reportItem) {
+        const id = reportItem.dataset.id;
+        const report = cachedReports.find(r => String(r.id) === String(id));
+        if (report) deleteReportById(id, report.query);
+      }
+      return;
+    }
+
+    const reportItem = e.target.closest('.report-item');
+    if (reportItem) {
+      const id = reportItem.dataset.id;
+      const { loadReportById } = await import('../api.js');
+      loadReportById(id);
+    }
+  });
+
+  const queueList = document.getElementById('queueList');
+  if (queueList) {
+    queueList.addEventListener('click', (e) => {
+      const item = e.target.closest('.queue-item');
+      if (!item) return;
+      
+      const priorityBtn = e.target.closest('.queue-btn--priority');
+      const editBtn = e.target.closest('.queue-btn--edit');
+      const deleteBtn = e.target.closest('.queue-btn--delete');
+      const id = item.dataset.id;
+      
+      if (priorityBtn) {
+        e.stopPropagation();
+        queueAction(id, 'priority');
+      } else if (editBtn) {
+        e.stopPropagation();
+        const task = cachedQueue.find(t => String(t.id) === String(id));
+        if (task) queueEdit(task);
+      } else if (deleteBtn) {
+        e.stopPropagation();
+        queueAction(id, 'delete');
+      }
+    });
+  }
 }
 
 /**
@@ -111,20 +155,6 @@ export function renderReportsList(reports, updateCache = true) {
         </div>
       `;
 
-      div.addEventListener('click', async (e) => {
-        if (e.target.closest('.report-item__delete')) return;
-        
-        /** Динамический импорт для предотвращения циклической зависимости */
-        const { loadReportById } = await import('../api.js');
-        loadReportById(report.id);
-      });
-
-      const deleteBtn = div.querySelector('.report-item__delete');
-      deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteReportById(report.id, report.query);
-      });
-
       DOM.reportsList.insertBefore(div, DOM.reportsEmpty);
     });
   });
@@ -182,10 +212,10 @@ async function deleteReportById(id, query) {
     if (data.success) {
       const { loadReportsList } = await import('../api.js');
       const { showToast, showScreen } = await import('./common.js');
-      const { currentReport, setCurrentReport } = await import('../state.js');
+      const state = await import('../state.js');
       
-      if (currentReport && currentReport.id === id) {
-        setCurrentReport(null);
+      if (state.currentReport && state.currentReport.id === id) {
+        state.setCurrentReport(null);
         localStorage.removeItem('lastReportId');
         showScreen('welcome');
       }
@@ -248,6 +278,7 @@ export function renderQueueList(queue) {
   }
 
   container.style.display = 'block';
+  cachedQueue = queue;
 
   const currentIds = new Set(queue.map(t => String(t.id)));
   Array.from(container.children).forEach(el => {
@@ -298,13 +329,6 @@ export function renderQueueList(queue) {
           ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--edit" title="Редактировать">✏️</button>' : ''}
           ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--delete" title="Удалить">❌</button>' : ''}
         `;
-        const priorityBtn = actionsEl.querySelector('.queue-btn--priority');
-        const editBtn = actionsEl.querySelector('.queue-btn--edit');
-        const deleteBtn = actionsEl.querySelector('.queue-btn--delete');
-
-        priorityBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'priority'); });
-        editBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueEdit(task); });
-        deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'delete'); });
       }
       
       if (task.status === 'processing' && task.startedAt) {
@@ -341,14 +365,6 @@ export function renderQueueList(queue) {
           ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--delete" title="Удалить">❌</button>' : ''}
         </div>
       `;
-
-      const priorityBtn = div.querySelector('.queue-btn--priority');
-      const editBtn = div.querySelector('.queue-btn--edit');
-      const deleteBtn = div.querySelector('.queue-btn--delete');
-
-      priorityBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'priority'); });
-      editBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueEdit(task); });
-      deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'delete'); });
 
       container.appendChild(div);
       
