@@ -78,17 +78,6 @@ async function handleTaskUpdate(task) {
     const errorMsg = task.error || 'Неизвестная ошибка сервера.';
     showErrorModal('Ошибка сбора данных', `${errorMsg}\n\nСбор прерван через: ${formatDuration(totalSeconds)}`);
     loadReportsList().then(() => updateWelcomeStats());
-  } else if (task.status === 'stopped') {
-    if (progressTimerInterval) {
-      clearInterval(progressTimerInterval);
-      progressTimerInterval = null;
-    }
-    progressStartTime = null;
-
-    showScreen('welcome');
-    const { showToast } = await import('./common.js');
-    showToast('Задача остановлена', 'success');
-    loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'pending') {
     loadReportsList();
   }

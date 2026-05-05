@@ -229,37 +229,43 @@ export async function loadQueueUI() {
   }
 }
 
-let queueTimers = [];
+let queueTimers = new Map();
 
 /**
  * Рендерит список задач очереди в сайдбаре.
  * @param {Array} queue — Массив задач из /api/queue
  */
 export function renderQueueList(queue) {
-  queueTimers.forEach(clearInterval);
-  queueTimers = [];
-
   const container = document.getElementById('queueList');
   if (!container) return;
 
-  container.innerHTML = '';
-
   if (!queue || queue.length === 0) {
     container.style.display = 'none';
+    queueTimers.forEach(timerId => clearInterval(timerId));
+    queueTimers.clear();
+    container.innerHTML = '';
     return;
   }
 
   container.style.display = 'block';
 
-  queue.forEach(task => {
-    const div = document.createElement('div');
-    div.className = `queue-item queue-item--${task.status}`;
-    div.dataset.id = task.id;
+  const currentIds = new Set(queue.map(t => String(t.id)));
+  Array.from(container.children).forEach(el => {
+    if (!currentIds.has(el.dataset.id)) {
+      const taskId = el.dataset.id;
+      if (queueTimers.has(taskId)) {
+        clearInterval(queueTimers.get(taskId));
+        queueTimers.delete(taskId);
+      }
+      el.remove();
+    }
+  });
 
+  queue.forEach((task, index) => {
+    let div = container.querySelector(`div[data-id="${task.id}"]`);
     const statusLabels = {
       pending: '⏳ Ожидание',
       processing: '⚙️ Выполняется',
-      stopped: '⏸️ Остановлена',
       completed: '✅ Готово',
       failed: '❌ Ошибка',
     };
@@ -270,42 +276,98 @@ export function renderQueueList(queue) {
       statusLabel = `⚙️ Выполняется (${formatDuration(elapsed)})`;
     }
 
-    div.innerHTML = `
-      <div class="queue-item__info">
-        <span class="queue-item__query">${escapeHtml(task.query)}</span>
-        <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 2px; margin-bottom: 2px;">
-          Лимит: ${task.filters?.limit || 50}
-        </div>
-        <span class="queue-item__status">${statusLabel}</span>
-      </div>
-      <div class="queue-item__actions">
-        ${task.status === 'pending' ? '<button class="queue-btn queue-btn--priority" title="В начало очереди">⬆️</button>' : ''}
-        ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--edit" title="Редактировать">✏️</button>' : ''}
-        ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--delete" title="Удалить">❌</button>' : ''}
-      </div>
-    `;
+    if (div) {
+      div.className = `queue-item queue-item--${task.status}`;
+      const statusEl = div.querySelector('.queue-item__status');
+      if (statusEl && statusEl.textContent !== statusLabel) {
+        statusEl.textContent = statusLabel;
+      }
+      const queryEl = div.querySelector('.queue-item__query');
+      if (queryEl && queryEl.textContent !== task.query) {
+        queryEl.textContent = task.query;
+      }
+      const limitDiv = div.querySelector('.queue-item__info > div');
+      if (limitDiv) {
+        limitDiv.textContent = `Лимит: ${task.filters?.limit || 50}`;
+      }
+      
+      const actionsEl = div.querySelector('.queue-item__actions');
+      if (actionsEl) {
+        actionsEl.innerHTML = `
+          ${task.status === 'pending' ? '<button class="queue-btn queue-btn--priority" title="В начало очереди">⬆️</button>' : ''}
+          ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--edit" title="Редактировать">✏️</button>' : ''}
+          ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--delete" title="Удалить">❌</button>' : ''}
+        `;
+        const priorityBtn = actionsEl.querySelector('.queue-btn--priority');
+        const editBtn = actionsEl.querySelector('.queue-btn--edit');
+        const deleteBtn = actionsEl.querySelector('.queue-btn--delete');
 
-    if (task.status === 'processing' && task.startedAt) {
-      const timerId = setInterval(() => {
-        const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
-        const statusEl = div.querySelector('.queue-item__status');
-        if (statusEl) {
-          statusEl.textContent = `⚙️ Выполняется (${formatDuration(elapsed)})`;
+        priorityBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'priority'); });
+        editBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueEdit(task); });
+        deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'delete'); });
+      }
+      
+      if (task.status === 'processing' && task.startedAt) {
+        if (!queueTimers.has(String(task.id))) {
+          const timerId = setInterval(() => {
+            const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
+            const statEl = div.querySelector('.queue-item__status');
+            if (statEl) statEl.textContent = `⚙️ Выполняется (${formatDuration(elapsed)})`;
+          }, 1000);
+          queueTimers.set(String(task.id), timerId);
         }
-      }, 1000);
-      queueTimers.push(timerId);
+      } else {
+        if (queueTimers.has(String(task.id))) {
+          clearInterval(queueTimers.get(String(task.id)));
+          queueTimers.delete(String(task.id));
+        }
+      }
+    } else {
+      div = document.createElement('div');
+      div.className = `queue-item queue-item--${task.status}`;
+      div.dataset.id = task.id;
+
+      div.innerHTML = `
+        <div class="queue-item__info">
+          <span class="queue-item__query">${escapeHtml(task.query)}</span>
+          <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 2px; margin-bottom: 2px;">
+            Лимит: ${task.filters?.limit || 50}
+          </div>
+          <span class="queue-item__status">${statusLabel}</span>
+        </div>
+        <div class="queue-item__actions">
+          ${task.status === 'pending' ? '<button class="queue-btn queue-btn--priority" title="В начало очереди">⬆️</button>' : ''}
+          ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--edit" title="Редактировать">✏️</button>' : ''}
+          ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--delete" title="Удалить">❌</button>' : ''}
+        </div>
+      `;
+
+      const priorityBtn = div.querySelector('.queue-btn--priority');
+      const editBtn = div.querySelector('.queue-btn--edit');
+      const deleteBtn = div.querySelector('.queue-btn--delete');
+
+      priorityBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'priority'); });
+      editBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueEdit(task); });
+      deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'delete'); });
+
+      container.appendChild(div);
+      
+      if (task.status === 'processing' && task.startedAt) {
+        const timerId = setInterval(() => {
+          const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
+          const statEl = div.querySelector('.queue-item__status');
+          if (statEl) statEl.textContent = `⚙️ Выполняется (${formatDuration(elapsed)})`;
+        }, 1000);
+        queueTimers.set(String(task.id), timerId);
+      }
     }
+  });
 
-    // Event listeners
-    const priorityBtn = div.querySelector('.queue-btn--priority');
-    const editBtn = div.querySelector('.queue-btn--edit');
-    const deleteBtn = div.querySelector('.queue-btn--delete');
-
-    priorityBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'priority'); });
-    editBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueEdit(task); });
-    deleteBtn?.addEventListener('click', (e) => { e.stopPropagation(); queueAction(task.id, 'delete'); });
-
-    container.appendChild(div);
+  queue.forEach((task, index) => {
+    const div = container.querySelector(`div[data-id="${task.id}"]`);
+    if (div && container.children[index] !== div) {
+      container.insertBefore(div, container.children[index]);
+    }
   });
 }
 

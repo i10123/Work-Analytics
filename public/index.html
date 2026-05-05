@@ -344,9 +344,6 @@
                   <input type="radio" name="period" id="period_7d" value="7days" class="sr-only" checked>
                   <label for="period_7d" class="segmented-control__btn">7д</label>
 
-                  <input type="radio" name="period" id="period_14d" value="14days" class="sr-only">
-                  <label for="period_14d" class="segmented-control__btn">14д</label>
-
                   <input type="radio" name="period" id="period_30d" value="30days" class="sr-only">
                   <label for="period_30d" class="segmented-control__btn">30д</label>
 
@@ -450,6 +447,11 @@
             <span class="kpi-card__label">Всего вакансий</span>
           </div>
           <div class="kpi-card">
+            <span class="kpi-card__icon">🤷‍♂️</span>
+            <span class="kpi-card__value" id="kpiNoSalary">—</span>
+            <span class="kpi-card__label">Без указания ЗП</span>
+          </div>
+          <div class="kpi-card">
             <span class="kpi-card__icon">💰</span>
             <span class="kpi-card__value" id="kpiAvgSalary">—</span>
             <span class="kpi-card__label">Средняя зарплата</span>
@@ -481,9 +483,16 @@
               </svg>
               ✨ Портрет идеального кандидата (AI)
             </div>
-            <button class="btn btn--outline btn--sm" id="btnGenerateAiSummary">
-              <span>Сгенерировать</span>
-            </button>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn btn--outline btn--sm" id="btnGenerateAiSummary">
+                <span>Сгенерировать</span>
+              </button>
+              <button class="btn btn--icon btn--sm" id="btnCollapseAiSummary" aria-label="Свернуть/Развернуть" style="display: none; padding: 4px; background: transparent; border: none; color: inherit; cursor: pointer;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s;" id="aiSummaryCollapseIcon">
+                  <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="ai-summary-card__content" id="aiSummaryContent" style="display: none;">
             <!-- Контент от ИИ будет здесь -->
@@ -507,7 +516,7 @@
 
         <!-- 2. Топ-15 Hard Skills + Категории -->
         <div class="charts-grid">
-          <div class="chart-card chart-card--wide">
+          <div class="chart-card chart-card--wide chart-card--skills">
             <h3 class="chart-card__title">Топ-15 Hard Skills</h3>
             <div class="chart-card__body">
               <canvas id="chartSkills"></canvas>
@@ -556,20 +565,7 @@
           </div>
         </div>
 
-        <!-- 6. Динамика ЗП -->
-        <div class="charts-grid">
-          <div class="chart-card chart-card--wide">
-            <h3 class="chart-card__title">Динамика зарплаты</h3>
-            <div class="chart-card__header-controls" style="margin-bottom: 0.5rem;">
-              <select id="dynamicsQuerySelect" class="form-input form-input--sm" style="width: 100%;">
-                <option value="">Выберите запрос...</option>
-              </select>
-            </div>
-            <div class="chart-card__body">
-              <canvas id="chartDynamics"></canvas>
-            </div>
-          </div>
-        </div>
+
 
 
 
@@ -780,9 +776,6 @@
                     checked>
                   <label for="settings_period_7d" class="segmented-control__btn">7д</label>
 
-                  <input type="radio" name="settings_period" id="settings_period_14d" value="14days" class="sr-only">
-                  <label for="settings_period_14d" class="segmented-control__btn">14д</label>
-
                   <input type="radio" name="settings_period" id="settings_period_30d" value="30days" class="sr-only">
                   <label for="settings_period_30d" class="segmented-control__btn">30д</label>
 
@@ -870,8 +863,8 @@
                 </svg>
               </div>
               <div class="settings-premium-card__content">
-                <div class="settings-source-item"
-                  style="padding: 0; background: transparent; border: none; cursor: default;">
+                <label class="settings-source-item"
+                  style="padding: 0; background: transparent; border: none; cursor: pointer;">
                   <div class="settings-source-item__info">
                     <span class="settings-theme-card__name">Глубокий парсинг</span>
                     <span class="settings-theme-card__label" style="display:block; margin-top: 4px;">Заходить внутрь
@@ -879,7 +872,7 @@
                   </div>
                   <input type="checkbox" class="settings-toggle" id="settingsDeepScrape" />
                   <span class="settings-toggle-visual"></span>
-                </div>
+                </label>
               </div>
             </div>
           </div>

@@ -17,7 +17,8 @@ let reportsCache = null;
 let cacheInitPromise = null;
 
 /** Mutex-очередь для сериализации записей в index.json (защита от Race Condition) */
-let writeLock = Promise.resolve();
+let isWriting = false;
+let writeQueue = false;
 
 /**
  * Создаёт директории data/ и data/reports/, если они ещё не существуют.
@@ -36,25 +37,29 @@ async function ensureDataDirs() {
 
 /**
  * Сохраняет индексный файл.
- * Использует promise-based mutex (writeLock) — каждая новая запись
- * ждёт завершения предыдущей, предотвращая повреждение JSON при
- * конкурентных вызовах fs.promises.writeFile.
+ * Использует очередь из флагов вместо бесконечной цепочки промисов
+ * для предотвращения утечки памяти.
  */
 async function _saveIndex() {
   if (reportsCache === null) return;
-
-  // Каждая новая запись ждёт завершения предыдущей!
-  writeLock = writeLock.then(async () => {
-    try {
-      const jsonString = JSON.stringify(reportsCache, null, 2);
-      await fs.promises.writeFile(`${INDEX_FILE}.tmp`, jsonString, 'utf-8');
-      await fs.promises.rename(`${INDEX_FILE}.tmp`, INDEX_FILE);
-    } catch (err) {
-      console.error('[Storage] ❌ Ошибка сохранения index.json:', err.message);
+  if (isWriting) {
+    writeQueue = true;
+    return;
+  }
+  isWriting = true;
+  try {
+    const jsonString = JSON.stringify(reportsCache, null, 2);
+    await fs.promises.writeFile(`${INDEX_FILE}.tmp`, jsonString, 'utf-8');
+    await fs.promises.rename(`${INDEX_FILE}.tmp`, INDEX_FILE);
+  } catch (err) {
+    console.error('[Storage] ❌ Ошибка сохранения index.json:', err.message);
+  } finally {
+    isWriting = false;
+    if (writeQueue) {
+      writeQueue = false;
+      _saveIndex(); // Запускаем отложенное сохранение
     }
-  });
-
-  await writeLock;
+  }
 }
 
 /**
@@ -77,7 +82,8 @@ async function saveReport(report) {
     
     // Обновляем кэш только после успешного сохранения файла
     if (reportsCache !== null) {
-      reportsCache.unshift({
+      const existingIndex = reportsCache.findIndex(r => r.id === report.id);
+      const cacheItem = {
         id: report.id,
         query: report.query,
         filters: report.filters,
@@ -85,7 +91,13 @@ async function saveReport(report) {
         createdAt: report.createdAt,
         stats: report.stats,
         errors: report.errors || [],
-      });
+      };
+      
+      if (existingIndex !== -1) {
+        reportsCache[existingIndex] = cacheItem;
+      } else {
+        reportsCache.unshift(cacheItem);
+      }
       await _saveIndex();
     }
     

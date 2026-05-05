@@ -49,10 +49,13 @@ export const DOM = {
   btnGenerateAiSummary: document.getElementById('btnGenerateAiSummary'),
   aiSummaryContent: document.getElementById('aiSummaryContent'),
   aiSummaryLoader: document.getElementById('aiSummaryLoader'),
+  btnCollapseAiSummary: document.getElementById('btnCollapseAiSummary'),
+  aiSummaryCollapseIcon: document.getElementById('aiSummaryCollapseIcon'),
 
 
   /* KPI */
   kpiTotal: document.getElementById('kpiTotal'),
+  kpiNoSalary: document.getElementById('kpiNoSalary'),
   kpiAvgSalary: document.getElementById('kpiAvgSalary'),
   kpiMedianSalary: document.getElementById('kpiMedianSalary'),
   kpiCompanies: document.getElementById('kpiCompanies'),

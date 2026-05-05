@@ -1,6 +1,6 @@
 /**
  * @file rabotaby.js — Парсер вакансий с Rabota.by.
- * @description Наследует HhParser. Вся логика ротации прокси, UA, токенов
+ * @description Наследует HhParser. Вся логика UA, токенов
  * и ретраев наследуется автоматически из hh.js.
  */
 

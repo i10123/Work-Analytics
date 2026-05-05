@@ -13,7 +13,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { enqueueTask, getQueueStatus, getFullQueueState, stopTask, restartTask, deleteTask, prioritizeTask, updateTask, taskEmitter } = require('../services/queue');
+const { enqueueTask, getQueueStatus, getFullQueueState, deleteTask, prioritizeTask, updateTask, taskEmitter } = require('../services/queue');
 const { listReports, loadReport, deleteReport, deleteAllReports, saveReport } = require('../services/storage');
 const { generateCandidateProfile } = require('../services/ai');
 
@@ -21,7 +21,7 @@ const { generateCandidateProfile } = require('../services/ai');
  * POST /api/parse — Запуск нового сбора данных.
  * Тело запроса (JSON):
  *   - query {string} — Ключевое слово для поиска (обязательно).
- *   - period {string} — Период ("1day", "3days", "7days", "14days", "30days").
+ *   - period {string} — Период ("1day", "3days", "7days", "30days").
  *   - limit {number} — Максимум вакансий с каждого из 3 источников.
  *
  * @returns {Object} — { success, task: { id, status, query, filters } }
@@ -243,25 +243,6 @@ router.get('/queue', (req, res) => {
   return res.json({ success: true, ...state });
 });
 
-/**
- * POST /api/queue/:id/stop — Остановка задачи.
- */
-router.post('/queue/:id/stop', (req, res) => {
-  const { id } = req.params;
-  const ok = stopTask(id);
-  if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена или не может быть остановлена.' });
-  return res.json({ success: true, message: 'Задача остановлена.' });
-});
-
-/**
- * POST /api/queue/:id/start — Перезапуск остановленной задачи (ставит pending).
- */
-router.post('/queue/:id/start', (req, res) => {
-  const { id } = req.params;
-  const ok = restartTask(id);
-  if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена или не может быть перезапущена.' });
-  return res.json({ success: true, message: 'Задача перезапущена.' });
-});
 
 /**
  * POST /api/queue/:id/delete — Удаление задачи из очереди.

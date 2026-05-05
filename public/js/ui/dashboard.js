@@ -10,7 +10,6 @@ import {
   renderChartWorkFormatBar,
   renderChartEnglishSalary,
   renderChartTechCategory,
-  renderChartDynamics,
   destroyAllCharts,
 } from './charts.js';
 import { renderJobsTable } from './table.js';
@@ -67,15 +66,7 @@ export function renderDashboard(report) {
   renderChartEnglishSalary(jobs, rates, currentCurrency);
   renderChartTechCategory(jobs);
 
-  // Динамика — подгружаем все отчёты для сравнения
-  fetch('/api/reports')
-    .then(r => r.json())
-    .then(data => {
-      if (data.success && data.reports) {
-        renderChartDynamics(data.reports, currentCurrency, rates);
-      }
-    })
-    .catch(() => {});
+
 
   renderJobsTable(jobs, rates);
 
@@ -93,10 +84,33 @@ function renderAiSummary(report) {
   DOM.aiSummaryContent.style.display = 'none';
   DOM.aiSummaryContent.innerHTML = '';
   
+  if (DOM.btnCollapseAiSummary) {
+    DOM.btnCollapseAiSummary.style.display = 'none';
+    
+    // Add event listener if not already added
+    if (!DOM.btnCollapseAiSummary.dataset.initialized) {
+      DOM.btnCollapseAiSummary.dataset.initialized = 'true';
+      DOM.btnCollapseAiSummary.addEventListener('click', () => {
+        const isCollapsed = DOM.aiSummaryContent.style.display === 'none';
+        if (isCollapsed) {
+          DOM.aiSummaryContent.style.display = 'block';
+          if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(0deg)';
+        } else {
+          DOM.aiSummaryContent.style.display = 'none';
+          if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(180deg)';
+        }
+      });
+    }
+  }
+  
   if (report.aiSummary) {
     DOM.aiSummaryContent.innerHTML = parseMarkdown(report.aiSummary);
-    DOM.aiSummaryContent.style.display = 'block';
+    DOM.aiSummaryContent.style.display = 'none'; // Скрыто по умолчанию
     DOM.btnGenerateAiSummary.style.display = 'none';
+    if (DOM.btnCollapseAiSummary) {
+      DOM.btnCollapseAiSummary.style.display = 'inline-flex';
+      if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(180deg)';
+    }
   } else {
     DOM.btnGenerateAiSummary.style.display = 'inline-flex';
     DOM.btnGenerateAiSummary.onclick = async () => {
@@ -112,6 +126,10 @@ function renderAiSummary(report) {
           report.aiSummary = data.summary; // обновляем локальный объект отчёта
           DOM.aiSummaryContent.innerHTML = parseMarkdown(data.summary);
           DOM.aiSummaryContent.style.display = 'block';
+          if (DOM.btnCollapseAiSummary) {
+            DOM.btnCollapseAiSummary.style.display = 'inline-flex';
+            if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(0deg)';
+          }
         } else {
           DOM.aiSummaryContent.innerHTML = `<div class="alert alert--warning" style="margin-top:10px;"><span class="alert__icon">❌</span> <span class="alert__text">${escapeHtml(data.error || 'Ошибка при генерации')}</span></div>`;
           DOM.aiSummaryContent.style.display = 'block';
@@ -186,8 +204,12 @@ function renderKPI(jobs, rates) {
   if (!DOM.kpiTotal) return;
   DOM.kpiTotal.textContent = jobs.length;
 
+  const withSalaryCount = jobs.filter((j) => j.salary && (j.salary.min > 0 || j.salary.max > 0)).length;
+  const noSalaryCount = jobs.length - withSalaryCount;
+  if (DOM.kpiNoSalary) DOM.kpiNoSalary.textContent = noSalaryCount;
+
   const salaries = jobs
-    .filter((j) => j.salary && (j.salary.min || j.salary.max))
+    .filter((j) => j.salary && (j.salary.min > 0 || j.salary.max > 0))
     .map((j) => {
       const avg = j.salary.min && j.salary.max
         ? (j.salary.min + j.salary.max) / 2

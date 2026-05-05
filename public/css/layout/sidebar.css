@@ -344,10 +344,7 @@
   background: var(--color-accent-soft);
 }
 
-.queue-item--stopped {
-  border-color: var(--color-warning);
-  opacity: 0.8;
-}
+
 
 .queue-item__info {
   flex: 1;

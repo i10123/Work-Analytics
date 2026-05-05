@@ -115,9 +115,7 @@ async function processNext() {
 
     // Проверка остановки после каждого шага
     if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} остановлена после получения курсов валют.`);
-      task.status = 'stopped';
-      emitUpdate(task);
+      console.log(`[Queue] 🛑 Задача ${task.id} удалена во время получения курсов валют. Прерываем.`);
       return;
     }
 
@@ -129,9 +127,7 @@ async function processNext() {
 
     // === ЗАЩИТА: проверка isStopped СРАЗУ после возврата из парсеров ===
     if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} остановлена после парсинга. Данные выброшены.`);
-      task.status = 'stopped';
-      emitUpdate(task);
+      console.log(`[Queue] 🛑 Задача ${task.id} удалена после парсинга. Данные выброшены.`);
       return; // НЕ вызываем AI и saveReport
     }
 
@@ -158,9 +154,7 @@ async function processNext() {
 
     // Ещё одна проверка остановки
     if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} остановлена после дедупликации. Данные выброшены.`);
-      task.status = 'stopped';
-      emitUpdate(task);
+      console.log(`[Queue] 🛑 Задача ${task.id} удалена после дедупликации. Данные выброшены.`);
       return;
     }
 
@@ -170,9 +164,7 @@ async function processNext() {
 
     // Проверка остановки после AI
     if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} остановлена после AI-анализа. Данные выброшены.`);
-      task.status = 'stopped';
-      emitUpdate(task);
+      console.log(`[Queue] 🛑 Задача ${task.id} удалена после AI-анализа. Данные выброшены.`);
       return;
     }
 
@@ -239,9 +231,7 @@ async function processNext() {
   } catch (error) {
     // Если задача была остановлена и axios выбросил AbortError — не считаем это критической ошибкой
     if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} остановлена (abort). Данные выброшены.`);
-      task.status = 'stopped';
-      emitUpdate(task);
+      console.log(`[Queue] 🛑 Задача ${task.id} прервана (abort). Данные выброшены.`);
     } else {
       task.status = 'failed';
       console.error(`[Queue] ❌ Критическая ошибка при обработке ${task.id}:`, error.message);
@@ -327,11 +317,11 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
 // ────────────────────────────────────────────────
 
 /**
- * Останавливает активную задачу. Ставит isStopped = true и абортит сетевые запросы.
+ * Внутренняя функция: Останавливает активную задачу. Ставит isStopped = true и абортит сетевые запросы.
  * @param {string} id — ID задачи.
  * @returns {boolean} — Успешно ли.
  */
-function stopTask(id) {
+function abortTask(id) {
   const task = findTask(id);
   if (!task) return false;
 
@@ -340,41 +330,11 @@ function stopTask(id) {
     if (task.cancelFlag.abortController) {
       task.cancelFlag.abortController.abort();
     }
-    // Статус будет изменён в processNext() при проверке флага
-    console.log(`[Queue] 🛑 Задача ${id} отмечена для остановки.`);
-    return true;
-  }
-
-  // Если pending — просто меняем статус
-  if (task.status === 'pending') {
-    task.status = 'stopped';
-    emitUpdate(task);
+    console.log(`[Queue] 🛑 Задача ${id} отмечена для прерывания (удаление).`);
     return true;
   }
 
   return false;
-}
-
-/**
- * Перезапускает остановленную задачу (ставит pending).
- * @param {string} id — ID задачи.
- * @returns {boolean}
- */
-function restartTask(id) {
-  const task = findTask(id);
-  if (!task || task.status !== 'stopped') return false;
-
-  task.status = 'pending';
-  task.cancelFlag = {
-    isStopped: false,
-    abortController: null,
-  };
-  console.log(`[Queue] ▶️ Задача ${id} перезапущена (pending).`);
-  emitUpdate(task);
-
-  // Пробуем начать обработку
-  processNext();
-  return true;
 }
 
 /**
@@ -388,7 +348,7 @@ function deleteTask(id) {
 
   // Если задача в процессе — останавливаем
   if (task.status === 'processing') {
-    stopTask(id);
+    abortTask(id);
   }
 
   removeTaskFromQueue(id);
@@ -514,8 +474,6 @@ module.exports = {
   enqueueTask,
   getQueueStatus,
   getFullQueueState,
-  stopTask,
-  restartTask,
   deleteTask,
   prioritizeTask,
   updateTask,

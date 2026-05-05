@@ -1,16 +1,16 @@
 /**
  * @file charts.js — Модуль визуализации данных дашборда (Chart.js).
- * @description Рендерит 6 основных графиков + динамику:
+ * @description Рендерит 6 основных графиков:
  *   1. Распределение зарплат (гистограмма)
  *   2. Топ-15 Hard Skills (горизонтальный bar)
  *   3. Зарплата vs Опыт (bar)
  *   4. Формат работы и ЗП (combo: doughnut + bar)
  *   5. Влияние английского на ЗП (bar)
  *   6. Категории специалистов (pie)
- *   7. Динамика зарплаты (line)
  */
 
 import { charts } from '../state.js';
+import { convertCurrency } from '../utils/currency.js';
 
 // ────────────────────────────────────────────────
 //  УТИЛИТЫ
@@ -56,7 +56,7 @@ function filterValid(jobs, field) {
  * @returns {number}
  */
 function avgSalary(jobs, rates, currency) {
-  const withSalary = jobs.filter(j => j.salary && (j.salary.min || j.salary.max));
+  const withSalary = jobs.filter(j => j.salary && (j.salary.min > 0 || j.salary.max > 0));
   if (withSalary.length === 0) return 0;
 
   let sum = 0;
@@ -64,19 +64,9 @@ function avgSalary(jobs, rates, currency) {
     const avg = j.salary.min && j.salary.max
       ? (j.salary.min + j.salary.max) / 2
       : (j.salary.min || j.salary.max);
-    sum += convertSalary(avg, j.salary.currency, currency, rates);
+    sum += convertCurrency(avg, j.salary.currency, currency, rates);
   }
   return Math.round(sum / withSalary.length);
-}
-
-/**
- * Конвертирует зарплату между валютами.
- */
-function convertSalary(amount, from, to, rates) {
-  if (!rates || from === to) return amount;
-  const fromRate = rates[from] || 1;
-  const toRate = rates[to] || 1;
-  return amount / fromRate * toRate;
 }
 
 /**
@@ -179,7 +169,7 @@ function formatNumber(n) {
  * 1. Распределение зарплат (гистограмма).
  */
 export function renderChartSalary(jobs, rates, currency) {
-  const withSalary = jobs.filter(j => j.salary && (j.salary.min || j.salary.max));
+  const withSalary = jobs.filter(j => j.salary && (j.salary.min > 0 || j.salary.max > 0));
   if (withSalary.length === 0) {
     toggleChartCardVisibility('chartSalary', false);
     return;
@@ -188,19 +178,24 @@ export function renderChartSalary(jobs, rates, currency) {
 
   const salaries = withSalary.map(j => {
     const avg = j.salary.min && j.salary.max ? (j.salary.min + j.salary.max) / 2 : (j.salary.min || j.salary.max);
-    return convertSalary(avg, j.salary.currency, currency, rates);
-  }).sort((a, b) => a - b);
+    return convertCurrency(avg, j.salary.currency, currency, rates);
+  }).filter(s => s > 0).sort((a, b) => a - b);
+
+  if (salaries.length === 0) {
+    toggleChartCardVisibility('chartSalary', false);
+    return;
+  }
 
   // Автоматическое определение бинов
   const min = salaries[0];
   const max = salaries[salaries.length - 1];
   const binCount = Math.min(15, Math.max(5, Math.ceil(Math.sqrt(salaries.length))));
-  const binSize = Math.ceil((max - min) / binCount / 10000) * 10000 || 50000;
+  const binSize = Math.ceil((max - min) / binCount / 1000) * 1000 || 5000;
 
   const bins = {};
   for (const s of salaries) {
     const binStart = Math.floor(s / binSize) * binSize;
-    const label = `${formatNumber(binStart / 1000)}k`;
+    const label = `${formatNumber(binStart)}`;
     bins[label] = (bins[label] || 0) + 1;
   }
 
@@ -234,36 +229,58 @@ export function renderChartSkills(jobs) {
     }
   }
 
-  const sorted = Object.entries(skillCount).sort((a, b) => b[1] - a[1]).slice(0, 30); // Берем топ 30 для облака
+  // Берем ровно топ 15 как в заголовке
+  const sorted = Object.entries(skillCount).sort((a, b) => b[1] - a[1]).slice(0, 15);
   if (sorted.length === 0) {
     toggleChartCardVisibility('chartSkills', false);
     return;
   }
   toggleChartCardVisibility('chartSkills', true);
 
-  // Используем wordCloud, так как библиотека подключена в index.html
   safeCreateChart('skills', 'chartSkills', {
-    type: 'wordCloud',
+    type: 'bar',
     data: {
       labels: sorted.map(e => e[0]),
       datasets: [{
         label: 'Упоминаний',
-        data: sorted.map(e => e[1] * 10), // Увеличиваем вес для размера
-        color: PALETTE.slice(0, sorted.length),
+        data: sorted.map(e => e[1]),
+        backgroundColor: PALETTE.slice(0, sorted.length),
+        borderRadius: 6,
+        borderSkipped: false,
+        barThickness: 20,
       }],
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => `${ctx.raw / 10} упоминаний`,
+    options: commonOptions({
+      legend: false,
+      extra: {
+        indexAxis: 'y',
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.raw} упоминаний`,
+            }
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { display: false },
+            ticks: { precision: 0 }
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              autoSkip: false,
+              font: {
+                size: 12,
+                weight: '600'
+              },
+              padding: 10
+            }
           }
         }
       }
-    }
+    })
   });
 }
 
@@ -358,7 +375,6 @@ export function renderChartWorkFormatDoughnut(jobs) {
         data,
         backgroundColor: labels.map(l => colorMap[l] || 'rgba(148, 163, 184, 0.5)'),
         borderWidth: 0,
-        spacing: 2,
       }],
     },
     options: commonOptions({
@@ -525,7 +541,6 @@ export function renderChartTechCategory(jobs) {
         data,
         backgroundColor: PALETTE.slice(0, labels.length),
         borderWidth: 0,
-        spacing: 2,
       }],
     },
     options: commonOptions({
@@ -548,86 +563,7 @@ export function renderChartTechCategory(jobs) {
   });
 }
 
-/**
- * 7. Динамика зарплаты (line) — по отчётам за одинаковый query.
- */
-export function renderChartDynamics(reports, currency, rates) {
-  const select = document.getElementById('dynamicsQuerySelect');
-  if (!select || !reports || reports.length === 0) {
-    toggleChartCardVisibility('chartDynamics', false);
-    return;
-  }
-  toggleChartCardVisibility('chartDynamics', true);
 
-  // Получаем уникальные запросы
-  const queries = [...new Set(reports.map(r => r.query))].filter(Boolean);
-  
-  // Заполняем селект
-  select.innerHTML = '<option value="">Выберите запрос...</option>';
-  queries.forEach(q => {
-    const opt = document.createElement('option');
-    opt.value = q;
-    opt.textContent = q;
-    select.appendChild(opt);
-  });
-
-  // Обработчик выбора
-  select.onchange = () => {
-    const query = select.value;
-    if (!query) return;
-
-    const filtered = reports
-      .filter(r => r.query === query && r.stats?.avgSalaryNormalized)
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
-    if (filtered.length < 2) return;
-
-    const labels = filtered.map(r => {
-      const d = new Date(r.createdAt);
-      return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-    });
-
-    const data = filtered.map(r => {
-      const avg = r.stats.avgSalaryNormalized || 0;
-      return rates ? convertSalary(avg, 'RUB', currency, rates) : avg;
-    });
-
-    safeCreateChart('dynamics', 'chartDynamics', {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: `Ср. ЗП "${query}" (${currency})`,
-          data,
-          borderColor: 'rgba(99, 102, 241, 1)',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          borderWidth: 2,
-        }],
-      },
-      options: commonOptions({
-        extra: {
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: (ctx) => `${formatNumber(ctx.raw)} ${currency}`,
-              },
-            },
-          },
-        },
-      }),
-    });
-  };
-
-  // Авто-выбор первого запроса если есть
-  if (queries.length > 0) {
-    select.value = queries[0];
-    select.dispatchEvent(new Event('change'));
-  }
-}
 
 /**
  * Уничтожает все активные графики.

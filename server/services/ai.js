@@ -323,8 +323,6 @@ async function generateCandidateProfile(report) {
   const skillsCount = {};
   const formats = {};
   const experiences = {};
-  let validSalaries = 0;
-  let sumSalaries = 0;
 
   jobs.forEach(j => {
     (j.skills || []).forEach(s => {
@@ -332,12 +330,6 @@ async function generateCandidateProfile(report) {
     });
     if (j.workFormat) formats[j.workFormat] = (formats[j.workFormat] || 0) + 1;
     if (j.experience) experiences[j.experience] = (experiences[j.experience] || 0) + 1;
-    
-    if (j.salary && (j.salary.min || j.salary.max)) {
-      const avg = j.salary.min && j.salary.max ? (j.salary.min + j.salary.max) / 2 : (j.salary.min || j.salary.max);
-      // Для простоты просто суммируем, не конвертируя валюты, чтобы дать ИИ примерное представление
-      // Или лучше просто не передавать среднюю, а передать массив
-    }
   });
 
   const topSkills = Object.entries(skillsCount)

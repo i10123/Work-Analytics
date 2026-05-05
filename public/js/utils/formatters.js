@@ -69,7 +69,8 @@ export function parseMarkdown(md) {
 
   // Неупорядоченные списки: - item или * item
   html = html.replace(/^\s*[-*]\s+(.*)$/gim, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>'); // Оборачиваем группы li в ul (очень простой вариант)
+  // Нежадная группировка только идущих подряд <li>
+  html = html.replace(/(?:<li>.*?<\/li>\s*)+/g, '<ul>$&</ul>');
   
   // Переносы строк
   html = html.replace(/\n$/gim, '<br />');

@@ -332,6 +332,10 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
   height: 320px;
 }
 
+.chart-card--skills .chart-card__body {
+  height: 480px;
+}
+
 /* Combo chart: two charts side-by-side */
 .chart-card__body--combo {
   display: flex;
