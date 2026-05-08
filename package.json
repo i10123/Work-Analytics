@@ -16,7 +16,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@heyputer/puter.js": "^2.2.15",
     "axios": "^1.15.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",

@@ -8,7 +8,7 @@
 
 - **Backend**: [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/)
 - **Парсинг**: [Axios](https://axios-http.com/) & [Cheerio](https://cheerio.js.org/)
-- **Инфраструктура**: [Puter.js](https://docs.puter.com/)
+- **Инфраструктура**: Node.js
 - **Environment**: [Dotenv](https://www.npmjs.com/package/dotenv)
 - **Proxy**: [HTTPS Proxy Agent](https://www.npmjs.com/package/https-proxy-agent)
 
@@ -56,8 +56,6 @@ EXCHANGE_RATE_API_KEYS=ваш_ключ_1,ваш_ключ_2
 # AI Интеграция (OpenRouter) — для анализа вакансий через LLM
 OPENROUTER_API_KEY=ваш_ключ_openrouter
 
-# Облачная платформа Puter (опционально)
-PUTER_AUTH_TOKEN=ваш_токен_puter
 ```
 
 ### 4. Запуск приложения

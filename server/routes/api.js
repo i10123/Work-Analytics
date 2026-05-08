@@ -302,9 +302,6 @@ router.get('/status', (req, res) => {
     openrouter: {
       configured: !!openrouterKey,
       key: maskKey(openrouterKey),
-    },
-    puter: {
-      configured: !!process.env.PUTER_AUTH_TOKEN,
     }
   });
 });

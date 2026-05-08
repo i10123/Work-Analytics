@@ -6,17 +6,6 @@
  */
 
 const axios = require('axios');
-let puter = null;
-
-try {
-  const puterModule = require('@heyputer/puter.js');
-  const init = puterModule.init || (puterModule.default && puterModule.default.init);
-  if (init && process.env.PUTER_AUTH_TOKEN && process.env.PUTER_AUTH_TOKEN !== 'YOUR_PUTER_AUTH_TOKEN_HERE') {
-    puter = init(process.env.PUTER_AUTH_TOKEN);
-  }
-} catch (e) {
-  console.warn('[AI] ⚠️ Модуль @heyputer/puter.js не загружен. Резервный провайдер (Puter) отключен.');
-}
 
 /** Количество вакансий в одном батче (уменьшено для стабильности — 7 полей на вакансию) */
 const BATCH_SIZE = 5;
@@ -52,8 +41,8 @@ const DEFAULT_METADATA = {
 async function extractMetadataFromJobs(jobs, onProgress = null) {
   const openRouterKeys = getOpenRouterKeys();
 
-  if (!openRouterKeys.length && !puter) {
-    console.warn('[AI] ⚠️ Провайдеры (OpenRouter, Puter) не настроены. Метаданные не будут извлечены.');
+  if (!openRouterKeys.length) {
+    console.warn('[AI] ⚠️ Провайдеры (OpenRouter) не настроены. Метаданные не будут извлечены.');
     // Проставляем дефолтные значения, сохраняя навыки парсера
     return jobs.map((job) => ({
       ...job,
@@ -88,15 +77,6 @@ async function extractMetadataFromJobs(jobs, onProgress = null) {
       }
     }
 
-    // 2. Попытка через Puter (если OpenRouter не сработал)
-    if (!metadataMap && puter) {
-      console.log(`[AI] 🔄 Пробую резервный провайдер: Puter (DeepSeek)...`);
-      try {
-        metadataMap = await processBatchPuter(batch);
-      } catch (puterError) {
-        console.error(`[AI] ❌ Ошибка резервного провайдера (Puter): ${puterError.message}`);
-      }
-    }
 
     /** Присваиваем метаданные (или дефолтные при фиаско) */
     for (let j = 0; j < batch.length; j++) {
@@ -219,20 +199,6 @@ async function processBatchOpenAI(batch, apiKey, url, model) {
   return parseJsonFromAi(rawText, batch.length);
 }
 
-// --- PUTER LOGIC ---
-
-async function processBatchPuter(batch) {
-  if (!puter) throw new Error('Puter not initialized');
-  const prompt = generatePrompt(batch);
-
-  // Используем DeepSeek v3.2 через Puter
-  const response = await puter.ai.chat(prompt, { 
-    model: 'deepseek/deepseek-v3.2'
-  });
-
-  const rawText = response.message?.content || '{}';
-  return parseJsonFromAi(rawText, batch.length);
-}
 
 // --- HELPERS ---
 
@@ -398,16 +364,7 @@ async function generateTextFromAI(prompt) {
     console.warn('[AI] ❌ Все ключи OpenRouter исчерпаны или недоступны для генерации сводки. Пробую резервный провайдер...');
   }
 
-  if (puter) {
-    try {
-      const response = await puter.ai.chat(prompt, { model: 'deepseek/deepseek-v3.2' });
-      return response.message?.content || "Не удалось сгенерировать сводку.";
-    } catch (e) {
-      console.error('[AI] Ошибка генерации текста через Puter:', e.message);
-    }
-  }
-
-  return "Ошибка: Не настроен AI провайдер (OpenRouter или Puter) для генерации сводки.";
+  return "Ошибка: Не настроен AI провайдер (OpenRouter) для генерации сводки.";
 }
 
 module.exports = {
