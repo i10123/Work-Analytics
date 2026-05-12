@@ -44,12 +44,32 @@ let currentTask = null;
  * @param {Object} [params.sources] — Включенные источники { hh, rabotaby, habr }.
  * @returns {Object} — Объект задачи с id и статусом.
  */
+function sanitizeQueryForId(query) {
+  let sanitized = query
+    .replace(/[^a-zA-Z0-9а-яА-ЯёЁ]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return sanitized || 'query';
+}
+
+function formatDateTime() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+}
+
 function enqueueTask(params) {
   if (taskQueue.length >= MAX_QUEUE_SIZE) {
     throw new Error('Очередь сервера переполнена. Повторите попытку позже.');
   }
 
-  const taskId = `report_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const querySlug = sanitizeQueryForId(params.query);
+  const dateTime = formatDateTime();
+  const taskId = `report_${querySlug}_${dateTime}`;
 
   const task = {
     id: taskId,

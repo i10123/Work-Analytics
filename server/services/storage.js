@@ -63,7 +63,7 @@ async function _saveIndex() {
  * @returns {Promise<string>} — Абсолютный путь к сохранённому файлу.
  */
 async function saveReport(report) {
-  if (!report || !/^report_\d+(?:_[a-z0-9]+)?$/.test(report.id)) {
+  if (!report || !/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(report.id)) {
     throw new Error('Invalid report ID format for saving');
   }
   const filename = `${report.id}.json`;
@@ -109,7 +109,7 @@ async function saveReport(report) {
  * @returns {Promise<Object|null>} — Распарсенный объект отчёта или null, если файл не найден.
  */
 async function loadReport(reportId) {
-  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(reportId)) {
+  if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
     throw new Error('Invalid report ID format for loading');
   }
   const filepath = path.join(REPORTS_DIR, `${reportId}.json`);
@@ -205,7 +205,7 @@ async function listReports() {
  * @returns {Promise<boolean>} — true, если файл удалён, false, если файл не найден.
  */
 async function deleteReport(reportId) {
-  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(reportId)) {
+  if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
     throw new Error('Invalid report ID format for deletion');
   }
   const filepath = path.join(REPORTS_DIR, `${reportId}.json`);

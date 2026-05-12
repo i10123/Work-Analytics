@@ -10,9 +10,6 @@ export const DEFAULT_SETTINGS = {
   deepScrape: false,
 };
 
-/**
- * Загружает настройки из localStorage.
- */
 export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -25,9 +22,6 @@ export function loadSettings() {
   return { ...DEFAULT_SETTINGS };
 }
 
-/**
- * Сохраняет настройки в localStorage.
- */
 export function saveSettings(settings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }

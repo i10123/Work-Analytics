@@ -14,25 +14,22 @@
     rel="stylesheet" />
   <link href="https://fonts.cdnfonts.com/css/anurati" rel="stylesheet">
   <script>
-    (function() {
+    (function () {
       try {
         var theme = localStorage.getItem('app-theme') || 'slate-modernity';
         document.documentElement.setAttribute('data-theme', theme);
-      } catch (e) {}
+      } catch (e) { }
     })();
   </script>
   <link rel="stylesheet" href="css/main.css" />
 </head>
 
 <body>
-  <!-- ========== LAYOUT ========== -->
   <div class="app-layout" id="appLayout">
-    <!-- Элементы фона для Glassmorphism / 3D -->
     <div class="bg-shape bg-shape--1"></div>
     <div class="bg-shape bg-shape--2"></div>
     <div class="bg-shape bg-shape--3"></div>
 
-    <!-- Мобильная шапка -->
     <header class="mobile-topbar" id="mobileTopbar">
       <div class="mobile-topbar__logo">
         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none"
@@ -46,7 +43,6 @@
       <button class="mobile-topbar__toggle" id="mobileMenuToggle" aria-label="Открыть меню">☰</button>
     </header>
 
-    <!-- ===== САЙДБАР (левая панель: история отчётов) ===== -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__header">
         <div class="sidebar__logo">
@@ -90,7 +86,6 @@
         </div>
       </div>
       <div class="sidebar__reports-list" id="reportsList">
-        <!-- Динамически заполняется через JS -->
         <div class="sidebar__empty" id="reportsEmpty">
           <span class="sidebar__empty-icon">
             <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="1.5" fill="none"
@@ -103,15 +98,12 @@
       </div>
 
 
-      <!-- Очередь задач -->
       <div class="sidebar__section-header" id="queueSectionHeader" style="display: none;">
         <div class="sidebar__section-title">Очередь задач</div>
       </div>
       <div class="sidebar__queue-list" id="queueList" style="display: none;">
-        <!-- Динамически заполняется через JS -->
       </div>
 
-      <!-- Статус очереди -->
       <div class="sidebar__queue-status" id="queueStatus" style="display: none;">
         <div class="queue-badge">
           <span class="queue-badge__dot"></span>
@@ -119,7 +111,6 @@
         </div>
       </div>
 
-      <!-- Кнопка Настройки -->
       <button class="btn sidebar__settings-btn mt-auto" id="btnSettings">
         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
           stroke-linecap="round" stroke-linejoin="round">
@@ -132,7 +123,6 @@
       </button>
     </aside>
 
-    <!-- ===== ОСНОВНОЙ КОНТЕНТ ===== -->
     <main class="main-content" id="mainContent">
       <button class="absolute-toggle" id="sidebarToggle" aria-label="Меню">
         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
@@ -142,7 +132,6 @@
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
-      <!-- ---- ЭКРАН ПРИВЕТСТВИЯ (Command Center) ---- -->
       <section class="welcome-screen" id="welcomeScreen">
 
         <div class="welcome-screen__inner">
@@ -280,7 +269,8 @@
             </div>
             <div class="welcome-stat-card">
               <div class="welcome-stat-card__icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="var(--color-accent)" stroke-width="2"
+                  fill="none" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M19 11c0-2-2-4-5-4V3H10v4C7 7 5 9 5 11c0 3 2 6 6 7.5V21h2v-2.5c4-1.5 6-4.5 6-7.5z"></path>
                   <path d="M10 7h4"></path>
                   <path d="M10 11h2.5a1.5 1.5 0 1 0 0 3h-2.5"></path>
@@ -317,7 +307,6 @@
         </div>
       </section>
 
-      <!-- ---- МОДАЛЬНОЕ ОКНО: Новый сбор ---- -->
       <div class="modal-overlay" id="modalOverlay" style="display: none;">
         <div class="modal" id="parseModal">
           <div class="modal__header">
@@ -378,14 +367,14 @@
         </div>
       </div>
 
-      <!-- ---- СТАТУС ПАРСИНГА (progress) ---- -->
       <section class="progress-section" id="progressSection" style="display: none;">
         <div class="progress-container">
           <div class="progress-card">
             <div class="progress-card__spinner"></div>
             <h3 class="progress-card__title" id="progressTitle">Сбор данных...</h3>
             <p class="progress-card__step" id="progressStep">Инициализация...</p>
-            <p class="progress-card__time" id="progressTime" style="font-size: 1.1rem; color: var(--color-primary); font-weight: 600; margin-top: 0.5rem;"></p>
+            <p class="progress-card__time" id="progressTime"
+              style="font-size: 1.1rem; color: var(--color-primary); font-weight: 600; margin-top: 0.5rem;"></p>
             <div class="progress-bar">
               <div class="progress-bar__fill" id="progressFill"></div>
             </div>
@@ -393,9 +382,7 @@
         </div>
       </section>
 
-      <!-- ---- ДАШБОРД (графики и данные) ---- -->
       <section class="dashboard" id="dashboard" style="display: none;">
-        <!-- Заголовок и мета -->
         <div class="dashboard__header">
           <div class="dashboard__header-left">
             <button class="btn btn--back" id="btnBackToWelcome" title="Вернуться на главную">
@@ -418,13 +405,11 @@
                 <div class="dashboard__subtitle-group">
                   <p class="dashboard__subtitle" id="dashSubtitle">—</p>
                   <div class="dashboard__badges" id="dashBadges">
-                    <!-- Badges will be injected here -->
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <!-- Переключатель валют -->
           <div class="currency-switcher" id="currencySwitcher">
             <button class="currency-btn active" data-currency="RUB">₽ RUB</button>
             <button class="currency-btn" data-currency="USD">$ USD</button>
@@ -433,13 +418,11 @@
           </div>
         </div>
 
-        <!-- Уведомление об ошибках (partial) -->
         <div class="alert alert--warning" id="alertPartial" style="display: none;">
           <span class="alert__icon">⚠️</span>
           <span class="alert__text" id="alertPartialText">—</span>
         </div>
 
-        <!-- KPI-карточки -->
         <div class="kpi-grid" id="kpiGrid">
           <div class="kpi-card">
             <span class="kpi-card__icon">📌</span>
@@ -477,7 +460,8 @@
         <div class="ai-summary-card" id="aiSummaryCard">
           <div class="ai-summary-card__header">
             <div class="ai-summary-card__title">
-              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                 <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
               </svg>
@@ -487,8 +471,11 @@
               <button class="btn btn--outline btn--sm" id="btnGenerateAiSummary">
                 <span>Сгенерировать</span>
               </button>
-              <button class="btn btn--icon btn--sm" id="btnCollapseAiSummary" aria-label="Свернуть/Развернуть" style="display: none; padding: 4px; background: transparent; border: none; color: inherit; cursor: pointer;">
-                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s;" id="aiSummaryCollapseIcon">
+              <button class="btn btn--icon btn--sm" id="btnCollapseAiSummary" aria-label="Свернуть/Развернуть"
+                style="display: none; padding: 4px; background: transparent; border: none; color: inherit; cursor: pointer;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"
+                  stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s;"
+                  id="aiSummaryCollapseIcon">
                   <polyline points="18 15 12 9 6 15"></polyline>
                 </svg>
               </button>
@@ -575,7 +562,8 @@
             <h3 class="table-card__title">Все вакансии</h3>
             <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
               <button class="btn btn--export-csv" id="btnExportCsv" title="Экспорт в CSV">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>

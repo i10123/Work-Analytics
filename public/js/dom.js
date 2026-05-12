@@ -1,5 +1,5 @@
 export const DOM = {
-  /* Сайдбар */
+  // Сайдбар
   sidebar: document.getElementById('sidebar'),
   sidebarToggle: document.getElementById('sidebarToggle'),
   btnNewReport: document.getElementById('btnNewReport'),
@@ -9,12 +9,12 @@ export const DOM = {
   queueStatus: document.getElementById('queueStatus'),
   queueText: document.getElementById('queueText'),
 
-  /* Экраны */
+  // Экраны
   welcomeScreen: document.getElementById('welcomeScreen'),
   progressSection: document.getElementById('progressSection'),
   dashboard: document.getElementById('dashboard'),
 
-  /* Модалка */
+  // Модалка
   modalOverlay: document.getElementById('modalOverlay'),
   modalClose: document.getElementById('modalClose'),
   parseForm: document.getElementById('parseForm'),
@@ -23,7 +23,7 @@ export const DOM = {
   inputLimit: document.getElementById('inputLimit'),
   btnSubmitParse: document.getElementById('btnSubmitParse'),
 
-  /* Чарты */
+  // Чарты
   chartWorkFormat: document.getElementById('chartWorkFormat'),
   chartSalaryByFormat: document.getElementById('chartSalaryByFormat'),
   chartSalaryExp: document.getElementById('chartSalaryExp'),
@@ -31,20 +31,18 @@ export const DOM = {
   chartDynamics: document.getElementById('chartDynamics'),
   dynamicsQuerySelect: document.getElementById('dynamicsQuerySelect'),
 
-  /* Дашборд */
+  // Дашборд
   btnExportCsv: document.getElementById('btnExportCsv'),
   progressTitle: document.getElementById('progressTitle'),
   progressStep: document.getElementById('progressStep'),
   progressTime: document.getElementById('progressTime'),
-
-  /* Дашборд */
   btnBackToWelcome: document.getElementById('btnBackToWelcome'),
   dashTitle: document.getElementById('dashTitle'),
   dashSubtitle: document.getElementById('dashSubtitle'),
   alertPartial: document.getElementById('alertPartial'),
   alertPartialText: document.getElementById('alertPartialText'),
 
-  /* AI Сводка */
+  // AI Сводка
   aiSummaryCard: document.getElementById('aiSummaryCard'),
   btnGenerateAiSummary: document.getElementById('btnGenerateAiSummary'),
   aiSummaryContent: document.getElementById('aiSummaryContent'),
@@ -52,8 +50,7 @@ export const DOM = {
   btnCollapseAiSummary: document.getElementById('btnCollapseAiSummary'),
   aiSummaryCollapseIcon: document.getElementById('aiSummaryCollapseIcon'),
 
-
-  /* KPI */
+  // KPI
   kpiTotal: document.getElementById('kpiTotal'),
   kpiNoSalary: document.getElementById('kpiNoSalary'),
   kpiAvgSalary: document.getElementById('kpiAvgSalary'),
@@ -61,16 +58,16 @@ export const DOM = {
   kpiCompanies: document.getElementById('kpiCompanies'),
   kpiRemote: document.getElementById('kpiRemote'),
 
-  /* Валюты */
+  // Валюты
   currencyBtns: document.querySelectorAll('.currency-btn'),
 
-  /* Таблица */
+  // Таблица
   jobsTableBody: document.getElementById('jobsTableBody'),
 
-  /* Темы и мобильное меню */
+  // Темы и мобильное меню
   mobileMenuToggle: document.getElementById('mobileMenuToggle'),
 
-  /* Настройки */
+  // Настройки
   btnSettings: document.getElementById('btnSettings'),
   settingsOverlay: document.getElementById('settingsOverlay'),
   settingsClose: document.getElementById('settingsClose'),

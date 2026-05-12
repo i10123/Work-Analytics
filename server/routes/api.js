@@ -104,7 +104,7 @@ router.get('/reports', async (req, res) => {
 router.get('/reports/:id', async (req, res) => {
   const { id } = req.params;
 
-  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(id)) {
+  if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(id)) {
     return res.status(400).json({ success: false, error: 'Неверный формат ID отчёта.' });
   }
 
@@ -128,7 +128,7 @@ router.get('/reports/:id', async (req, res) => {
 router.post('/reports/:id/summary', async (req, res) => {
   const { id } = req.params;
 
-  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(id)) {
+  if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(id)) {
     return res.status(400).json({ success: false, error: 'Неверный формат ID отчёта.' });
   }
 
@@ -161,7 +161,7 @@ router.post('/reports/:id/summary', async (req, res) => {
 router.delete('/reports/:id', async (req, res) => {
   const { id } = req.params;
 
-  if (!/^report_\d+(?:_[a-z0-9]+)?$/.test(id)) {
+  if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(id)) {
     return res.status(400).json({ success: false, error: 'Неверный формат ID отчёта.' });
   }
 

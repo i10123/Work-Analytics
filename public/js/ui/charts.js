@@ -1,46 +1,24 @@
-/**
- * @file charts.js — Модуль визуализации данных дашборда (Chart.js).
- * @description Рендерит 6 основных графиков:
- *   1. Распределение зарплат (гистограмма)
- *   2. Топ-15 Hard Skills (горизонтальный bar)
- *   3. Зарплата vs Опыт (bar)
- *   4. Формат работы и ЗП (combo: doughnut + bar)
- *   5. Влияние английского на ЗП (bar)
- *   6. Категории специалистов (pie)
- */
-
 import { charts } from '../state.js';
 import { convertCurrency } from '../utils/currency.js';
 
-// ────────────────────────────────────────────────
-//  УТИЛИТЫ
-// ────────────────────────────────────────────────
-
-/** Палитра цветов для графиков */
 const PALETTE = [
-  'rgba(99, 102, 241, 0.85)',   // indigo
-  'rgba(236, 72, 153, 0.85)',   // pink
-  'rgba(14, 165, 233, 0.85)',   // sky
-  'rgba(34, 197, 94, 0.85)',    // green
-  'rgba(249, 115, 22, 0.85)',   // orange
-  'rgba(168, 85, 247, 0.85)',   // purple
-  'rgba(20, 184, 166, 0.85)',   // teal
-  'rgba(234, 179, 8, 0.85)',    // yellow
-  'rgba(239, 68, 68, 0.85)',    // red
-  'rgba(59, 130, 246, 0.85)',   // blue
-  'rgba(217, 70, 239, 0.85)',   // fuchsia
-  'rgba(132, 204, 22, 0.85)',   // lime
-  'rgba(244, 63, 94, 0.85)',    // rose
-  'rgba(6, 182, 212, 0.85)',    // cyan
-  'rgba(251, 146, 60, 0.85)',   // amber
+  'rgba(99, 102, 241, 0.85)',
+  'rgba(236, 72, 153, 0.85)',
+  'rgba(14, 165, 233, 0.85)',
+  'rgba(34, 197, 94, 0.85)',
+  'rgba(249, 115, 22, 0.85)',
+  'rgba(168, 85, 247, 0.85)',
+  'rgba(20, 184, 166, 0.85)',
+  'rgba(234, 179, 8, 0.85)',
+  'rgba(239, 68, 68, 0.85)',
+  'rgba(59, 130, 246, 0.85)',
+  'rgba(217, 70, 239, 0.85)',
+  'rgba(132, 204, 22, 0.85)',
+  'rgba(244, 63, 94, 0.85)',
+  'rgba(6, 182, 212, 0.85)',
+  'rgba(251, 146, 60, 0.85)',
 ];
 
-/**
- * Фильтрует значения "Не указано", null, undefined из данных.
- * @param {Array} jobs
- * @param {string} field — Имя поля.
- * @returns {Array}
- */
 function filterValid(jobs, field) {
   return jobs.filter(j => {
     const v = j[field];
@@ -48,13 +26,6 @@ function filterValid(jobs, field) {
   });
 }
 
-/**
- * Считает среднюю ЗП для группы вакансий.
- * @param {Array} jobs
- * @param {Object} rates — Курсы валют.
- * @param {string} currency — Целевая валюта.
- * @returns {number}
- */
 function avgSalary(jobs, rates, currency) {
   const withSalary = jobs.filter(j => j.salary && (j.salary.min > 0 || j.salary.max > 0));
   if (withSalary.length === 0) return 0;
@@ -69,9 +40,6 @@ function avgSalary(jobs, rates, currency) {
   return Math.round(sum / withSalary.length);
 }
 
-/**
- * Уничтожает старый инстанс Chart и создаёт новый.
- */
 function safeCreateChart(chartKey, canvasId, config) {
   if (charts[chartKey]) {
     charts[chartKey].destroy();
@@ -85,9 +53,6 @@ function safeCreateChart(chartKey, canvasId, config) {
   return charts[chartKey];
 }
 
-/**
- * Скрывает или показывает родительскую карточку графика.
- */
 function toggleChartCardVisibility(canvasId, show) {
   const canvas = document.getElementById(canvasId);
   if (canvas) {
@@ -98,9 +63,6 @@ function toggleChartCardVisibility(canvasId, show) {
   }
 }
 
-/**
- * Маппит сырой опыт парсеров (например, "От 1 года до 3 лет") в стандартные грейды.
- */
 function mapExperienceToLevel(exp) {
   if (!exp) return null;
   const l = exp.toLowerCase();
@@ -112,9 +74,6 @@ function mapExperienceToLevel(exp) {
   return null;
 }
 
-/**
- * Общие опции для графиков.
- */
 function commonOptions(opts = {}) {
   const textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || '#94a3b8';
   const gridColor = 'rgba(148, 163, 184, 0.08)';
@@ -153,21 +112,11 @@ function commonOptions(opts = {}) {
   };
 }
 
-/**
- * Форматирует число с разделителями тысяч.
- */
 function formatNumber(n) {
   if (!n && n !== 0) return '—';
   return n.toLocaleString('ru-RU');
 }
 
-// ────────────────────────────────────────────────
-//  ГРАФИКИ
-// ────────────────────────────────────────────────
-
-/**
- * 1. Распределение зарплат (гистограмма).
- */
 export function renderChartSalary(jobs, rates, currency) {
   const withSalary = jobs.filter(j => j.salary && (j.salary.min > 0 || j.salary.max > 0));
   if (withSalary.length === 0) {
@@ -186,7 +135,6 @@ export function renderChartSalary(jobs, rates, currency) {
     return;
   }
 
-  // Автоматическое определение бинов
   const min = salaries[0];
   const max = salaries[salaries.length - 1];
   const binCount = Math.min(15, Math.max(5, Math.ceil(Math.sqrt(salaries.length))));
@@ -216,9 +164,6 @@ export function renderChartSalary(jobs, rates, currency) {
   });
 }
 
-/**
- * 2. Топ-15 Hard Skills (горизонтальный bar).
- */
 export function renderChartSkills(jobs) {
   const skillCount = {};
   for (const job of jobs) {
@@ -229,7 +174,6 @@ export function renderChartSkills(jobs) {
     }
   }
 
-  // Берем ровно топ 15 как в заголовке
   const sorted = Object.entries(skillCount).sort((a, b) => b[1] - a[1]).slice(0, 15);
   if (sorted.length === 0) {
     toggleChartCardVisibility('chartSkills', false);
@@ -284,14 +228,9 @@ export function renderChartSkills(jobs) {
   });
 }
 
-/**
- * 3. Зарплата vs Опыт (bar).
- * Группирует по experience, считает среднюю ЗП. Исключает "Не указано".
- */
 export function renderChartSalaryVsExperience(jobs, rates, currency) {
   const levels = ['Junior', 'Middle', 'Senior', 'Lead'];
-  
-  // Добавляем нормализованный опыт каждому джобу для агрегации
+
   const normalizedJobs = jobs.map(j => ({ ...j, mappedExp: mapExperienceToLevel(j.experience) }));
   const valid = normalizedJobs.filter(j => j.mappedExp);
 
@@ -300,7 +239,6 @@ export function renderChartSalaryVsExperience(jobs, rates, currency) {
     return avgSalary(group, rates, currency);
   }).map(v => v || 0);
 
-  // Если все нули — не рендерим
   if (data.every(v => v === 0)) {
     toggleChartCardVisibility('chartSalaryVsExp', false);
     return;
@@ -342,9 +280,6 @@ export function renderChartSalaryVsExperience(jobs, rates, currency) {
   });
 }
 
-/**
- * 4a. Формат работы — Doughnut (доля Remote/Office/Hybrid).
- */
 export function renderChartWorkFormatDoughnut(jobs) {
   const valid = filterValid(jobs, 'workFormat');
   if (valid.length === 0) {
@@ -398,9 +333,6 @@ export function renderChartWorkFormatDoughnut(jobs) {
   });
 }
 
-/**
- * 4b. Формат работы — Bar (средняя ЗП по формату).
- */
 export function renderChartWorkFormatBar(jobs, rates, currency) {
   const formats = ['Remote', 'Office', 'Hybrid'];
   const valid = filterValid(jobs, 'workFormat');
@@ -449,9 +381,6 @@ export function renderChartWorkFormatBar(jobs, rates, currency) {
   });
 }
 
-/**
- * 5. Влияние английского на ЗП (bar).
- */
 export function renderChartEnglishSalary(jobs, rates, currency) {
   const levels = ['Нет', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
   const valid = filterValid(jobs, 'englishLevel');
@@ -461,7 +390,6 @@ export function renderChartEnglishSalary(jobs, rates, currency) {
     return avgSalary(group, rates, currency);
   });
 
-  // Показываем только уровни с данными
   const filteredLabels = [];
   const filteredData = [];
   levels.forEach((l, i) => {
@@ -477,7 +405,6 @@ export function renderChartEnglishSalary(jobs, rates, currency) {
   }
   toggleChartCardVisibility('chartEnglishSalary', true);
 
-  // Градиент от зелёного к фиолетовому
   const gradientColors = filteredLabels.map((_, i) => {
     const t = i / Math.max(filteredLabels.length - 1, 1);
     const r = Math.round(34 + (168 - 34) * t);
@@ -513,9 +440,6 @@ export function renderChartEnglishSalary(jobs, rates, currency) {
   });
 }
 
-/**
- * 6. Категории специалистов (pie).
- */
 export function renderChartTechCategory(jobs) {
   const valid = filterValid(jobs, 'techCategory');
   if (valid.length === 0 || valid.every(j => j.techCategory === 'Другое')) {
@@ -529,7 +453,6 @@ export function renderChartTechCategory(jobs) {
     counts[j.techCategory] = (counts[j.techCategory] || 0) + 1;
   }
 
-  // Убираем "Другое" если слишком мало
   const labels = Object.keys(counts);
   const data = Object.values(counts);
 
@@ -563,11 +486,6 @@ export function renderChartTechCategory(jobs) {
   });
 }
 
-
-
-/**
- * Уничтожает все активные графики.
- */
 export function destroyAllCharts() {
   for (const key of Object.keys(charts)) {
     if (charts[key]) {

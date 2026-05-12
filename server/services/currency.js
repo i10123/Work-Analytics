@@ -23,6 +23,11 @@ const FALLBACK_RATES = {
 /** Текущий индекс ключа для валют */
 let currentRateKeyIndex = 0;
 
+/** Кэш для хранения полученных курсов */
+let cachedRates = null;
+let lastFetchTime = null;
+const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 часов в миллисекундах
+
 /**
  * Получает массив ключей из переменной окружения.
  * @returns {string[]}
@@ -37,6 +42,14 @@ function getRateKeys() {
  * Базовая валюта — RUB. Результат: сколько RUB стоит 1 единица каждой валюты.
  */
 async function fetchExchangeRates() {
+  const now = Date.now();
+
+  // Если кэш существует и он свежий — используем его
+  if (cachedRates && lastFetchTime && (now - lastFetchTime < CACHE_TTL)) {
+    console.log('[Currency] 📦 Используются закэшированные курсы валют (TTL).');
+    return cachedRates;
+  }
+
   const keys = getRateKeys();
 
   /** Если ключи не заданы — сразу возвращаем fallback */
@@ -69,7 +82,13 @@ async function fetchExchangeRates() {
         currentRateKeyIndex = activeKeyIndex;
 
         console.log(`[Currency] ✅ Курсы получены: 1 USD = ${rates.USD} RUB`);
-        return buildRatesResponse(rates, false);
+        const responseObj = buildRatesResponse(rates, false);
+        
+        // Сохраняем в кэш только успешные ответы от API
+        cachedRates = responseObj;
+        lastFetchTime = Date.now();
+
+        return responseObj;
       }
     } catch (error) {
       console.warn(`[Currency] ⚠️ Ключ #${activeKeyIndex + 1} не сработал: ${error.message}`);
@@ -89,7 +108,7 @@ async function fetchExchangeRates() {
  * @param {string} fromCurrency — Исходная валюта (например: "USD").
  * @param {string} toCurrency — Целевая валюта (например: "RUB").
  * @param {Object<string, number>} rates — Объект курсов (1 единица валюты = X RUB).
- * @returns {number} — Сконвертированная сумма, округлённая до целого.
+ * @returns {number} — Сконвертированная сумма, округлённая до сотых.
  */
 function convertCurrency(amount, fromCurrency, toCurrency, rates) {
   if (fromCurrency === toCurrency) return amount;
@@ -98,7 +117,7 @@ function convertCurrency(amount, fromCurrency, toCurrency, rates) {
   const amountInRub = amount * (rates[fromCurrency] || 1);
   const result = amountInRub / (rates[toCurrency] || 1);
 
-  return Math.round(result);
+  return Math.round(result * 100) / 100;
 }
 
 /**

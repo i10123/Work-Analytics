@@ -1,13 +1,8 @@
-import { DOM } from './dom.js';
-import { escapeHtml } from './utils/formatters.js';
 import { showScreen } from './ui/common.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { setCurrentReport, setAllReports } from './state.js';
 import { renderReportsList } from './ui/sidebar.js';
 
-/**
- * Загружает список отчётов из API и рендерит сайдбар.
- */
 export async function loadReportsList() {
   try {
     const response = await fetch('/api/reports');
@@ -25,11 +20,6 @@ export async function loadReportsList() {
   }
 }
 
-/**
- * Загружает полный отчёт по ID и отображает дашборд.
- * @param {string} reportId — Идентификатор отчёта.
- * @param {boolean} skipHistory — Пропустить ли добавление в историю (для popstate).
- */
 export async function loadReportById(reportId, skipHistory = false) {
   try {
     const response = await fetch(`/api/reports/${reportId}`);
@@ -38,7 +28,7 @@ export async function loadReportById(reportId, skipHistory = false) {
     if (data.success) {
       setCurrentReport(data.report);
       localStorage.setItem('lastReportId', reportId);
-      
+
       if (!skipHistory) {
         history.pushState({ type: 'report', id: reportId }, '', `#report=${reportId}`);
       }
