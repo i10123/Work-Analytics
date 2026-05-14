@@ -1,3 +1,6 @@
+/*Файл содержит стили футера (нижней части страницы), 
+включая ховер-эффекты и адаптивность подписи.*/
+
 .footer-signature {
     font-family: 'Anurati', sans-serif;
     text-align: center;

@@ -1,6 +1,12 @@
+/**
+ * sse.js
+ * Суть: Модуль реал-тайм обмена данными через Server-Sent Events.
+ * Что делает: Слушает обновления статуса задач от бэкенда, динамически меняет отображение экранов при старте/завершении задач и обновляет таймеры прогресса.
+ * Что содержит: Инициализацию EventSource (setupSSE), обработчики событий обновлений задач handleTaskUpdate и обновление счетчика очереди.
+ */
 import { DOM } from '../dom.js';
 import { showScreen } from './common.js';
-import { loadReportById, loadReportsList } from '../api.js';
+import { loadReportById, loadReportsList } from '../report.js';
 import { showErrorModal } from './modal.js';
 import { updateWelcomeStats } from './welcome.js';
 import { loadQueueUI } from './sidebar.js';

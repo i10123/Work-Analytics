@@ -1,3 +1,13 @@
+/**
+ * Модуль для работы с пользовательскими настройками приложения.
+ * 
+ * Содержит:
+ * - SETTINGS_KEY: ключ для хранения настроек в localStorage.
+ * - DEFAULT_SETTINGS: объект с настройками по умолчанию.
+ * - loadSettings: загрузка настроек из локального хранилища с объединением с дефолтными.
+ * - saveSettings: сохранение текущих настроек пользователя.
+ */
+
 export const SETTINGS_KEY = 'workanalytics-settings';
 
 export const DEFAULT_SETTINGS = {

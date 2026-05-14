@@ -1,3 +1,9 @@
+/**
+ * table.js
+ * Суть: Менеджер интерактивной таблицы со списком вакансий.
+ * Что делает: Генерирует строки таблицы, поддерживает динамический поиск по тексту, сквозную сортировку по столбцам с учетом конвертации валют.
+ * Что содержит: Паттерн модуль TableManager с внутренней инкапсуляцией состояния сортировки, методы отрисовки строк renderTableRows и настройки слушателей таблицы.
+ */
 import { DOM } from '../dom.js';
 import { currentCurrency } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
@@ -50,12 +56,9 @@ const TableManager = (() => {
         sortConfig.direction = 'asc';
       }
 
-      // Обновляем визуальные классы
       const headers = table.querySelectorAll('th[data-sort]');
       headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
       th.classList.add(`sort-${sortConfig.direction}`);
-
-      // Получаем текущие отфильтрованные данные
       const searchInput = document.getElementById('jobsTableSearch');
       const q = searchInput ? searchInput.value.toLowerCase() : '';
 
@@ -76,8 +79,6 @@ const TableManager = (() => {
     globalTableBodyListenerAdded = true;
 
     DOM.jobsTableBody.addEventListener('click', (e) => {
-      // Future interactive elements inside table rows can be handled here via event delegation.
-      // Currently, the only interactive element is a standard <a> tag which works natively.
       const btn = e.target.closest('button');
       if (btn) {
         // e.g. e.stopPropagation();
@@ -133,7 +134,6 @@ const TableManager = (() => {
     jobs.forEach((job) => {
       const tr = document.createElement('tr');
 
-      /** Форматируем зарплату */
       let salaryStr = '—';
       if (job.salary && (job.salary.min || job.salary.max)) {
         const min = job.salary.min ? convertCurrency(job.salary.min, job.salary.currency, currentCurrency, rates) : null;
@@ -149,13 +149,10 @@ const TableManager = (() => {
         }
       }
 
-      /** Навыки (теги) */
       const skillsHtml = (job.skills || [])
         .slice(0, 5)
         .map((s) => `<span class="skill-tag">${escapeHtml(s)}</span>`)
         .join('');
-
-      /** Источник (бейдж) */
       const sourceMap = { hh: 'HH.ru', rabotaby: 'Rabota.by', habr: 'Хабр' };
       const sourceName = sourceMap[job.source] || job.source;
       const sourceClass = `source-badge--${job.source}`;

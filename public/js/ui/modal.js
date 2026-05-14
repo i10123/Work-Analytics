@@ -1,3 +1,9 @@
+/**
+ * modal.js
+ * Суть: Управление модальными окнами приложения.
+ * Что делает: Отвечает за вывод диалогового окна настройки поиска, валидацию его полей и отправку запроса на сервер для создания задачи.
+ * Что содержит: Функции открытия/закрытия модальных окон, обработчик отправки формы handleFormSubmit и вывод кастомных ошибок.
+ */
 import { DOM } from '../dom.js';
 import { loadSettings } from '../utils/settings.js';
 import { showScreen } from './common.js';
@@ -6,26 +12,26 @@ import { loadQueueUI } from './sidebar.js';
 
 export function openModal(prefillQuery) {
   const settings = loadSettings();
-  
+
   if (DOM.inputQuery) {
     DOM.inputQuery.value = typeof prefillQuery === 'string' ? prefillQuery : '';
     DOM.inputQuery.focus();
   }
-  
+
   const periodRadio = document.querySelector(`input[name="period"][value="${settings.defaultPeriod}"]`);
   if (periodRadio) {
     periodRadio.checked = true;
   }
-  
+
   if (DOM.inputLimit) {
     DOM.inputLimit.value = settings.defaultLimit;
   }
 
-  if(DOM.modalOverlay) DOM.modalOverlay.style.display = 'flex';
+  if (DOM.modalOverlay) DOM.modalOverlay.style.display = 'flex';
 }
 
 export function closeModal() {
-  if(DOM.modalOverlay) DOM.modalOverlay.style.display = 'none';
+  if (DOM.modalOverlay) DOM.modalOverlay.style.display = 'none';
 }
 
 export async function handleFormSubmit(e) {
@@ -33,9 +39,8 @@ export async function handleFormSubmit(e) {
 
   const query = DOM.inputQuery.value.trim();
 
-  // Проверка на пустой запрос (пробелы) до HTML5-валидации
   if (!query) {
-    DOM.inputQuery.value = ''; // Очищаем пробелы, чтобы required сработал визуально
+    DOM.inputQuery.value = '';
     showValidationTooltip(DOM.inputQuery);
     DOM.inputQuery.focus();
     return;
@@ -64,9 +69,9 @@ export async function handleFormSubmit(e) {
       console.log(`[App] ✅ Задача создана: ${data.task.id}`);
       closeModal();
       showScreen('progress');
-      
-      if(DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${query}"`;
-      if(DOM.progressStep) DOM.progressStep.textContent = 'Задача добавлена в очередь...';
+
+      if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${query}"`;
+      if (DOM.progressStep) DOM.progressStep.textContent = 'Задача добавлена в очередь...';
       loadQueueUI();
     } else {
       showErrorModal('Ошибка запуска', data.error);
@@ -80,11 +85,6 @@ export async function handleFormSubmit(e) {
   }
 }
 
-/**
- * Показывает тематическое окно ошибки.
- * @param {string} title — Заголовок.
- * @param {string} text — Описание ошибки.
- */
 export function showErrorModal(title, text) {
   if (!DOM.errorModalOverlay || !DOM.errorTitle || !DOM.errorText) return;
 

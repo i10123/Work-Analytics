@@ -1,9 +1,15 @@
+/**
+ * settings.js
+ * Суть: Модуль конфигурации приложения и пользовательских настроек.
+ * Что делает: Управляет выбором темы, валюты, фильтров поиска по умолчанию, проверяет состояние API и очищает данные.
+ * Что содержит: Слушатели событий формы настроек, синхронизацию настроек с UI, работу с подтверждениями (confirm modal) и кастомные степперы для полей ввода чисел.
+ */
 import { DOM } from '../dom.js';
 import { loadSettings, saveSettings, DEFAULT_SETTINGS } from '../utils/settings.js';
 import { showToast, showScreen } from './common.js';
 import { setAppTheme } from './theme.js';
 import { renderDashboard } from './dashboard.js';
-import { loadReportsList } from '../api.js';
+import { loadReportsList } from '../report.js';
 import { currentReport, setCurrentReport, currentCurrency, setCurrentCurrency, baselineSettings, setBaselineSettings } from '../state.js';
 
 export function setupSettingsListeners() {

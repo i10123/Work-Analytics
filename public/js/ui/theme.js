@@ -1,18 +1,17 @@
+/**
+ * theme.js
+ * Суть: Контроллер визуальных тем приложения.
+ * Что делает: Отвечает за применение выбранной темы к документу, её сохранение в localStorage и перерисовку графиков под цветовую схему.
+ * Что содержит: Функции initializeTheme и setAppTheme для смены data-атрибута темы на корневом элементе.
+ */
 import { renderDashboard } from './dashboard.js';
 import { currentReport } from '../state.js';
 
-/**
- * Инициализирует тему оформления из localStorage.
- */
 export function initializeTheme() {
   const savedTheme = localStorage.getItem('app-theme') || 'slate-modernity';
   setAppTheme(savedTheme);
 }
 
-/**
- * Устанавливает тему оформления.
- * @param {string} theme 
- */
 export function setAppTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('app-theme', theme);

@@ -1,3 +1,9 @@
+/**
+ * welcome.js
+ * Суть: Логика стартового приветственного экрана (лендинга).
+ * Что делает: Обеспечивает работу интерактивного фона с волнами, анимацию пишущейся строки поиска, быстрый выбор тегов и вывод глобальной статистики.
+ * Что содержит: Настройку рисования на Canvas (setupCanvasBackground), typewriter-эффект для плейсхолдера, анимацию счетчиков (animateValue) и расчет суммарной статы updateWelcomeStats.
+ */
 import { DOM } from '../dom.js';
 import { allReports, currentCurrency } from '../state.js';
 import { openModal } from './modal.js';
@@ -13,16 +19,13 @@ export function setupWelcomeScreen() {
   updateWelcomeStats();
 }
 
-/**
- * Ultra-Premium Data Wave Background
- */
 function setupCanvasBackground() {
   const canvas = document.getElementById('welcomeCanvas');
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
   let width, height;
-  
+
   function resize() {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
@@ -33,7 +36,6 @@ function setupCanvasBackground() {
 
   let time = 0;
 
-  // Wave configurations
   const waves = [
     { amplitude: 40, frequency: 0.003, speed: 0.015, color: 'rgba(0, 150, 255, 0.05)', lineWidth: 1 },
     { amplitude: 70, frequency: 0.002, speed: 0.01, color: 'rgba(0, 150, 255, 0.08)', lineWidth: 1.5 },
@@ -41,11 +43,10 @@ function setupCanvasBackground() {
     { amplitude: 100, frequency: 0.0015, speed: 0.008, color: 'rgba(0, 200, 255, 0.06)', lineWidth: 2 }
   ];
 
-  // Mouse interaction
   let mouseX = 0;
   let targetMouseX = 0;
   let mouseY = height / 2;
-  
+
   const welcomeScreen = document.getElementById('welcomeScreen');
   if (welcomeScreen) {
     welcomeScreen.addEventListener('mousemove', (e) => {
@@ -63,25 +64,18 @@ function setupCanvasBackground() {
 
   function drawWave(wave) {
     ctx.beginPath();
-    // The wave moves across the screen based on time
-    // We add mouse interaction to slightly alter the wave phase
-    
-    // Smooth mouse movement
+
     mouseX += (targetMouseX - mouseX) * 0.05;
-    
+
     const mouseInfluence = (mouseX / width) * 100;
-    
+
     for (let x = 0; x <= width; x += 5) {
-      // Base sine wave
       let y = Math.sin(x * wave.frequency + time * wave.speed) * wave.amplitude;
-      // Add a secondary wave for more natural flow
       y += Math.cos(x * wave.frequency * 1.5 + time * wave.speed * 0.8) * (wave.amplitude * 0.5);
-      
-      // Calculate distance to vertical center to taper the waves
+
       const distanceFromCenter = Math.abs((height / 2) - y);
       const taper = 1 - Math.min(distanceFromCenter / (height * 0.8), 1);
-      
-      // Mouse Y influence to shift the wave up/down smoothly
+
       const verticalShift = (mouseY - height / 2) * 0.2;
 
       const finalY = (height / 2) + y * taper + verticalShift;
@@ -97,15 +91,12 @@ function setupCanvasBackground() {
     ctx.lineWidth = wave.lineWidth;
     ctx.stroke();
 
-    // Fill underneath the wave for depth
     ctx.lineTo(width, height);
     ctx.lineTo(0, height);
     ctx.closePath();
-    
-    // Create soft gradient fill
-    const gradient = ctx.createLinearGradient(0, height/2, 0, height);
-    
-    // Extract base color and create a very transparent fill
+
+    const gradient = ctx.createLinearGradient(0, height / 2, 0, height);
+
     const baseColorMatch = wave.color.match(/rgba\((\d+,\s*\d+,\s*\d+)/);
     if (baseColorMatch) {
       const rgb = baseColorMatch[1];
@@ -123,9 +114,8 @@ function setupCanvasBackground() {
     }
 
     ctx.clearRect(0, 0, width, height);
-    
-    // Add a very subtle glowing center
-    const bgGradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width*0.6);
+
+    const bgGradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, width * 0.6);
     bgGradient.addColorStop(0, 'rgba(0, 150, 255, 0.03)');
     bgGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.fillStyle = bgGradient;
@@ -140,9 +130,6 @@ function setupCanvasBackground() {
   animate();
 }
 
-/**
- * Typewriter effect for search input placeholder
- */
 function setupTypewriter() {
   const input = document.getElementById('welcomeSearchInput');
   if (!input) return;
@@ -159,7 +146,7 @@ function setupTypewriter() {
     'Поиск по: iOS Swift',
     'Поиск по: Data Analyst'
   ];
-  
+
   let phraseIndex = 0;
   let charIndex = 0;
   let isDeleting = false;
@@ -174,14 +161,14 @@ function setupTypewriter() {
   input.addEventListener('blur', () => {
     isPaused = false;
     if (!input.value) {
-      charIndex = 0; 
+      charIndex = 0;
       typewriterLoop();
     }
   });
 
   function typewriterLoop() {
     if (isPaused) return;
-    
+
     const welcomeScreen = document.getElementById('welcomeScreen');
     if (welcomeScreen && welcomeScreen.style.display === 'none') {
       clearTimeout(typewriterTimeout);
@@ -190,7 +177,7 @@ function setupTypewriter() {
     }
 
     const currentPhrase = phrases[phraseIndex];
-    
+
     if (isDeleting) {
       input.setAttribute('placeholder', currentPhrase.substring(0, charIndex - 1));
       charIndex--;
@@ -202,12 +189,12 @@ function setupTypewriter() {
     let typeSpeed = isDeleting ? 30 : 80;
 
     if (!isDeleting && charIndex === currentPhrase.length) {
-      typeSpeed = 2500; 
+      typeSpeed = 2500;
       isDeleting = true;
     } else if (isDeleting && charIndex === 0) {
       isDeleting = false;
       phraseIndex = (phraseIndex + 1) % phrases.length;
-      typeSpeed = 500; 
+      typeSpeed = 500;
     }
 
     clearTimeout(typewriterTimeout);
@@ -217,9 +204,6 @@ function setupTypewriter() {
   typewriterLoop();
 }
 
-/**
- * Setup Quick Tags click handlers
- */
 function setupQuickTags() {
   const tags = document.querySelectorAll('.welcome-tag');
   tags.forEach(tag => {
@@ -230,13 +214,10 @@ function setupQuickTags() {
   });
 }
 
-/**
- * Setup central search input enter key and global hotkey
- */
 function setupSearchInput() {
   const input = document.getElementById('welcomeSearchInput');
   const submitBtn = document.getElementById('welcomeSearchSubmit');
-  
+
   if (!input || !submitBtn) return;
 
   const handleSearch = () => {
@@ -259,7 +240,6 @@ function setupSearchInput() {
 
   submitBtn.addEventListener('click', handleSearch);
 
-  // Global Ctrl+K / Cmd+K hotkey (Silent focus)
   document.addEventListener('keydown', (e) => {
     const welcomeScreen = document.getElementById('welcomeScreen');
     if (welcomeScreen && welcomeScreen.style.display !== 'none') {
@@ -275,36 +255,30 @@ function triggerSearch(query) {
   openModal(query);
 }
 
-/**
- * 3D Tilt effect for stat cards
- */
 function setupTiltEffect() {
   const cards = document.querySelectorAll('.welcome-stat-card');
-  
+
   cards.forEach(card => {
     card.addEventListener('mousemove', (e) => {
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-      
+
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      
-      const rotateX = ((y - centerY) / centerY) * -10; 
+
+      const rotateX = ((y - centerY) / centerY) * -10;
       const rotateY = ((x - centerX) / centerX) * 10;
-      
+
       card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
     });
-    
+
     card.addEventListener('mouseleave', () => {
       card.style.transform = `rotateX(0deg) rotateY(0deg) translateY(0)`;
     });
   });
 }
 
-/**
- * Animate Number from 0 to value
- */
 function animateValue(obj, start, end, duration, formatFn = null) {
   if (!obj) return;
   let startTimestamp = null;
@@ -313,9 +287,9 @@ function animateValue(obj, start, end, duration, formatFn = null) {
     const progress = Math.min((timestamp - startTimestamp) / duration, 1);
     const easeProgress = 1 - Math.pow(1 - progress, 4);
     const current = Math.floor(easeProgress * (end - start) + start);
-    
+
     obj.textContent = formatFn ? formatFn(current) : current;
-    
+
     if (progress < 1) {
       window.requestAnimationFrame(step);
     } else {
@@ -325,15 +299,12 @@ function animateValue(obj, start, end, duration, formatFn = null) {
   window.requestAnimationFrame(step);
 }
 
-/**
- * Calculate and display global stats based on reports history
- */
 export function updateWelcomeStats() {
   const reportsCountEl = document.getElementById('welcomeStatReports');
   const jobsCountEl = document.getElementById('welcomeStatJobs');
   const topTechEl = document.getElementById('welcomeStatTopTech');
   const avgSalaryEl = document.getElementById('welcomeStatAvgSalary');
-  
+
   if (!reportsCountEl || !jobsCountEl || !topTechEl) return;
 
   if (!allReports || allReports.length === 0) {

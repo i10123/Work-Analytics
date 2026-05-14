@@ -1,3 +1,9 @@
+/**
+ * sidebar.js
+ * Суть: Управление боковой панелью с историей отчётов и очередью задач.
+ * Что делает: Отображает список прошлых аналитик, позволяет искать/удалять их, а также визуализирует статус задач в очереди на исполнение.
+ * Что содержит: Функции отрисовки списка отчётов renderReportsList, группировку по датам, логику управления очередью (loadQueueUI) и обновление счетчиков времени выполнения.
+ */
 import { DOM } from '../dom.js';
 import { escapeHtml, formatDuration } from '../utils/formatters.js';
 
@@ -26,7 +32,7 @@ export function setupSidebarListeners() {
     const reportItem = e.target.closest('.report-item');
     if (reportItem) {
       const id = reportItem.dataset.id;
-      const { loadReportById } = await import('../api.js');
+      const { loadReportById } = await import('../report.js');
       loadReportById(id);
     }
   });
@@ -36,12 +42,12 @@ export function setupSidebarListeners() {
     queueList.addEventListener('click', (e) => {
       const item = e.target.closest('.queue-item');
       if (!item) return;
-      
+
       const priorityBtn = e.target.closest('.queue-btn--priority');
       const editBtn = e.target.closest('.queue-btn--edit');
       const deleteBtn = e.target.closest('.queue-btn--delete');
       const id = item.dataset.id;
-      
+
       if (priorityBtn) {
         e.stopPropagation();
         queueAction(id, 'priority');
@@ -57,26 +63,18 @@ export function setupSidebarListeners() {
   }
 }
 
-/**
- * Фильтрует отчёты по поисковому запросу и рендерит их.
- */
 function filterAndRenderReports(searchQuery = '') {
   if (!searchQuery) {
     renderReportsList(cachedReports, false);
     return;
   }
 
-  const filtered = cachedReports.filter(r => 
+  const filtered = cachedReports.filter(r =>
     r.query.toLowerCase().includes(searchQuery)
   );
   renderReportsList(filtered, false);
 }
 
-/**
- * Рендерит список отчётов в боковой панели с группировкой по датам.
- * @param {Array<Object>} reports — Массив метаданных отчётов.
- * @param {boolean} updateCache — Нужно ли обновить локальный кэш отчётов.
- */
 export function renderReportsList(reports, updateCache = true) {
   if (!DOM.reportsEmpty || !DOM.reportsList) return;
 
@@ -84,7 +82,6 @@ export function renderReportsList(reports, updateCache = true) {
     cachedReports = reports;
   }
 
-  /** Очищаем список (оставляя блок "пусто") */
   const existingItems = DOM.reportsList.querySelectorAll('.report-item, .sidebar__date-group');
   existingItems.forEach((el) => el.remove());
 
@@ -92,8 +89,8 @@ export function renderReportsList(reports, updateCache = true) {
     DOM.reportsEmpty.style.display = 'block';
     const emptyMsg = DOM.reportsEmpty.querySelector('p');
     if (emptyMsg) {
-      emptyMsg.textContent = cachedReports.length > 0 
-        ? 'Ничего не найдено' 
+      emptyMsg.textContent = cachedReports.length > 0
+        ? 'Ничего не найдено'
         : 'Нет сохранённых отчётов';
     }
     return;
@@ -101,13 +98,11 @@ export function renderReportsList(reports, updateCache = true) {
 
   DOM.reportsEmpty.style.display = 'none';
 
-  // Группировка отчётов
   const groups = groupReportsByDate(reports);
 
   Object.entries(groups).forEach(([groupName, groupReports]) => {
     if (groupReports.length === 0) return;
 
-    // Заголовок группы
     const groupHeader = document.createElement('div');
     groupHeader.className = 'sidebar__date-group';
     groupHeader.textContent = groupName;
@@ -160,9 +155,6 @@ export function renderReportsList(reports, updateCache = true) {
   });
 }
 
-/**
- * Группирует отчёты по датам (Сегодня, Вчера, Ранее).
- */
 function groupReportsByDate(reports) {
   const groups = {
     'Сегодня': [],
@@ -188,9 +180,6 @@ function groupReportsByDate(reports) {
   return groups;
 }
 
-/**
- * Удаляет отчёт по ID с подтверждением.
- */
 async function deleteReportById(id, query) {
   const { showConfirm } = await import('./settings.js');
   const confirmed = await showConfirm({
@@ -210,16 +199,16 @@ async function deleteReportById(id, query) {
     const data = await response.json();
 
     if (data.success) {
-      const { loadReportsList } = await import('../api.js');
+      const { loadReportsList } = await import('../report.js');
       const { showToast, showScreen } = await import('./common.js');
       const state = await import('../state.js');
-      
+
       if (state.currentReport && state.currentReport.id === id) {
         state.setCurrentReport(null);
         localStorage.removeItem('lastReportId');
         showScreen('welcome');
       }
-      
+
       loadReportsList();
       showToast('Отчёт удалён', 'success');
     }
@@ -228,13 +217,6 @@ async function deleteReportById(id, query) {
   }
 }
 
-// ────────────────────────────────────────────────
-//  UI ОЧЕРЕДИ ЗАДАЧ
-// ────────────────────────────────────────────────
-
-/**
- * Загружает состояние очереди и рендерит UI.
- */
 export async function loadQueueUI() {
   try {
     const response = await fetch('/api/queue');
@@ -261,10 +243,6 @@ export async function loadQueueUI() {
 
 let queueTimers = new Map();
 
-/**
- * Рендерит список задач очереди в сайдбаре.
- * @param {Array} queue — Массив задач из /api/queue
- */
 export function renderQueueList(queue) {
   const container = document.getElementById('queueList');
   if (!container) return;
@@ -321,7 +299,7 @@ export function renderQueueList(queue) {
       if (limitDiv) {
         limitDiv.textContent = `Лимит: ${task.filters?.limit || 50}`;
       }
-      
+
       const actionsEl = div.querySelector('.queue-item__actions');
       if (actionsEl) {
         actionsEl.innerHTML = `
@@ -330,7 +308,7 @@ export function renderQueueList(queue) {
           ${task.status !== 'processing' ? '<button class="queue-btn queue-btn--delete" title="Удалить">❌</button>' : ''}
         `;
       }
-      
+
       if (task.status === 'processing' && task.startedAt) {
         if (!queueTimers.has(String(task.id))) {
           const timerId = setInterval(() => {
@@ -367,7 +345,7 @@ export function renderQueueList(queue) {
       `;
 
       container.appendChild(div);
-      
+
       if (task.status === 'processing' && task.startedAt) {
         const timerId = setInterval(() => {
           const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
@@ -387,9 +365,6 @@ export function renderQueueList(queue) {
   });
 }
 
-/**
- * Выполняет действие над задачей в очереди.
- */
 async function queueAction(id, action) {
   try {
     const response = await fetch(`/api/queue/${id}/${action}`, { method: 'POST' });
@@ -402,11 +377,6 @@ async function queueAction(id, action) {
   }
 }
 
-/**
- * Открывает диалог редактирования параметров задачи (запрос, лимит).
- * Отправляет PUT /api/queue/:id.
- * @param {Object} task — Объект задачи { id, query, filters }.
- */
 async function queueEdit(task) {
   const newQuery = prompt('Ключевое слово:', task.query);
   if (newQuery === null) return; // Отмена

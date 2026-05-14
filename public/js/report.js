@@ -1,3 +1,11 @@
+/**
+ * Модуль для взаимодействия с API отчетов и управления их жизненным циклом.
+ * 
+ * Функции:
+ * - loadReportsList: Загружает полный список отчетов, обновляет состояние и боковую панель.
+ * - loadReportById: Загружает детальную информацию об отчете, переключает экран на дашборд и рендерит данные.
+ */
+
 import { showScreen } from './ui/common.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { setCurrentReport, setAllReports } from './state.js';

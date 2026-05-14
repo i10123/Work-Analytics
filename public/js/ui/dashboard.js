@@ -1,3 +1,9 @@
+/**
+ * dashboard.js
+ * Суть: Главный модуль отображения аналитического дашборда.
+ * Что делает: Наполняет интерфейс данными отчёта, обновляет KPI, инициирует рендер графиков и таблицы, управляет экспортом.
+ * Что содержит: Логику вычисления сводных показателей (KPI), интеграцию с модулем AI-саммари, экспорт в CSV и основную функцию renderDashboard.
+ */
 import { DOM } from '../dom.js';
 import { charts, currentCurrency } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
@@ -23,8 +29,7 @@ export function renderDashboard(report) {
     const parsedDate = new Date(report.createdAt);
     const dateStr = isNaN(parsedDate.getTime()) ? 'Дата неизвестна' : parsedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
     DOM.dashSubtitle.textContent = `Сформирован ${dateStr}`;
-    
-    // Вставляем бейджи
+
     const badgesContainer = document.getElementById('dashBadges');
     if (badgesContainer) {
       badgesContainer.innerHTML = `
@@ -54,10 +59,8 @@ export function renderDashboard(report) {
   renderKPI(jobs, rates);
   renderAiSummary(report);
 
-  // Уничтожаем старые графики перед рендером новых
   destroyAllCharts();
 
-  // Рендерим все графики
   renderChartSalary(jobs, rates, currentCurrency);
   renderChartSkills(jobs);
   renderChartSalaryVsExperience(jobs, rates, currentCurrency);
@@ -70,7 +73,6 @@ export function renderDashboard(report) {
 
   renderJobsTable(jobs, rates);
 
-  // Обработчик экспорта (удаляем старый, чтобы не плодить)
   if (DOM.btnExportCsv) {
     DOM.btnExportCsv.onclick = () => exportToCSV(jobs, report.query);
   }
@@ -79,15 +81,13 @@ export function renderDashboard(report) {
 function renderAiSummary(report) {
   if (!DOM.aiSummaryCard || !DOM.btnGenerateAiSummary || !DOM.aiSummaryContent || !DOM.aiSummaryLoader) return;
 
-  // Сброс состояния
   DOM.aiSummaryLoader.style.display = 'none';
   DOM.aiSummaryContent.style.display = 'none';
   DOM.aiSummaryContent.innerHTML = '';
-  
+
   if (DOM.btnCollapseAiSummary) {
     DOM.btnCollapseAiSummary.style.display = 'none';
-    
-    // Add event listener if not already added
+
     if (!DOM.btnCollapseAiSummary.dataset.initialized) {
       DOM.btnCollapseAiSummary.dataset.initialized = 'true';
       DOM.btnCollapseAiSummary.addEventListener('click', () => {
@@ -102,10 +102,10 @@ function renderAiSummary(report) {
       });
     }
   }
-  
+
   if (report.aiSummary) {
     DOM.aiSummaryContent.innerHTML = parseMarkdown(report.aiSummary);
-    DOM.aiSummaryContent.style.display = 'none'; // Скрыто по умолчанию
+    DOM.aiSummaryContent.style.display = 'none';
     DOM.btnGenerateAiSummary.style.display = 'none';
     if (DOM.btnCollapseAiSummary) {
       DOM.btnCollapseAiSummary.style.display = 'inline-flex';
@@ -116,14 +116,14 @@ function renderAiSummary(report) {
     DOM.btnGenerateAiSummary.onclick = async () => {
       DOM.btnGenerateAiSummary.style.display = 'none';
       DOM.aiSummaryLoader.style.display = 'flex';
-      
+
       try {
         const res = await fetch(`/api/reports/${report.id}/summary`, { method: 'POST' });
         const data = await res.json();
-        
+
         DOM.aiSummaryLoader.style.display = 'none';
         if (data.success) {
-          report.aiSummary = data.summary; // обновляем локальный объект отчёта
+          report.aiSummary = data.summary;
           DOM.aiSummaryContent.innerHTML = parseMarkdown(data.summary);
           DOM.aiSummaryContent.style.display = 'block';
           if (DOM.btnCollapseAiSummary) {
@@ -156,14 +156,12 @@ function exportToCSV(jobs, query) {
     if (val === null || val === undefined) return '';
     let str = String(val);
     str = str.replace(/"/g, '""');
-    // Исправлено: проверяем реальный перенос строки, а не экранированный
     if (str.includes(delimiter) || str.includes('\n') || str.includes('"')) {
       return `"${str}"`;
     }
     return str;
   };
 
-  // Исправлено: используем \r\n для правильного переноса строк в Excel и sep=; для совместимости
   let csvContent = 'sep=;\r\n' + BOM + headers.join(delimiter) + '\r\n';
 
   jobs.forEach(j => {
@@ -182,7 +180,7 @@ function exportToCSV(jobs, query) {
       (j.skills || []).join(', '),
       j.url
     ];
-    // Исправлено: используем \r\n
+
     csvContent += row.map(escapeCsv).join(delimiter) + '\r\n';
   });
 
@@ -190,10 +188,10 @@ function exportToCSV(jobs, query) {
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   link.setAttribute('href', url);
-  
+
   const safeQuery = query.replace(/[^a-z0-9а-яё]/gi, '_').toLowerCase();
   link.setAttribute('download', `analytics_${safeQuery}_${new Date().toISOString().slice(0, 10)}.csv`);
-  
+
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();

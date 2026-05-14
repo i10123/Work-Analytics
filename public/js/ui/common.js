@@ -1,28 +1,24 @@
+/**
+ * common.js
+ * Суть: Вспомогательные утилиты для работы с интерфейсом.
+ * Что делает: Обеспечивает базовую функциональность переключения экранов приложения и отображения уведомлений (тостов).
+ * Что содержит: Функции showScreen для навигации между разделами и showToast для вывода сообщений.
+ */
 import { DOM } from '../dom.js';
 import { escapeHtml } from '../utils/formatters.js';
 
-/**
- * Переключает видимый экран (welcome / progress / dashboard).
- * @param {string} screen — welcome | progress | dashboard
- */
 export function showScreen(screen) {
   if (DOM.welcomeScreen) DOM.welcomeScreen.style.display = screen === 'welcome' ? 'flex' : 'none';
   if (DOM.progressSection) DOM.progressSection.style.display = screen === 'progress' ? 'flex' : 'none';
   if (DOM.dashboard) DOM.dashboard.style.display = screen === 'dashboard' ? 'block' : 'none';
-  
+
   const mainContent = document.getElementById('mainContent');
   if (mainContent) {
     mainContent.scrollTop = 0;
   }
 }
 
-/**
- * Показывает всплывающее уведомление (toast).
- * @param {string} message — Текст уведомления.
- * @param {'success'|'error'} type — Тип уведомления.
- */
 export function showToast(message, type = 'success') {
-  /** Удаляем предыдущий тост, если есть */
   const existing = document.querySelector('.toast');
   if (existing) existing.remove();
 
@@ -35,7 +31,6 @@ export function showToast(message, type = 'success') {
 
   document.body.appendChild(toast);
 
-  /** Автоудаление через 3 секунды */
   setTimeout(() => {
     toast.classList.add('toast--exit');
     setTimeout(() => toast.remove(), 300);
