@@ -1,9 +1,3 @@
-/**
- * @file rabotaby.js — Парсер вакансий с Rabota.by.
- * @description Наследует HhParser. Вся логика UA, токенов
- * и ретраев наследуется автоматически из hh.js.
- */
-
 const { HhParser } = require('./hh');
 
 class RabotaByParser extends HhParser {
@@ -15,15 +9,13 @@ class RabotaByParser extends HhParser {
   normalizeVacancy(vacancy) {
     const job = super.normalizeVacancy(vacancy);
     job.source = 'rabotaby';
-    
-    // Корректировка города для Беларуси
     const workFormat = (vacancy.schedule?.id === 'remote') ? 'Remote' : 'Office';
     let city = vacancy.area?.name || 'Не указан';
     if (workFormat === 'Remote' || city === 'Не указан' || city === 'Беларусь') {
       city = 'Онлайн';
     }
     job.city = city;
-    
+
     job.salary.currency = this.mapCurrency(vacancy.salary?.currency, 'BYN');
     return job;
   }

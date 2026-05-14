@@ -86,16 +86,7 @@ export async function handleFormSubmit(e) {
 }
 
 export function showErrorModal(title, text) {
-  if (!DOM.errorModalOverlay || !DOM.errorTitle || !DOM.errorText) return;
-
-  DOM.errorTitle.textContent = title;
-  DOM.errorText.textContent = text;
-  DOM.errorModalOverlay.style.display = 'flex';
-
-  const closeFn = () => {
-    DOM.errorModalOverlay.style.display = 'none';
-    DOM.btnErrorOk.removeEventListener('click', closeFn);
-  };
-
-  DOM.btnErrorOk.addEventListener('click', closeFn);
+  import('./common.js').then(({ showToast }) => {
+    showToast(`${title}: ${text}`, 'error');
+  });
 }

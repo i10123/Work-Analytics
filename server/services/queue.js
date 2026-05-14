@@ -1,11 +1,3 @@
-/**
- * @file queue.js — Менеджер очереди задач парсинга.
- * @description Обеспечивает последовательное выполнение задач сбора данных.
- *              Если парсинг уже идёт, новый запрос ставится в очередь (FIFO).
- *              Эмитит события для SSE-трансляции статуса клиентам.
- *              Поддерживает остановку, перезапуск, удаление, приоритезацию задач.
- */
-
 const EventEmitter = require('events');
 const { fetchExchangeRates, convertCurrency } = require('./currency');
 const { extractMetadataFromJobs } = require('./ai');
@@ -14,36 +6,15 @@ const { HhParser } = require('../parsers/hh');
 const { RabotaByParser } = require('../parsers/rabotaby');
 const { HabrParser } = require('../parsers/habr');
 
-/**
- * EventEmitter для SSE-трансляции.
- * Клиенты подписываются на событие 'taskUpdate'.
- * @type {EventEmitter}
- */
 const taskEmitter = new EventEmitter();
 taskEmitter.setMaxListeners(50);
 
-/** Очередь задач (FIFO) */
 const taskQueue = [];
-
-/** Максимальное количество задач в очереди (защита от OOM) */
 const MAX_QUEUE_SIZE = 50;
 
-/** Флаг: выполняется ли сейчас задача */
 let isProcessing = false;
-
-/** Текущая выполняемая задача (ссылка) */
 let currentTask = null;
 
-/**
- * Добавляет новую задачу парсинга в очередь.
- * Если очередь пуста и ничего не обрабатывается — задача запускается сразу.
- *
- * @param {Object} params — Параметры поиска.
- * @param {string} params.query — Ключевое слово для поиска вакансий.
- * @param {string} [params.period="7days"] — Период поиска.
- * @param {Object} [params.sources] — Включенные источники { hh, rabotaby, habr }.
- * @returns {Object} — Объект задачи с id и статусом.
- */
 function sanitizeQueryForId(query) {
   let sanitized = query
     .replace(/[^a-zA-Z0-9а-яА-ЯёЁ]+/g, '_')
@@ -92,24 +63,16 @@ function enqueueTask(params) {
   taskQueue.push(task);
   console.log(`[Queue] 📥 Задача добавлена в очередь: ${taskId} (запрос: "${params.query}"). В очереди: ${taskQueue.length}`);
 
-  /** Отправляем клиентам SSE-событие о новой задаче */
   emitUpdate(task);
 
-  /** Пробуем начать обработку (если не занято) */
   processNext();
 
   return task;
 }
 
-/**
- * Берёт следующую задачу из очереди и выполняет её.
- * Если очередь пуста или уже идёт обработка — ничего не делает.
- * @returns {Promise<void>}
- */
 async function processNext() {
   if (isProcessing) return;
 
-  // Ищем первую pending-задачу в очереди
   const taskIndex = taskQueue.findIndex(t => t.status === 'pending');
   if (taskIndex === -1) return;
 
@@ -117,7 +80,6 @@ async function processNext() {
   const task = taskQueue[taskIndex];
   currentTask = task;
 
-  // Создаём AbortController для этой задачи
   task.cancelFlag.isStopped = false;
   task.cancelFlag.abortController = new AbortController();
 
@@ -128,32 +90,26 @@ async function processNext() {
   emitUpdate(task);
 
   try {
-    /** Шаг 1: Получаем курсы валют */
     console.log(`[Queue] 💱 Получение курсов валют...`);
     emitUpdate({ ...task, step: 'Получение курсов валют...' });
     const exchangeRates = await fetchExchangeRates();
-
-    // Проверка остановки после каждого шага
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} удалена во время получения курсов валют. Прерываем.`);
       removeTaskFromQueue(task.id);
       return;
     }
 
-    /** Шаг 2: Параллельный запуск парсеров (каждый с retry) */
     console.log(`[Queue] 🔍 Запуск парсеров для запроса: "${task.query}"...`);
     emitUpdate({ ...task, step: 'Парсинг вакансий...' });
 
     const parserResults = await runParsersWithRetry(task.query, task.filters, task.cancelFlag);
 
-    // === ЗАЩИТА: проверка isStopped СРАЗУ после возврата из парсеров ===
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} удалена после парсинга. Данные выброшены.`);
       removeTaskFromQueue(task.id);
-      return; // НЕ вызываем AI и saveReport
+      return;
     }
 
-    /** Шаг 3: Объединяем результаты всех парсеров */
     let allJobs = [];
     const errors = [];
 
@@ -165,7 +121,6 @@ async function processNext() {
       }
     }
 
-    // Очистка дубликатов (Дедупликация)
     const normalize = (str) => {
       if (!str) return '';
       return str.toLowerCase().replace(/[^\p{L}\d]/gu, '').trim();
@@ -174,27 +129,23 @@ async function processNext() {
 
     console.log(`[Queue] 📊 Собрано вакансий: ${allJobs.length}. Ошибок источников: ${errors.length}`);
 
-    // Ещё одна проверка остановки
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} удалена после дедупликации. Данные выброшены.`);
       removeTaskFromQueue(task.id);
       return;
     }
 
-    /** Шаг 4: Извлечение метаданных через AI (навыки, опыт, формат, категория и др.) */
     emitUpdate({ ...task, step: 'AI-анализ вакансий...' });
     const enrichedJobs = await extractMetadataFromJobs(allJobs, (current, total) => {
       emitUpdate({ ...task, step: `AI-анализ вакансий: батч ${current} из ${total}...` });
     });
 
-    // Проверка остановки после AI
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} удалена после AI-анализа. Данные выброшены.`);
       removeTaskFromQueue(task.id);
       return;
     }
 
-    /** Шаг 5: Формируем итоговый отчёт */
     let sumSalaryRub = 0;
     let countSalary = 0;
     for (const job of enrichedJobs) {
@@ -207,10 +158,10 @@ async function processNext() {
     }
     const avgSalaryNormalized = countSalary > 0 ? Math.round(sumSalaryRub / countSalary) : null;
 
-    const status = (errors.length > 0 && allJobs.length > 0) ? 'partial' 
-                 : (allJobs.length === 0) ? 'failed' 
-                 : 'completed';
-                 
+    const status = (errors.length > 0 && allJobs.length > 0) ? 'partial'
+      : (allJobs.length === 0) ? 'failed'
+        : 'completed';
+
     let failMessage = null;
     if (status === 'failed') {
       if (errors.length > 0) {
@@ -242,20 +193,15 @@ async function processNext() {
       jobs: enrichedJobs,
     };
 
-    /** Шаг 6: Сохраняем JSON-файл */
     emitUpdate({ ...task, step: 'Сохранение отчёта...' });
     await saveReport(report);
-
-    /** Готово! */
     task.status = report.status;
     task.error = failMessage;
     console.log(`[Queue] ✅ Задача завершена: ${task.id} (статус: ${task.status})`);
     emitUpdate({ ...task, reportId: task.id, errors, error: failMessage });
 
-    // Удаляем завершённую задачу из очереди
     removeTaskFromQueue(task.id);
   } catch (error) {
-    // Если задача была остановлена и axios выбросил AbortError — не считаем это критической ошибкой
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} прервана (abort). Данные выброшены.`);
       removeTaskFromQueue(task.id);
@@ -263,26 +209,15 @@ async function processNext() {
       task.status = 'failed';
       console.error(`[Queue] ❌ Критическая ошибка при обработке ${task.id}:`, error.message);
       emitUpdate({ ...task, error: error.message });
-      // Удаляем упавшую задачу из очереди
       removeTaskFromQueue(task.id);
     }
   } finally {
     isProcessing = false;
     currentTask = null;
-    /** Пробуем взять следующую задачу из очереди */
     processNext();
   }
 }
 
-/**
- * Запускает все 3 парсера параллельно. Каждый парсер имеет до 3 попыток (retry).
- * Реализует паттерн "Graceful Degradation" — если один источник упал, остальные продолжают работу.
- *
- * @param {string} query — Поисковый запрос.
- * @param {Object} filters — Фильтры (period, limit).
- * @param {Object} cancelFlag — Флаг отмены { isStopped, abortController }.
- * @returns {Promise<Array<Object>>} — Массив результатов: [{ source, success, jobs }]
- */
 async function runParsersWithRetry(query, filters, cancelFlag) {
   const allowedSources = filters.sources || { hh: true, rabotaby: true, habr: true };
 
@@ -302,7 +237,6 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
   const results = await Promise.all(
     parsers.map(async (parser) => {
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        // Проверка остановки перед каждой попыткой
         if (cancelFlag.isStopped) {
           console.log(`[Queue] 🛑 ${parser.name}: задача остановлена, прерываем retry.`);
           return { source: parser.name, success: false, jobs: [] };
@@ -314,7 +248,6 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
           console.log(`[Queue] ✅ ${parser.name}: получено ${jobs.length} вакансий.`);
           return { source: parser.name, success: true, jobs };
         } catch (error) {
-          // Если задача остановлена — не повторяем
           if (cancelFlag.isStopped || error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
             console.log(`[Queue] 🛑 ${parser.name}: задача остановлена (abort).`);
             return { source: parser.name, success: false, jobs: [] };
@@ -322,7 +255,6 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
 
           console.warn(`[Queue] ⚠️ ${parser.name}: попытка ${attempt} не удалась — ${error.message}`);
           if (attempt < MAX_RETRIES) {
-            /** Увеличиваем задержку при каждой повторной попытке (exponential backoff) */
             const backoff = attempt * 3000;
             console.log(`[Queue] ⏳ ${parser.name}: ожидание ${backoff}мс перед повтором...`);
             await new Promise((r) => setTimeout(r, backoff));
@@ -330,7 +262,6 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
         }
       }
 
-      /** Все попытки исчерпаны */
       console.error(`[Queue] ❌ ${parser.name}: все ${MAX_RETRIES} попытки провалились.`);
       return { source: parser.name, success: false, jobs: [] };
     })
@@ -343,11 +274,6 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
 //  ФУНКЦИИ УПРАВЛЕНИЯ ЗАДАЧАМИ
 // ────────────────────────────────────────────────
 
-/**
- * Внутренняя функция: Останавливает активную задачу. Ставит isStopped = true и абортит сетевые запросы.
- * @param {string} id — ID задачи.
- * @returns {boolean} — Успешно ли.
- */
 function abortTask(id) {
   const task = findTask(id);
   if (!task) return false;
@@ -364,16 +290,10 @@ function abortTask(id) {
   return false;
 }
 
-/**
- * Удаляет задачу из очереди. Если активна — сначала останавливает.
- * @param {string} id — ID задачи.
- * @returns {boolean}
- */
 function deleteTask(id) {
   const task = findTask(id);
   if (!task) return false;
 
-  // Если задача в процессе — останавливаем
   if (task.status === 'processing') {
     abortTask(id);
   }
@@ -384,20 +304,14 @@ function deleteTask(id) {
   return true;
 }
 
-/**
- * Перемещает задачу в начало очереди (приоритет).
- * @param {string} id — ID задачи.
- * @returns {boolean}
- */
 function prioritizeTask(id) {
   const idx = taskQueue.findIndex(t => t.id === id);
   if (idx === -1 || idx === 0) return false;
 
   const task = taskQueue[idx];
-  if (task.status !== 'pending') return false; // Можно приоритизировать только pending
+  if (task.status !== 'pending') return false;
 
   taskQueue.splice(idx, 1);
-  // Вставляем после processing задачи (если есть) или в начало
   const firstNonProcessing = taskQueue.findIndex(t => t.status !== 'processing');
   const insertAt = firstNonProcessing === -1 ? taskQueue.length : firstNonProcessing;
   taskQueue.splice(insertAt, 0, task);
@@ -407,12 +321,6 @@ function prioritizeTask(id) {
   return true;
 }
 
-/**
- * Обновляет параметры задачи (запрос, лимит и т.д.). Только если не processing.
- * @param {string} id — ID задачи.
- * @param {Object} params — Новые параметры { query?, limit?, period?, sources? }.
- * @returns {boolean}
- */
 function updateTask(id, params) {
   const task = findTask(id);
   if (!task || task.status === 'processing') return false;
@@ -427,10 +335,6 @@ function updateTask(id, params) {
   return true;
 }
 
-/**
- * Возвращает полное состояние очереди для фронтенда.
- * @returns {Object} — { queue: [...], currentTask: {...} | null }
- */
 function getFullQueueState() {
   return {
     queue: taskQueue.map(t => ({
@@ -458,19 +362,10 @@ function getFullQueueState() {
 //  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 // ────────────────────────────────────────────────
 
-/**
- * Находит задачу по ID в очереди.
- * @param {string} id
- * @returns {Object|null}
- */
 function findTask(id) {
   return taskQueue.find(t => t.id === id) || null;
 }
 
-/**
- * Удаляет задачу из массива очереди по ID.
- * @param {string} id
- */
 function removeTaskFromQueue(id) {
   const idx = taskQueue.findIndex(t => t.id === id);
   if (idx !== -1) {
@@ -478,18 +373,10 @@ function removeTaskFromQueue(id) {
   }
 }
 
-/**
- * Эмитит SSE-событие обновления статуса задачи.
- * @param {Object} task — Объект задачи (или его часть) для отправки клиентам.
- */
 function emitUpdate(task) {
   taskEmitter.emit('taskUpdate', task);
 }
 
-/**
- * Возвращает текущее состояние очереди (совместимость со старым API).
- * @returns {Object} — { isProcessing, queueLength }
- */
 function getQueueStatus() {
   return {
     isProcessing,

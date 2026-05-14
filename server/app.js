@@ -1,42 +1,22 @@
-/**
- * @file app.js — Главный файл сервера Work Analytics.
- * @description Настраивает Express-приложение: статику, CORS, API-роуты и SSE.
- *              Запускает HTTP-сервер на порту из .env (по умолчанию 3000).
- */
-
 require('dotenv').config();
 const express = require('express');
-
-// --- Глобальные обработчики ошибок (защита от молчаливого падения) ---
 process.on('uncaughtException', (err) => console.error('[Fatal] Непойманная ошибка:', err));
 process.on('unhandledRejection', (err) => console.error('[Fatal] Необработанный промис:', err));
 const path = require('path');
 const apiRouter = require('./routes/api');
+const requestLogger = require('./middleware/requestLogger');
 const { ensureDataDirs } = require('./services/storage');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- Middleware ---
+app.set('trust proxy', true);
 
-/** Парсинг JSON-тела запросов (лимит 100KB для защиты от DOS) */
+app.use(requestLogger);
 app.use(express.json({ limit: '100kb' }));
-
-/** Раздача статических файлов фронтенда из папки /public */
 app.use(express.static(path.join(__dirname, '..', 'public')));
-
-// --- Роуты ---
-
-/** Подключение всех API-эндпоинтов (/api/*) */
 app.use('/api', apiRouter);
 
-// --- Запуск ---
-
-/**
- * Инициализация сервера:
- * 1. Создаёт директории для данных (data/reports), если их нет.
- * 2. Запускает HTTP-сервер на указанном порту.
- */
 async function startServer() {
   try {
     await ensureDataDirs();

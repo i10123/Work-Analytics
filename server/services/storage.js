@@ -1,29 +1,13 @@
-/**
- * @file storage.js — Модуль хранения данных в JSON-файлах.
- * @description Отвечает за чтение, запись и листинг отчётов в директории data/reports/.
- *              Заменяет классическую СУБД файловой системой (требование курсовой).
- */
 
 const fs = require('fs');
 const path = require('path');
 
-/** Абсолютный путь к директории с отчётами */
 const REPORTS_DIR = path.join(__dirname, '..', '..', 'data', 'reports');
-/** Абсолютный путь к файлу индекса */
 const INDEX_FILE = path.join(REPORTS_DIR, 'index.json');
-
-/** In-memory кэш для отчётов (чтобы не читать ФС каждый раз) */
 let reportsCache = null;
 let cacheInitPromise = null;
-
-/** Promise-based queue для сериализации записей в index.json (защита от Race Condition) */
 let saveIndexQueue = Promise.resolve();
 
-/**
- * Создаёт директории data/ и data/reports/, если они ещё не существуют.
- * Вызывается один раз при старте сервера.
- * @returns {Promise<void>}
- */
 async function ensureDataDirs() {
   try {
     await fs.promises.mkdir(REPORTS_DIR, { recursive: true });
@@ -34,14 +18,9 @@ async function ensureDataDirs() {
   }
 }
 
-/**
- * Сохраняет индексный файл.
- * Использует Promise-queue для предотвращения гонок и обеспечения
- * правильного ожидания (await) завершения записи вызывающим кодом.
- */
 async function _saveIndex() {
   if (reportsCache === null) return;
-  
+
   const currentWrite = saveIndexQueue.then(async () => {
     try {
       const jsonString = JSON.stringify(reportsCache, null, 2);
@@ -51,17 +30,11 @@ async function _saveIndex() {
       console.error('[Storage] ❌ Ошибка сохранения index.json:', err.message);
     }
   });
-  
-  saveIndexQueue = currentWrite.catch(() => {});
+
+  saveIndexQueue = currentWrite.catch(() => { });
   return currentWrite;
 }
 
-/**
- * Сохраняет объект отчёта в JSON-файл.
- * Имя файла формируется из поля report.id (например: report_1713360000.json).
- * @param {Object} report — Объект отчёта (должен содержать поле id).
- * @returns {Promise<string>} — Абсолютный путь к сохранённому файлу.
- */
 async function saveReport(report) {
   if (!report || !/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(report.id)) {
     throw new Error('Invalid report ID format for saving');
@@ -73,8 +46,7 @@ async function saveReport(report) {
     const jsonString = JSON.stringify(report, null, 2);
     await fs.promises.writeFile(`${filepath}.tmp`, jsonString, 'utf-8');
     await fs.promises.rename(`${filepath}.tmp`, filepath);
-    
-    // Обновляем кэш только после успешного сохранения файла
+
     if (reportsCache !== null) {
       const existingIndex = reportsCache.findIndex(r => r.id === report.id);
       const cacheItem = {
@@ -86,7 +58,7 @@ async function saveReport(report) {
         stats: report.stats,
         errors: report.errors || [],
       };
-      
+
       if (existingIndex !== -1) {
         reportsCache[existingIndex] = cacheItem;
       } else {
@@ -94,7 +66,7 @@ async function saveReport(report) {
       }
       await _saveIndex();
     }
-    
+
     console.log(`[Storage] 💾 Отчёт сохранён: ${filename}`);
     return filepath;
   } catch (error) {
@@ -103,11 +75,6 @@ async function saveReport(report) {
   }
 }
 
-/**
- * Загружает отчёт по его идентификатору.
- * @param {string} reportId — ID отчёта (например: "report_1713360000").
- * @returns {Promise<Object|null>} — Распарсенный объект отчёта или null, если файл не найден.
- */
 async function loadReport(reportId) {
   if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
     throw new Error('Invalid report ID format for loading');
@@ -128,11 +95,6 @@ async function loadReport(reportId) {
   }
 }
 
-/**
- * Возвращает список всех сохранённых отчётов (метаданные без массива jobs).
- * Сортировка: от новых к старым (по дате создания).
- * @returns {Promise<Array<Object>>} — Массив кратких описаний отчётов.
- */
 async function listReports() {
   if (reportsCache !== null) {
     return reportsCache;
@@ -141,7 +103,6 @@ async function listReports() {
   if (!cacheInitPromise) {
     cacheInitPromise = (async () => {
       try {
-        // Пробуем прочитать index.json
         try {
           const indexRaw = await fs.promises.readFile(INDEX_FILE, 'utf-8');
           reportsCache = JSON.parse(indexRaw);
@@ -186,7 +147,7 @@ async function listReports() {
         return reportsCache;
       } catch (error) {
         console.error('[Storage] ❌ Ошибка инициализации кэша отчётов:', error.message);
-        cacheInitPromise = null; // Очищаем отравленный промис
+        cacheInitPromise = null;
         throw error;
       }
     })();
@@ -199,11 +160,6 @@ async function listReports() {
   }
 }
 
-/**
- * Удаляет один отчёт по его ID.
- * @param {string} reportId — ID отчёта.
- * @returns {Promise<boolean>} — true, если файл удалён, false, если файл не найден.
- */
 async function deleteReport(reportId) {
   if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
     throw new Error('Invalid report ID format for deletion');
@@ -212,13 +168,12 @@ async function deleteReport(reportId) {
 
   try {
     await fs.promises.unlink(filepath);
-    
-    // Обновляем кэш только после успешного удаления файла
+
     if (reportsCache !== null) {
       reportsCache = reportsCache.filter(r => r.id !== reportId);
       await _saveIndex();
     }
-    
+
     console.log(`[Storage] 🗑️ Отчёт удалён: ${reportId}`);
     return true;
   } catch (error) {
@@ -236,16 +191,10 @@ async function deleteReport(reportId) {
   }
 }
 
-/**
- * Удаляет ВСЕ сохранённые отчёты.
- * @returns {Promise<number>} — Количество удалённых файлов.
- */
 async function deleteAllReports() {
   try {
     const files = await fs.promises.readdir(REPORTS_DIR);
     const jsonFiles = files.filter((f) => f.endsWith('.json') && f !== 'index.json');
-
-    // Параллельное удаление файлов (Promise.all вместо последовательного await)
     const results = await Promise.all(
       jsonFiles.map(file =>
         fs.promises.unlink(path.join(REPORTS_DIR, file))
@@ -258,7 +207,6 @@ async function deleteAllReports() {
     );
     const count = results.filter(Boolean).length;
 
-    // Очищаем кэш после успешного удаления файлов
     if (reportsCache !== null) {
       const deletedIds = new Set(jsonFiles.map(f => f.replace('.json', '')));
       reportsCache = reportsCache.filter(r => !deletedIds.has(r.id));

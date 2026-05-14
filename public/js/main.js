@@ -3,7 +3,7 @@ import { initializeTheme } from './ui/theme.js';
 import { loadSettings } from './utils/settings.js';
 import { setCurrentCurrency, currentReport } from './state.js';
 import { loadReportsList, loadReportById } from './report.js';
-import { setupSSE } from './ui/sse.js';
+
 import { openModal, closeModal, handleFormSubmit } from './ui/modal.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { showScreen } from './ui/common.js';
@@ -12,14 +12,13 @@ import { setupSettingsListeners, setupStepperListeners, setupSegmentedControlLis
 import { initializePremiumUI } from './ui/ui-premium.js';
 import { setupWelcomeScreen, updateWelcomeStats } from './ui/welcome.js';
 
-// Запуск кода сразу после загрузки HTML-структуры браузером
 document.addEventListener('DOMContentLoaded', async () => {
   initializeTheme();
 
   initializeSettings();
   initializePremiumUI();
   setupEventListeners();
-  setupSSE();
+  setupLimitValidation();
   setupWelcomeScreen();
 
   let isRestoredProgress = false;
@@ -137,3 +136,32 @@ function setupEventListeners() {
   if (DOM.sidebarLogs)
     DOM.sidebarLogs.classList.add('collapsed');
 }
+
+function setupLimitValidation() {
+  const limits = [DOM.inputLimit, DOM.settingsDefaultLimit];
+
+  limits.forEach(input => {
+    if (!input) return;
+
+    const validate = () => {
+      let val = parseInt(input.value, 10);
+      if (isNaN(val)) return;
+
+      let message = '';
+      if (val < 5) {
+        input.value = 5;
+        message = 'Минимальное количество вакансий: 5';
+      } else if (val > 200) {
+        input.value = 200;
+        message = 'Максимальное количество вакансий: 200';
+      }
+
+      if (message) {
+        import('./ui/common.js').then(({ showToast }) => showToast(message, 'error'));
+      }
+    };
+
+    input.addEventListener('change', validate);
+  });
+}
+

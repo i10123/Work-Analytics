@@ -1,35 +1,12 @@
-/**
- * @file api.js — Роутер API-эндпоинтов.
- * @description Определяет REST API и SSE endpoint для взаимодействия фронтенда с сервером.
- *
- * Эндпоинты:
- *   POST   /api/parse        — Запуск нового парсинга (добавление в очередь).
- *   GET    /api/reports       — Список всех сохранённых отчётов (без массива jobs).
- *   GET    /api/reports/:id   — Полный отчёт по ID (с массивом jobs).
- *   DELETE /api/reports/:id   — Удаление отчёта.
- *   GET    /api/events        — SSE-стрим обновлений статуса задач.
- *   GET    /api/queue         — Текущее состояние очереди.
- */
-
 const express = require('express');
 const router = express.Router();
 const { enqueueTask, getQueueStatus, getFullQueueState, deleteTask, prioritizeTask, updateTask, taskEmitter } = require('../services/queue');
 const { listReports, loadReport, deleteReport, deleteAllReports, saveReport } = require('../services/storage');
 const { generateCandidateProfile } = require('../services/ai');
 
-/**
- * POST /api/parse — Запуск нового сбора данных.
- * Тело запроса (JSON):
- *   - query {string} — Ключевое слово для поиска (обязательно).
- *   - period {string} — Период ("1day", "3days", "7days", "30days").
- *   - limit {number} — Максимум вакансий с каждого из 3 источников.
- *
- * @returns {Object} — { success, task: { id, status, query, filters } }
- */
 router.post('/parse', (req, res) => {
   const { query, period, limit, sources, stopWords, deepScrape } = req.body;
 
-  /** Валидация: запрос — обязательное поле */
   if (!query || typeof query !== 'string' || query.trim().length === 0) {
     console.warn('[API] ⚠️ Попытка запуска без ключевого слова.');
     return res.status(400).json({
@@ -38,7 +15,6 @@ router.post('/parse', (req, res) => {
     });
   }
 
-  /** Ограничение длины запроса (защита от DOS / 414 URI Too Long) */
   if (query.trim().length > 200) {
     console.warn('[API] ⚠️ Слишком длинный запрос:', query.trim().length, 'символов');
     return res.status(400).json({
@@ -47,7 +23,6 @@ router.post('/parse', (req, res) => {
     });
   }
 
-  /** Приводим лимит к числу (минимум 5, максимум 200) */
   const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 5), 200);
 
   console.log(`[API] 🚀 Новый запрос на парсинг: "${query.trim()}", период: ${period || '7days'}, лимит: ${parsedLimit}, источники:`, sources);
@@ -82,10 +57,6 @@ router.post('/parse', (req, res) => {
   });
 });
 
-/**
- * GET /api/reports — Получение списка всех отчётов.
- * Возвращает метаданные (без массива jobs) для отображения в боковой панели.
- */
 router.get('/reports', async (req, res) => {
   try {
     const reports = await listReports();
@@ -97,10 +68,6 @@ router.get('/reports', async (req, res) => {
   }
 });
 
-/**
- * GET /api/reports/:id — Получение полного отчёта по ID.
- * Включает массив jobs для построения графиков.
- */
 router.get('/reports/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -122,9 +89,6 @@ router.get('/reports/:id', async (req, res) => {
   }
 });
 
-/**
- * POST /api/reports/:id/summary — Генерация AI сводки для отчёта.
- */
 router.post('/reports/:id/summary', async (req, res) => {
   const { id } = req.params;
 
@@ -144,7 +108,7 @@ router.post('/reports/:id/summary', async (req, res) => {
 
     console.log(`[API] ✨ Генерация AI сводки для отчёта: ${id}`);
     const summary = await generateCandidateProfile(report);
-    
+
     report.aiSummary = summary;
     await saveReport(report);
 
@@ -155,9 +119,6 @@ router.post('/reports/:id/summary', async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/reports/:id — Удаление отчёта.
- */
 router.delete('/reports/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -178,9 +139,6 @@ router.delete('/reports/:id', async (req, res) => {
   }
 });
 
-/**
- * DELETE /api/reports — Удаление ВСЕХ отчётов.
- */
 router.delete('/reports', async (req, res) => {
   try {
     const count = await deleteAllReports();
@@ -191,62 +149,11 @@ router.delete('/reports', async (req, res) => {
   }
 });
 
-/**
- * GET /api/events — SSE (Server-Sent Events) стрим.
- * Фронтенд подключается через new EventSource('/api/events') и
- * получает обновления статуса задач в реальном времени.
- *
- * Формат событий:
- *   event: taskUpdate
- *   data: { id, status, step?, reportId?, errors?, error? }
- */
-router.get('/events', (req, res) => {
-  console.log('[API] 📡 Новое SSE-подключение.');
-
-  /** Настраиваем заголовки для SSE */
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no', // Отключаем буферизацию nginx (если используется)
-  });
-
-  /** Отправляем текущее состояние очереди при подключении */
-  const queueStatus = getQueueStatus();
-  res.write(`event: queueStatus\ndata: ${JSON.stringify(queueStatus)}\n\n`);
-
-  /** Слушаем обновления задач */
-  const onTaskUpdate = (task) => {
-    res.write(`event: taskUpdate\ndata: ${JSON.stringify(task)}\n\n`);
-  };
-
-  taskEmitter.on('taskUpdate', onTaskUpdate);
-
-  /** Heartbeat каждые 30 секунд (чтобы соединение не отваливалось) */
-  const heartbeat = setInterval(() => {
-    res.write(': heartbeat\n\n');
-  }, 30000);
-
-  /** Очистка при отключении клиента */
-  req.on('close', () => {
-    console.log('[API] 📡 SSE-подключение закрыто.');
-    taskEmitter.off('taskUpdate', onTaskUpdate);
-    clearInterval(heartbeat);
-  });
-});
-
-/**
- * GET /api/queue — Текущее состояние очереди задач.
- */
 router.get('/queue', (req, res) => {
   const state = getFullQueueState();
   return res.json({ success: true, ...state });
 });
 
-
-/**
- * POST /api/queue/:id/delete — Удаление задачи из очереди.
- */
 router.post('/queue/:id/delete', (req, res) => {
   const { id } = req.params;
   const ok = deleteTask(id);
@@ -254,9 +161,6 @@ router.post('/queue/:id/delete', (req, res) => {
   return res.json({ success: true, message: 'Задача удалена.' });
 });
 
-/**
- * POST /api/queue/:id/priority — Перемещение задачи в начало очереди.
- */
 router.post('/queue/:id/priority', (req, res) => {
   const { id } = req.params;
   const ok = prioritizeTask(id);
@@ -264,9 +168,6 @@ router.post('/queue/:id/priority', (req, res) => {
   return res.json({ success: true, message: 'Задача перемещена в начало очереди.' });
 });
 
-/**
- * PUT /api/queue/:id — Изменение параметров задачи (если не processing).
- */
 router.put('/queue/:id', (req, res) => {
   const { id } = req.params;
   const { query, limit, period, sources } = req.body;
@@ -275,22 +176,14 @@ router.put('/queue/:id', (req, res) => {
   return res.json({ success: true, message: 'Параметры задачи обновлены.' });
 });
 
-/**
- * GET /api/status — Статус конфигурации API-ключей.
- * Возвращает информацию о настроенности Gemini и Currency API
- * без раскрытия самих ключей (безопасность).
- */
 router.get('/status', (req, res) => {
-  /** Currency API */
   const currencyKeysStr = process.env.EXCHANGE_RATE_API_KEYS || '';
   const currencyKeys = currencyKeysStr.split(',').map((k) => k.trim()).filter(Boolean);
-
-  /** OpenRouter API */
   const openrouterKey = process.env.OPENROUTER_API_KEY || '';
 
   const maskKey = (key) => {
     if (!key) return null;
-    return '***'; // Полностью скрываем ключ для безопасности
+    return key.slice(0, 4) + '...';
   };
 
   return res.json({

@@ -1,8 +1,3 @@
-/**
- * @file habr.js — Парсер вакансий с Хабр Карьеры.
- * @description Рефакторинг с использованием ООП.
- */
-
 const axios = require('axios');
 const cheerio = require('cheerio');
 const BaseParser = require('./base');
@@ -17,6 +12,14 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15',
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (X11; Linux x86_64; rv:127.0) Gecko/20100101 Firefox/127.0',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+  'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36'
 ];
 
 class HabrParser extends BaseParser {
@@ -26,11 +29,7 @@ class HabrParser extends BaseParser {
 
   async parse(query, filters = {}, cancelFlag = null) {
     const limit = filters.limit || 50;
-    // Компилируем стоп-слова ОДИН РАЗ до начала цикла
     const stopRegexes = this.compileStopWords(filters.stopWords || '');
-    
-    // Хабр показывает ~25 вакансий на странице
-    // Ограничиваем максимальное количество страниц
     const maxPages = this.MAX_PAGES_TO_SCAN;
 
     console.log(`[Parser:Habr] 🔍 Поиск: "${query}", лимит: ${limit}`);
@@ -38,7 +37,6 @@ class HabrParser extends BaseParser {
     const allJobs = [];
 
     for (let page = 1; page <= maxPages; page++) {
-      // Проверка флага отмены
       if (cancelFlag?.isStopped) {
         console.log(`[Parser:Habr] 🛑 Задача остановлена. Прерываем парсинг.`);
         break;
@@ -124,14 +122,13 @@ class HabrParser extends BaseParser {
         const $card = $(element);
 
         const title = $card.find('.vacancy-card__title a').text().trim() ||
-                      $card.find('[class*="title"] a').text().trim();
-        
+          $card.find('[class*="title"] a').text().trim();
+
         const url = $card.find('.vacancy-card__title a').attr('href') ||
-                    $card.find('[class*="title"] a').attr('href') || '';
-        
+          $card.find('[class*="title"] a').attr('href') || '';
+
         let company = $card.find('.vacancy-card__company-title a').text().trim() ||
-                      $card.find('[class*="company"] a').text().trim() || 'Не указана';
-        // Убираем прилипший рейтинг компании (например "VK4.0" -> "VK")
+          $card.find('[class*="company"] a').text().trim() || 'Не указана';
         company = company.replace(/\d+\.\d+[\s\u200B]*$/, '').trim();
 
         const salaryText = $card.find('.vacancy-card__salary, [class*="salary"]').text().trim();
@@ -145,7 +142,6 @@ class HabrParser extends BaseParser {
 
         const description = $card.find('.vacancy-card__description, [class*="snippet"]').text().trim();
 
-        // Собираем все мета-данные из нового формата Хабра
         const metaNodes = [];
         $card.find('.vacancy-card__meta .inline-list > *').each((_, el) => {
           metaNodes.push($(el).text().trim());
@@ -169,13 +165,12 @@ class HabrParser extends BaseParser {
         else if (lowerMeta.match(/неполн|частичн/)) employment = 'Частичная занятость';
         else if (lowerMeta.match(/проект/)) employment = 'Проектная работа';
 
-        // Город (обычно это слово в мете, которое не является квалификацией или типом работы)
+        // Город
         let city = 'Не указан';
         const cityCandidate = metaNodes.find(n => !n.toLowerCase().match(/(полн|частичн|проект|junior|middle|senior|lead|стажер|младший|средний|старший|ведущий)/));
         if (cityCandidate) {
           city = cityCandidate;
         } else {
-          // Fallback
           city = $card.find('.vacancy-card__meta [class*="location"]').text().trim() || 'Не указан';
         }
 
@@ -185,12 +180,12 @@ class HabrParser extends BaseParser {
           finalDescription = [title, finalDescription, skillsText].filter(Boolean).join('\n\n');
         }
 
-        const isRemote = city.toLowerCase().includes('удаленно') || 
-                         city.toLowerCase().includes('удалённо') || 
-                         lowerMeta.includes('удаленно') || 
-                         lowerMeta.includes('удалённо') || 
-                         lowerMeta.includes('remote') ||
-                         skills.some(s => s.toLowerCase() === 'remote' || s.toLowerCase() === 'удаленная работа');
+        const isRemote = city.toLowerCase().includes('удаленно') ||
+          city.toLowerCase().includes('удалённо') ||
+          lowerMeta.includes('удаленно') ||
+          lowerMeta.includes('удалённо') ||
+          lowerMeta.includes('remote') ||
+          skills.some(s => s.toLowerCase() === 'remote' || s.toLowerCase() === 'удаленная работа');
         const workFormat = isRemote ? 'Remote' : 'Office';
 
         if (title) {
@@ -224,7 +219,7 @@ class HabrParser extends BaseParser {
 
       try {
         await this.delay(DEEP_SCRAPE_DELAY_MS);
-        
+
         const response = await axios.get(job.url, {
           headers: {
             'User-Agent': this.getRandomUserAgent(),
@@ -233,11 +228,10 @@ class HabrParser extends BaseParser {
           timeout: 15000,
           signal: cancelFlag?.abortController?.signal || undefined,
         });
-        
+
         const $ = cheerio.load(response.data);
-        // На Хабре описание обычно находится в .vacancy-description__text или подобном
         const fullDesc = $('.vacancy-description__text, .style-ugc').text().trim();
-        
+
         if (fullDesc) {
           job.description = fullDesc.replace(/\n\s*\n/g, '\n').trim();
         }
@@ -247,8 +241,7 @@ class HabrParser extends BaseParser {
       }
     };
 
-    // Ограничение параллелизма
-    await this.fetchDeepWithConcurrency(jobs, fetchFn, 2); // Хабр строже, лучше concurrency = 2
+    await this.fetchDeepWithConcurrency(jobs, fetchFn, 2);
   }
 
   parseSalaryText(text) {

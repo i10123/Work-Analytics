@@ -1,18 +1,9 @@
-/**
- * @file hh.js — Парсер вакансий с HeadHunter (hh.ru).
- * @description Упрощенный парсер:
- *   1. Ротация User-Agent с email (по правилам API HH.ru)
- *   2. OAuth2 авторизация (client_credentials) с кэшированием токена
- *   3. Экспоненциальный backoff при 403/429
- *   4. Рандомизация задержек (human-like behavior)
- */
-
 const axios = require('axios');
 const BaseParser = require('./base');
 
 const HH_API_BASE = 'https://api.hh.ru';
 
-const USER_AGENTS =[
+const USER_AGENTS = [
   'WorkAnalyticsApp/1.0 (work-analytics-support@gmail.com)',
   'JobMarketAnalyzer/1.1 (jobmarket.analyzer@mail.ru)',
   'VacancyTracker/2.0 (vacancy.tracker@yandex.ru)',
@@ -140,7 +131,6 @@ class HhParser extends BaseParser {
           );
 
           await this.delay(backoffMs);
-          // При следующей попытке User-Agent сменится автоматически
           continue;
         }
 
@@ -174,7 +164,7 @@ class HhParser extends BaseParser {
       console.log(`[Parser:HH] 🔓 Работаем в анонимном режиме (без токена).`);
     }
 
-    const allJobs =[];
+    const allJobs = [];
     const stopRegexes = this.compileStopWords(filters.stopWords || '');
 
     for (let page = 0; page < maxPages; page++) {
@@ -196,7 +186,7 @@ class HhParser extends BaseParser {
 
         const response = await this._requestWithRetry(`${HH_API_BASE}/vacancies`, params, token, cancelFlag);
 
-        const vacancies = response.data.items ||[];
+        const vacancies = response.data.items || [];
         console.log(`[Parser:HH] 📊 Страница ${page + 1}: получено ${vacancies.length} вакансий (до фильтрации)`);
 
         if (vacancies.length === 0) {
@@ -318,7 +308,7 @@ class HhParser extends BaseParser {
       workFormat: workFormat,
       description: vacancy.snippet?.requirement || vacancy.snippet?.responsibility || '',
       publishedAt: vacancy.published_at || '',
-      skills:[],
+      skills: [],
     };
   }
 

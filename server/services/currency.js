@@ -1,50 +1,26 @@
-/**
- * @file currency.js — Модуль мультивалютной конвертации.
- * @description Получает актуальные курсы валют через ExchangeRate-API.
- *              При недоступности API использует резервные (fallback) курсы.
- *              Поддерживаемые валюты: RUB, USD, EUR, BYN.
- */
-
 const axios = require('axios');
 
-/**
- * Резервные курсы валют (fallback).
- * Используются, если ExchangeRate-API недоступен.
- * Все курсы указаны относительно 1 RUB.
- * @type {Object<string, number>}
- */
 const FALLBACK_RATES = {
   RUB: 1,
-  USD: 93.5,
-  EUR: 100.2,
-  BYN: 28.5,
+  USD: 73.3,
+  EUR: 85.5,
+  BYN: 26.2,
 };
 
-/** Текущий индекс ключа для валют */
 let currentRateKeyIndex = 0;
 
-/** Кэш для хранения полученных курсов */
 let cachedRates = null;
 let lastFetchTime = null;
-const CACHE_TTL = 12 * 60 * 60 * 1000; // 12 часов в миллисекундах
+const CACHE_TTL = 12 * 60 * 60 * 1000;
 
-/**
- * Получает массив ключей из переменной окружения.
- * @returns {string[]}
- */
 function getRateKeys() {
   const keysStr = process.env.EXCHANGE_RATE_API_KEYS || '';
   return keysStr.split(',').map(k => k.trim()).filter(k => k && !k.startsWith('YOUR_') && !/^key\d*$/.test(k));
 }
 
-/**
- * Получает актуальные курсы валют с ExchangeRate-API.
- * Базовая валюта — RUB. Результат: сколько RUB стоит 1 единица каждой валюты.
- */
 async function fetchExchangeRates() {
   const now = Date.now();
 
-  // Если кэш существует и он свежий — используем его
   if (cachedRates && lastFetchTime && (now - lastFetchTime < CACHE_TTL)) {
     console.log('[Currency] 📦 Используются закэшированные курсы валют (TTL).');
     return cachedRates;
@@ -52,13 +28,10 @@ async function fetchExchangeRates() {
 
   const keys = getRateKeys();
 
-  /** Если ключи не заданы — сразу возвращаем fallback */
   if (keys.length === 0) {
     console.warn('[Currency] ⚠️ API-ключи для курсов валют не заданы в .env. Используются резервные курсы.');
     return buildRatesResponse(FALLBACK_RATES, true);
   }
-
-  // Пробуем ключи по очереди, пока не сработает
   for (let i = 0; i < keys.length; i++) {
     const activeKeyIndex = (currentRateKeyIndex + i) % keys.length;
     const apiKey = keys[activeKeyIndex];
@@ -78,13 +51,10 @@ async function fetchExchangeRates() {
           BYN: apiRates.BYN ? +(1 / apiRates.BYN).toFixed(2) : FALLBACK_RATES.BYN,
         };
 
-        // Запоминаем текущий рабочий ключ, чтобы в следующий раз начать с него
         currentRateKeyIndex = activeKeyIndex;
 
         console.log(`[Currency] ✅ Курсы получены: 1 USD = ${rates.USD} RUB`);
         const responseObj = buildRatesResponse(rates, false);
-        
-        // Сохраняем в кэш только успешные ответы от API
         cachedRates = responseObj;
         lastFetchTime = Date.now();
 
@@ -92,7 +62,6 @@ async function fetchExchangeRates() {
       }
     } catch (error) {
       console.warn(`[Currency] ⚠️ Ключ #${activeKeyIndex + 1} не сработал: ${error.message}`);
-      // Продолжаем цикл к следующему ключу
     }
   }
 
@@ -100,33 +69,15 @@ async function fetchExchangeRates() {
   return buildRatesResponse(FALLBACK_RATES, true);
 }
 
-
-/**
- * Конвертирует сумму из одной валюты в другую, используя переданные курсы.
- *
- * @param {number} amount — Исходная сумма.
- * @param {string} fromCurrency — Исходная валюта (например: "USD").
- * @param {string} toCurrency — Целевая валюта (например: "RUB").
- * @param {Object<string, number>} rates — Объект курсов (1 единица валюты = X RUB).
- * @returns {number} — Сконвертированная сумма, округлённая до сотых.
- */
 function convertCurrency(amount, fromCurrency, toCurrency, rates) {
   if (fromCurrency === toCurrency) return amount;
 
-  /** Приводим всё к RUB, затем к целевой валюте */
   const amountInRub = amount * (rates[fromCurrency] || 1);
   const result = amountInRub / (rates[toCurrency] || 1);
 
   return Math.round(result * 100) / 100;
 }
 
-/**
- * Формирует стандартный объект ответа с курсами.
- *
- * @param {Object<string, number>} rates — Курсы валют.
- * @param {boolean} isFallback — Использованы ли резервные курсы.
- * @returns {Object} — Стандартизированный объект курсов.
- */
 function buildRatesResponse(rates, isFallback) {
   return {
     base: 'RUB',
