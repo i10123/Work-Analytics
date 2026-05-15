@@ -10,7 +10,7 @@ import { showToast, showScreen } from './common.js';
 import { setAppTheme } from './theme.js';
 import { renderDashboard } from './dashboard.js';
 import { loadReportsList } from '../report.js';
-import { currentReport, setCurrentReport, currentCurrency, setCurrentCurrency, baselineSettings, setBaselineSettings } from '../state.js';
+import { appStore } from '../state.js';
 
 export function setupSettingsListeners() {
   if (DOM.btnSettings) DOM.btnSettings.addEventListener('click', openSettings);
@@ -88,17 +88,18 @@ export function openSettings() {
   loadApiStatus();
   loadDataStats();
 
-  setBaselineSettings(JSON.stringify(getSettingsFromUI()));
+  appStore.setState({ baselineSettings: JSON.stringify(getSettingsFromUI()) });
 }
 
 export async function closeSettings(force = false) {
+  const { baselineSettings } = appStore.getState();
   if (!force && baselineSettings) {
     const currentSettings = JSON.stringify(getSettingsFromUI());
     if (currentSettings !== baselineSettings) {
       const choice = await showConfirmModal();
       
       if (choice === 'save') {
-        handleSaveSettings();
+        await handleSaveSettings();
         return;
       } else if (choice === 'discard') {
       } else {
@@ -108,7 +109,7 @@ export async function closeSettings(force = false) {
   }
 
   if (DOM.settingsOverlay) DOM.settingsOverlay.style.display = 'none';
-  setBaselineSettings(null);
+  appStore.setState({ baselineSettings: null });
 }
 
 function showConfirmModal() {
@@ -179,7 +180,7 @@ function switchSettingsTab(tabName) {
   });
 }
 
-function handleSaveSettings() {
+async function handleSaveSettings() {
   const settings = getSettingsFromUI();
 
   const stopWordsInput = document.getElementById('settingsStopWords');
@@ -196,20 +197,24 @@ function handleSaveSettings() {
     return;
   }
 
-  saveSettings(settings);
+  // Сохраняем настройки в localStorage и на сервер
+  saveSettings(settings).catch(err => {
+    console.warn('[Settings] ⚠️ Ошибка сохранения настроек:', err);
+  });
 
-  setCurrentCurrency(settings.defaultCurrency);
+  appStore.setState({ currentCurrency: settings.defaultCurrency });
   DOM.currencyBtns?.forEach((b) => {
-    b.classList.toggle('active', b.dataset.currency === currentCurrency);
+    b.classList.toggle('active', b.dataset.currency === settings.defaultCurrency);
   });
 
   setAppTheme(settings.theme);
 
+  const { currentReport } = appStore.getState();
   if (currentReport) {
     renderDashboard(currentReport);
   }
 
-  setBaselineSettings(JSON.stringify(settings));
+  appStore.setState({ baselineSettings: JSON.stringify(settings) });
 
   closeSettings(true);
   showToast('Настройки сохранены', 'success');
@@ -327,7 +332,7 @@ async function loadDataStats() {
 async function handleDeleteAllReports() {
   const confirmed = await showConfirm({
     title: 'Удалить все отчёты?',
-    text: 'Это действие необратимо. Все собранные данные будут безвозвратно удалены из базе данных.',
+    text: 'Это действие необратимо. Все собранные данные будут безвозвратно удалены из базы данных.',
     icon: '🗑️',
     buttons: [
       { text: 'Да, удалить всё', type: 'primary', value: true },
@@ -342,7 +347,7 @@ async function handleDeleteAllReports() {
     const data = await response.json();
 
     if (data.success) {
-      setCurrentReport(null);
+      appStore.setState({ currentReport: null });
       history.replaceState({ type: 'welcome' }, '', window.location.pathname);
       showScreen('welcome');
       loadReportsList();
@@ -373,9 +378,12 @@ async function handleResetSettings() {
 
   if (!confirmed) return;
 
-  saveSettings(DEFAULT_SETTINGS);
+  saveSettings(DEFAULT_SETTINGS).catch(err => {
+    console.warn('[Settings] ⚠️ Ошибка сохранения сброшенных настроек:', err);
+    showToast('Настройки сброшены локально, но не сохранены на сервер', 'warning');
+  });
   setAppTheme(DEFAULT_SETTINGS.theme);
-  setCurrentCurrency(DEFAULT_SETTINGS.defaultCurrency);
+  appStore.setState({ currentCurrency: DEFAULT_SETTINGS.defaultCurrency });
 
   DOM.currencyBtns?.forEach((b) => {
     b.classList.toggle('active', b.dataset.currency === DEFAULT_SETTINGS.defaultCurrency);
@@ -458,7 +466,6 @@ export function setupStepperListeners() {
   });
 
   document.addEventListener('mouseup', stopStepping);
-  document.addEventListener('mouseleave', stopStepping);
   document.addEventListener('mouseout', (e) => {
     if (!e.relatedTarget) stopStepping();
   });
@@ -476,5 +483,27 @@ export function setupStepperListeners() {
 }
 
 export function setupSegmentedControlListeners() {
-  // Сегментированные контролы теперь используют нативные radio-inputs и не требуют JS
+  const controls = document.querySelectorAll('.segmented-control');
+  controls.forEach(control => {
+    const inputs = Array.from(control.querySelectorAll('input[type="radio"]'));
+    const indicator = control.querySelector('.segmented-control__indicator');
+    if (!inputs.length || !indicator) return;
+
+    const updateIndicator = () => {
+      const checkedIndex = inputs.findIndex(input => input.checked);
+      if (checkedIndex !== -1) {
+        indicator.style.transform = `translateX(${checkedIndex * 100}%)`;
+      }
+    };
+
+    inputs.forEach(input => {
+      input.addEventListener('change', updateIndicator);
+    });
+
+    // Инициализация при загрузке
+    updateIndicator();
+
+    // Также обновляем при кастомных событиях, если они есть
+    control.addEventListener('updateIndicator', updateIndicator);
+  });
 }

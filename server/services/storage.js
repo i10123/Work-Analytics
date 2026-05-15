@@ -1,12 +1,32 @@
-
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 
 const REPORTS_DIR = path.join(__dirname, '..', '..', 'data', 'reports');
-const INDEX_FILE = path.join(REPORTS_DIR, 'index.json');
+const INDEX_FILE = path.join(REPORTS_DIR, 'index.jsonl');
+const LEGACY_INDEX_FILE = path.join(REPORTS_DIR, 'index.json');
+
+function getSecureFilepath(reportId, action) {
+  if (!reportId || typeof reportId !== 'string' || !/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
+    throw new Error(`Invalid report ID format for ${action}`);
+  }
+  const filename = `${reportId}.json`;
+  const safeFilename = path.basename(filename);
+  if (safeFilename !== filename) {
+    throw new Error(`Path traversal attempt detected in filename for ${action}`);
+  }
+  const filepath = path.resolve(REPORTS_DIR, safeFilename);
+  const normalizedReportsDir = path.resolve(REPORTS_DIR);
+  if (!filepath.startsWith(normalizedReportsDir + path.sep)) {
+    throw new Error(`Path traversal attempt detected in resolved path for ${action}`);
+  }
+  return filepath;
+}
+
 let reportsCache = null;
 let cacheInitPromise = null;
-let saveIndexQueue = Promise.resolve();
+let lastInitErrorTime = 0;
+const INIT_ERROR_COOLDOWN_MS = 10000; // 10 секунд
 
 async function ensureDataDirs() {
   try {
@@ -18,55 +38,125 @@ async function ensureDataDirs() {
   }
 }
 
-async function _saveIndex() {
+async function _appendToIndex(cacheItem) {
+  if (!cacheItem) return;
+  try {
+    const line = JSON.stringify(cacheItem) + '\n';
+    await fs.promises.appendFile(INDEX_FILE, line, 'utf-8');
+  } catch (err) {
+    console.error('[Storage] ❌ Ошибка добавления в index.jsonl:', err.message);
+  }
+}
+
+async function _compactIndex() {
   if (reportsCache === null) return;
+  try {
+    const tempFile = `${INDEX_FILE}.tmp`;
+    const content = reportsCache.map(r => JSON.stringify(r)).join('\n') + '\n';
+    await fs.promises.writeFile(tempFile, content, 'utf-8');
+    await fs.promises.rename(tempFile, INDEX_FILE);
+  } catch (err) {
+    console.error('[Storage] ❌ Ошибка компактизации index.jsonl:', err.message);
+  }
+}
 
-  const currentWrite = saveIndexQueue.then(async () => {
-    try {
-      const jsonString = JSON.stringify(reportsCache, null, 2);
-      await fs.promises.writeFile(`${INDEX_FILE}.tmp`, jsonString, 'utf-8');
-      await fs.promises.rename(`${INDEX_FILE}.tmp`, INDEX_FILE);
-    } catch (err) {
-      console.error('[Storage] ❌ Ошибка сохранения index.json:', err.message);
+async function listReports() {
+  if (reportsCache !== null) return reportsCache;
+
+  if (!cacheInitPromise) {
+    if (Date.now() - lastInitErrorTime < INIT_ERROR_COOLDOWN_MS) {
+      console.warn('[Storage] ⚠️ listReports() cooldown active, returning empty list.');
+      return [];
     }
-  });
 
-  saveIndexQueue = currentWrite.catch(() => { });
-  return currentWrite;
+    cacheInitPromise = (async () => {
+      let reportsMap = new Map();
+
+      try {
+        const legacyIndex = await fs.promises.readFile(LEGACY_INDEX_FILE, 'utf-8');
+        const legacyData = JSON.parse(legacyIndex);
+        for (const item of legacyData) {
+          reportsMap.set(item.id, item);
+        }
+        await fs.promises.rename(LEGACY_INDEX_FILE, `${LEGACY_INDEX_FILE}.bak`);
+        console.log('[Storage] 📋 Миграция index.json -> index.jsonl завершена.');
+      } catch (err) {
+      }
+
+      try {
+        const fileStream = fs.createReadStream(INDEX_FILE);
+        const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
+        for await (const line of rl) {
+          if (!line.trim()) continue;
+          try {
+            const item = JSON.parse(line);
+            if (item._deleted) {
+              reportsMap.delete(item.id);
+            } else {
+              reportsMap.set(item.id, item);
+            }
+          } catch (e) {
+            console.warn(`[Storage] ⚠️ Ошибка парсинга строки в index.jsonl:`, e.message);
+          }
+        }
+        console.log(`[Storage] 📋 Индекс загружен из index.jsonl (${reportsMap.size} отчётов).`);
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          console.error('[Storage] ❌ Ошибка чтения index.jsonl:', err.message);
+          throw err;
+        } else {
+          console.log(`[Storage] 📋 index.jsonl не найден. Начинаем с чистого листа.`);
+        }
+      }
+
+      reportsCache = Array.from(reportsMap.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      await _compactIndex();
+
+      return reportsCache;
+    })();
+  }
+
+  try {
+    return await cacheInitPromise;
+  } catch (e) {
+    lastInitErrorTime = Date.now();
+    cacheInitPromise = null;
+    return [];
+  }
 }
 
 async function saveReport(report) {
-  if (!report || !/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(report.id)) {
-    throw new Error('Invalid report ID format for saving');
-  }
-  const filename = `${report.id}.json`;
-  const filepath = path.join(REPORTS_DIR, filename);
+  if (!report) throw new Error('Invalid report object');
+  const filepath = getSecureFilepath(report.id, 'saving');
+  const filename = path.basename(filepath);
 
   try {
     const jsonString = JSON.stringify(report, null, 2);
     await fs.promises.writeFile(`${filepath}.tmp`, jsonString, 'utf-8');
     await fs.promises.rename(`${filepath}.tmp`, filepath);
 
+    const cacheItem = {
+      id: report.id,
+      query: report.query,
+      filters: report.filters,
+      status: report.status,
+      createdAt: report.createdAt,
+      stats: report.stats,
+      errors: report.errors || [],
+    };
+
     if (reportsCache !== null) {
       const existingIndex = reportsCache.findIndex(r => r.id === report.id);
-      const cacheItem = {
-        id: report.id,
-        query: report.query,
-        filters: report.filters,
-        status: report.status,
-        createdAt: report.createdAt,
-        stats: report.stats,
-        errors: report.errors || [],
-      };
-
       if (existingIndex !== -1) {
         reportsCache[existingIndex] = cacheItem;
       } else {
         reportsCache.unshift(cacheItem);
+        reportsCache.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       }
-      await _saveIndex();
     }
 
+    await _appendToIndex(cacheItem);
     console.log(`[Storage] 💾 Отчёт сохранён: ${filename}`);
     return filepath;
   } catch (error) {
@@ -76,11 +166,7 @@ async function saveReport(report) {
 }
 
 async function loadReport(reportId) {
-  if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
-    throw new Error('Invalid report ID format for loading');
-  }
-  const filepath = path.join(REPORTS_DIR, `${reportId}.json`);
-
+  const filepath = getSecureFilepath(reportId, 'loading');
   try {
     const raw = await fs.promises.readFile(filepath, 'utf-8');
     console.log(`[Storage] 📖 Отчёт загружен: ${reportId}`);
@@ -95,94 +181,23 @@ async function loadReport(reportId) {
   }
 }
 
-async function listReports() {
-  if (reportsCache !== null) {
-    return reportsCache;
-  }
-
-  if (!cacheInitPromise) {
-    cacheInitPromise = (async () => {
-      try {
-        try {
-          const indexRaw = await fs.promises.readFile(INDEX_FILE, 'utf-8');
-          reportsCache = JSON.parse(indexRaw);
-          console.log(`[Storage] 📋 Кэш загружен из index.json (${reportsCache.length} отчётов).`);
-          return reportsCache;
-        } catch (err) {
-          if (err.code !== 'ENOENT') {
-            console.warn(`[Storage] ⚠️ Ошибка чтения index.json, пересобираем:`, err.message);
-          } else {
-            console.log(`[Storage] 📋 index.json не найден. Формируем индекс (холодный старт)...`);
-          }
-        }
-
-        const files = await fs.promises.readdir(REPORTS_DIR);
-        const jsonFiles = files.filter((f) => f.endsWith('.json') && f !== 'index.json');
-
-        console.log(`[Storage] 📋 Чтение отчётов для создания индекса: ${jsonFiles.length}`);
-
-        const reports = [];
-        for (const file of jsonFiles) {
-          try {
-            const raw = await fs.promises.readFile(path.join(REPORTS_DIR, file), 'utf-8');
-            const report = JSON.parse(raw);
-            reports.push({
-              id: report.id,
-              query: report.query,
-              filters: report.filters,
-              status: report.status,
-              createdAt: report.createdAt,
-              stats: report.stats,
-              errors: report.errors || [],
-            });
-          } catch (err) {
-            console.warn(`[Storage] ⚠️ Не удалось прочитать файл ${file}:`, err.message);
-          }
-        }
-
-        reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        reportsCache = reports;
-        await _saveIndex();
-        console.log(`[Storage] 📋 Индекс сохранён в index.json.`);
-        return reportsCache;
-      } catch (error) {
-        console.error('[Storage] ❌ Ошибка инициализации кэша отчётов:', error.message);
-        cacheInitPromise = null;
-        throw error;
-      }
-    })();
-  }
-
-  try {
-    return await cacheInitPromise;
-  } catch (error) {
-    return [];
-  }
-}
-
 async function deleteReport(reportId) {
-  if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
-    throw new Error('Invalid report ID format for deletion');
-  }
-  const filepath = path.join(REPORTS_DIR, `${reportId}.json`);
-
+  const filepath = getSecureFilepath(reportId, 'deletion');
   try {
     await fs.promises.unlink(filepath);
 
     if (reportsCache !== null) {
       reportsCache = reportsCache.filter(r => r.id !== reportId);
-      await _saveIndex();
     }
 
+    await _appendToIndex({ id: reportId, _deleted: true });
     console.log(`[Storage] 🗑️ Отчёт удалён: ${reportId}`);
     return true;
   } catch (error) {
     if (error.code === 'ENOENT') {
       console.warn(`[Storage] ⚠️ Попытка удаления несуществующего отчёта: ${reportId}`);
       if (reportsCache !== null) {
-        const len = reportsCache.length;
         reportsCache = reportsCache.filter(r => r.id !== reportId);
-        if (reportsCache.length !== len) await _saveIndex();
       }
       return false;
     }
@@ -194,7 +209,9 @@ async function deleteReport(reportId) {
 async function deleteAllReports() {
   try {
     const files = await fs.promises.readdir(REPORTS_DIR);
-    const jsonFiles = files.filter((f) => f.endsWith('.json') && f !== 'index.json');
+    const jsonFiles = files.filter(f => f.endsWith('.json') && f !== 'index.json');
+    let count = 0;
+
     const results = await Promise.all(
       jsonFiles.map(file =>
         fs.promises.unlink(path.join(REPORTS_DIR, file))
@@ -205,14 +222,10 @@ async function deleteAllReports() {
           })
       )
     );
-    const count = results.filter(Boolean).length;
+    count = results.filter(Boolean).length;
 
-    if (reportsCache !== null) {
-      const deletedIds = new Set(jsonFiles.map(f => f.replace('.json', '')));
-      reportsCache = reportsCache.filter(r => !deletedIds.has(r.id));
-      await _saveIndex();
-    }
-
+    reportsCache = [];
+    await _compactIndex();
     console.log(`[Storage] 🗑️ Очистка завершена. Удалено файлов: ${count}`);
     return count;
   } catch (error) {

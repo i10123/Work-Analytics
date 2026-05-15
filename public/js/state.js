@@ -1,19 +1,38 @@
-/**
- * Глобальное состояние приложения
- * 
- * Хранит динамические данные, используемые в разных модулях:
- * - currentReport: активный просматриваемый отчет.
- * - currentCurrency: выбранная валюта отображения.
- * - charts: ссылки на экземпляры графиков (для их обновления/уничтожения).
- * - baselineSettings: слепок настроек перед редактированием (для сравнения).
- * - allReports: полный список закэшированных отчетов пользователя.
- */
+class Store {
+  constructor(initialState) {
+    this.state = initialState;
+    this.listeners = new Set();
+  }
 
-export let currentReport = null;
-export function setCurrentReport(report) { currentReport = report; }
+  getState() {
+    return this.state;
+  }
 
-export let currentCurrency = 'RUB';
-export function setCurrentCurrency(currency) { currentCurrency = currency; }
+  setState(newState) {
+    this.state = { ...this.state, ...newState };
+    this.notify();
+  }
+
+  subscribe(listener) {
+    this.listeners.add(listener);
+    // Отправляем текущее состояние сразу при подписке (опционально, но удобно)
+    listener(this.state);
+    return () => this.listeners.delete(listener);
+  }
+
+  notify() {
+    for (const listener of this.listeners) {
+      listener(this.state);
+    }
+  }
+}
+
+export const appStore = new Store({
+  currentReport: null,
+  currentCurrency: 'RUB',
+  baselineSettings: null,
+  allReports: [],
+});
 
 export const charts = {
   salary: null,
@@ -26,8 +45,11 @@ export const charts = {
   dynamics: null,
 };
 
-export let baselineSettings = null;
-export function setBaselineSettings(settings) { baselineSettings = settings; }
-
-export let allReports = [];
-export function setAllReports(reports) { allReports = reports; }
+export const clientId = (() => {
+  let id = sessionStorage.getItem('clientId');
+  if (!id) {
+    id = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+    sessionStorage.setItem('clientId', id);
+  }
+  return id;
+})();

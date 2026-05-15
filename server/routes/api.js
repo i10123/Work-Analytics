@@ -2,10 +2,23 @@ const express = require('express');
 const router = express.Router();
 const { enqueueTask, getQueueStatus, getFullQueueState, deleteTask, prioritizeTask, updateTask, taskEmitter } = require('../services/queue');
 const { listReports, loadReport, deleteReport, deleteAllReports, saveReport } = require('../services/storage');
+const { getSettings, saveSettings: saveServerSettings } = require('../services/settings');
 const { generateCandidateProfile } = require('../services/ai');
+const rateLimit = require('express-rate-limit');
 
-router.post('/parse', (req, res) => {
-  const { query, period, limit, sources, stopWords, deepScrape } = req.body;
+const parseLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    success: false,
+    error: 'Слишком много запросов на парсинг. Пожалуйста, подождите 15 минут.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post('/parse', parseLimiter, (req, res) => {
+  const { query, period, limit, sources, stopWords, deepScrape, clientId } = req.body;
 
   if (!query || typeof query !== 'string' || query.trim().length === 0) {
     console.warn('[API] ⚠️ Попытка запуска без ключевого слова.');
@@ -35,7 +48,8 @@ router.post('/parse', (req, res) => {
       limit: parsedLimit,
       sources,
       stopWords,
-      deepScrape
+      deepScrape,
+      clientId
     });
   } catch (err) {
     console.warn(`[API] ⚠️ Очередь переполнена: ${err.message}`);
@@ -127,8 +141,10 @@ router.delete('/reports/:id', async (req, res) => {
   }
 
   try {
+    const taskDeleted = deleteTask(id);
     const deleted = await deleteReport(id);
-    if (!deleted) {
+
+    if (!deleted && !taskDeleted) {
       return res.status(404).json({ success: false, error: 'Отчёт не найден.' });
     }
     console.log(`[API] 🗑️ Отчёт удалён: ${id}`);
@@ -196,6 +212,56 @@ router.get('/status', (req, res) => {
       configured: !!openrouterKey,
       key: maskKey(openrouterKey),
     }
+  });
+});
+
+router.get('/settings', async (req, res) => {
+  try {
+    const settings = await getSettings();
+    return res.json({ success: true, settings });
+  } catch (error) {
+    console.error('[API] ❌ Ошибка получения настроек:', error.message);
+    return res.status(500).json({ success: false, error: 'Ошибка получения настроек.' });
+  }
+});
+
+router.post('/settings', async (req, res) => {
+  try {
+    const settings = req.body;
+    const updated = await saveServerSettings(settings);
+    return res.json({ success: true, settings: updated });
+  } catch (error) {
+    console.error('[API] ❌ Ошибка сохранения настроек:', error.message);
+    return res.status(500).json({ success: false, error: 'Ошибка сохранения настроек.' });
+  }
+});
+
+router.get('/events', (req, res) => {
+  const { clientId } = req.query;
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const onTaskUpdate = (task) => {
+    if (!task.clientId || task.clientId === clientId) {
+      res.write(`event: taskUpdate\ndata: ${JSON.stringify(task)}\n\n`);
+    }
+  };
+
+  const onQueueStatus = (status) => {
+    res.write(`event: queueStatus\ndata: ${JSON.stringify(status)}\n\n`);
+  };
+
+  taskEmitter.on('taskUpdate', onTaskUpdate);
+  taskEmitter.on('queueStatus', onQueueStatus);
+
+  res.write(`event: queueStatus\ndata: ${JSON.stringify(getQueueStatus())}\n\n`);
+
+  req.on('close', () => {
+    taskEmitter.off('taskUpdate', onTaskUpdate);
+    taskEmitter.off('queueStatus', onQueueStatus);
   });
 });
 

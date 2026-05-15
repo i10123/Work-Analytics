@@ -5,7 +5,7 @@
  * Что содержит: Паттерн модуль TableManager с внутренней инкапсуляцией состояния сортировки, методы отрисовки строк renderTableRows и настройки слушателей таблицы.
  */
 import { DOM } from '../dom.js';
-import { currentCurrency } from '../state.js';
+import { appStore } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
 import { escapeHtml, formatSalary } from '../utils/formatters.js';
 
@@ -21,18 +21,22 @@ const TableManager = (() => {
     const searchInput = document.getElementById('jobsTableSearch');
     if (searchInput && !searchListenerAdded) {
       searchListenerAdded = true;
+      let timeoutId = null;
       searchInput.addEventListener('input', (e) => {
-        const q = e.target.value.toLowerCase();
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          const q = e.target.value.toLowerCase();
 
-        const filtered = currentJobs.filter(j =>
-          (j.title || '').toLowerCase().includes(q) ||
-          (j.company || '').toLowerCase().includes(q) ||
-          (j.city || '').toLowerCase().includes(q) ||
-          (j.skills || []).join(' ').toLowerCase().includes(q)
-        );
+          const filtered = currentJobs.filter(j =>
+            (j.title || '').toLowerCase().includes(q) ||
+            (j.company || '').toLowerCase().includes(q) ||
+            (j.city || '').toLowerCase().includes(q) ||
+            (j.skills || []).join(' ').toLowerCase().includes(q)
+          );
 
-        const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
-        renderTableRows(sorted, currentRates);
+          const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
+          renderTableRows(sorted, currentRates);
+        }, 300); // 300ms debounce
       });
     }
   }
@@ -114,6 +118,7 @@ const TableManager = (() => {
   function getSalarySortValue(job, rates) {
     if (!job.salary) return 0;
 
+    const { currentCurrency } = appStore.getState();
     const min = job.salary.min ? convertCurrency(job.salary.min, job.salary.currency, currentCurrency, rates) : null;
     const max = job.salary.max ? convertCurrency(job.salary.max, job.salary.currency, currentCurrency, rates) : null;
 
@@ -131,11 +136,14 @@ const TableManager = (() => {
       return;
     }
 
+    const fragment = document.createDocumentFragment();
+
     jobs.forEach((job) => {
       const tr = document.createElement('tr');
 
       let salaryStr = '—';
       if (job.salary && (job.salary.min || job.salary.max)) {
+        const { currentCurrency } = appStore.getState();
         const min = job.salary.min ? convertCurrency(job.salary.min, job.salary.currency, currentCurrency, rates) : null;
         const max = job.salary.max ? convertCurrency(job.salary.max, job.salary.currency, currentCurrency, rates) : null;
         const sym = getCurrencySymbol(currentCurrency);
@@ -154,21 +162,35 @@ const TableManager = (() => {
         .map((s) => `<span class="skill-tag">${escapeHtml(s)}</span>`)
         .join('');
       const sourceMap = { hh: 'HH.ru', rabotaby: 'Rabota.by', habr: 'Хабр' };
-      const sourceName = sourceMap[job.source] || job.source;
-      const sourceClass = `source-badge--${job.source}`;
+      const sourceName = escapeHtml(sourceMap[job.source] || job.source);
+      const sourceClass = escapeHtml(`source-badge--${job.source}`);
+
+      let safeUrl = '#';
+      if (job.url) {
+        try {
+          const parsedUrl = new URL(job.url, window.location.origin);
+          if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+            safeUrl = escapeHtml(job.url);
+          }
+        } catch (e) {
+          // invalid url
+        }
+      }
 
       tr.innerHTML = `
         <td><span class="source-badge ${sourceClass}">${sourceName}</span></td>
         <td>${escapeHtml(job.title)}</td>
         <td>${escapeHtml(job.company)}</td>
         <td>${escapeHtml(job.city)}</td>
-        <td style="white-space: nowrap;">${salaryStr}</td>
+        <td style="white-space: nowrap;">${escapeHtml(salaryStr)}</td>
         <td>${skillsHtml || '<span style="color: #64748b;">—</span>'}</td>
-        <td>${job.url ? `<a href="${job.url.startsWith('http') ? escapeHtml(job.url) : '#'}" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: underline; font-weight: 500;">Откликнуться</a>` : '—'}</td>
+        <td>${safeUrl !== '#' ? `<a href="${safeUrl}" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: underline; font-weight: 500;">Откликнуться</a>` : '—'}</td>
       `;
 
-      DOM.jobsTableBody.appendChild(tr);
+      fragment.appendChild(tr);
     });
+
+    DOM.jobsTableBody.appendChild(fragment);
   }
 
   return {

@@ -39,15 +39,23 @@ export function formatDuration(seconds) {
 
   if (seconds < 60)
     return `${seconds} сек.`;
-  const m = Math.floor(seconds / 60);
+    
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
+  
+  if (h > 0) {
+    return `${h} ч. ${m} мин.`;
+  }
   return `${m} мин. ${s} сек.`;
 }
 
 export function parseMarkdown(md) {
-  if (!md)
-    return '';
-
+  if (!md) return '';
+  if (typeof window !== 'undefined' && window.marked) {
+    return window.marked.parse(md);
+  }
+  // Fallback
   let html = escapeHtml(md);
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');

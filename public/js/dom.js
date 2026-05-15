@@ -41,6 +41,7 @@ export const DOM = {
   progressTitle: document.getElementById('progressTitle'),
   progressStep: document.getElementById('progressStep'),
   progressTime: document.getElementById('progressTime'),
+  progressFill: document.getElementById('progressFill'),
   btnBackToWelcome: document.getElementById('btnBackToWelcome'),
   dashTitle: document.getElementById('dashTitle'),
   dashSubtitle: document.getElementById('dashSubtitle'),

@@ -113,12 +113,12 @@ export function renderReportsList(reports, updateCache = true) {
       div.className = 'report-item';
       div.dataset.id = report.id;
 
-      const statusClass = `report-item__status--${report.status}`;
-      const statusText = {
+      const statusClass = escapeHtml(`report-item__status--${report.status}`);
+      const statusText = escapeHtml({
         completed: 'Готово',
         partial: 'Частично',
         failed: 'Ошибка',
-      }[report.status] || report.status;
+      }[report.status] || report.status);
 
       const date = new Date(report.createdAt);
       const timeStr = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -134,9 +134,9 @@ export function renderReportsList(reports, updateCache = true) {
             <span>${escapeHtml(report.query)}</span>
           </div>
           <div class="report-item__meta">
-            <span class="report-item__date">${dateStr} <span class="report-item__at">в</span> ${timeStr}</span>
+            <span class="report-item__date">${escapeHtml(dateStr)} <span class="report-item__at">в</span> ${escapeHtml(timeStr)}</span>
             <span class="report-item__dot">·</span>
-            <span class="report-item__count">${report.stats?.totalFound || 0} вак.</span>
+            <span class="report-item__count">${escapeHtml(String(report.stats?.totalFound || 0))} вак.</span>
           </div>
         </div>
         <div class="report-item__side">
@@ -203,8 +203,9 @@ async function deleteReportById(id, query) {
       const { showToast, showScreen } = await import('./common.js');
       const state = await import('../state.js');
 
-      if (state.currentReport && state.currentReport.id === id) {
-        state.setCurrentReport(null);
+      const { currentReport } = state.appStore.getState();
+      if (currentReport && currentReport.id === id) {
+        state.appStore.setState({ currentReport: null });
         localStorage.removeItem('lastReportId');
         showScreen('welcome');
       }
@@ -312,6 +313,11 @@ export function renderQueueList(queue) {
       if (task.status === 'processing' && task.startedAt) {
         if (!queueTimers.has(String(task.id))) {
           const timerId = setInterval(() => {
+            if (!document.body.contains(div)) {
+              clearInterval(timerId);
+              queueTimers.delete(String(task.id));
+              return;
+            }
             const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
             const statEl = div.querySelector('.queue-item__status');
             if (statEl) statEl.textContent = `⚙️ Выполняется (${formatDuration(elapsed)})`;
@@ -333,9 +339,9 @@ export function renderQueueList(queue) {
         <div class="queue-item__info">
           <span class="queue-item__query">${escapeHtml(task.query)}</span>
           <div style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: 2px; margin-bottom: 2px;">
-            Лимит: ${task.filters?.limit || 50}
+            Лимит: ${escapeHtml(String(task.filters?.limit || 50))}
           </div>
-          <span class="queue-item__status">${statusLabel}</span>
+          <span class="queue-item__status">${escapeHtml(statusLabel)}</span>
         </div>
         <div class="queue-item__actions">
           ${task.status === 'pending' ? '<button class="queue-btn queue-btn--priority" title="В начало очереди">⬆️</button>' : ''}
@@ -348,6 +354,11 @@ export function renderQueueList(queue) {
 
       if (task.status === 'processing' && task.startedAt) {
         const timerId = setInterval(() => {
+          if (!document.body.contains(div)) {
+            clearInterval(timerId);
+            queueTimers.delete(String(task.id));
+            return;
+          }
           const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
           const statEl = div.querySelector('.queue-item__status');
           if (statEl) statEl.textContent = `⚙️ Выполняется (${formatDuration(elapsed)})`;

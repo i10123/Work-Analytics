@@ -1,0 +1,167 @@
+const { fetchExchangeRates, convertCurrency } = require('./currency');
+const { extractMetadataFromJobs } = require('./ai');
+const { saveReport } = require('./storage');
+const { deduplicateJobs } = require('./dedup');
+const { HhParser } = require('../parsers/hh');
+const { RabotaByParser } = require('../parsers/rabotaby');
+const { HabrParser } = require('../parsers/habr');
+
+async function runParsersWithRetry(query, filters, cancelFlag) {
+  const allowedSources = filters.sources || { hh: true, rabotaby: true, habr: true };
+
+  const parsers = [
+    { name: 'hh', fn: (q, f, cf) => new HhParser().parse(q, f, cf) },
+    { name: 'rabotaby', fn: (q, f, cf) => new RabotaByParser().parse(q, f, cf) },
+    { name: 'habr', fn: (q, f, cf) => new HabrParser().parse(q, f, cf) },
+  ].filter(p => allowedSources[p.name] === true);
+
+  if (parsers.length === 0) {
+    console.warn(`[Pipeline] ⚠️ Для запроса "${query}" не выбрано ни одного источника.`);
+    return [];
+  }
+
+  const MAX_RETRIES = 3;
+
+  const results = await Promise.all(
+    parsers.map(async (parser) => {
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        if (cancelFlag.isStopped) {
+          console.log(`[Pipeline] 🛑 ${parser.name}: задача остановлена, прерываем retry.`);
+          return { source: parser.name, success: false, jobs: [] };
+        }
+
+        try {
+          console.log(`[Pipeline] 🔄 ${parser.name}: попытка ${attempt}/${MAX_RETRIES}...`);
+          const jobs = await parser.fn(query, filters, cancelFlag);
+          console.log(`[Pipeline] ✅ ${parser.name}: получено ${jobs.length} вакансий.`);
+          return { source: parser.name, success: true, jobs };
+        } catch (error) {
+          if (cancelFlag.isStopped || error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+            console.log(`[Pipeline] 🛑 ${parser.name}: задача остановлена (abort).`);
+            return { source: parser.name, success: false, jobs: [] };
+          }
+
+          console.warn(`[Pipeline] ⚠️ ${parser.name}: попытка ${attempt} не удалась — ${error.message}`);
+          if (attempt < MAX_RETRIES) {
+            const backoff = attempt * 3000;
+            console.log(`[Pipeline] ⏳ ${parser.name}: ожидание ${backoff}мс перед повтором...`);
+            await new Promise((r) => setTimeout(r, backoff));
+          }
+        }
+      }
+
+      console.error(`[Pipeline] ❌ ${parser.name}: все ${MAX_RETRIES} попытки провалились.`);
+      return { source: parser.name, success: false, jobs: [] };
+    })
+  );
+
+  return results;
+}
+
+/**
+ * Выполняет основной пайплайн задачи.
+ * @param {Object} task 
+ * @param {Function} emitUpdate 
+ */
+async function runPipeline(task, emitUpdate) {
+  let isCancelled = () => task.cancelFlag.isStopped;
+
+  console.log(`[Pipeline] 💱 Получение курсов валют...`);
+  emitUpdate({ ...task, step: 'Получение курсов валют...' });
+  const exchangeRates = await fetchExchangeRates();
+  if (isCancelled()) return;
+
+  console.log(`[Pipeline] 🔍 Запуск парсеров для запроса: "${task.query}"...`);
+  emitUpdate({ ...task, step: 'Парсинг вакансий...' });
+
+  const parserResults = await runParsersWithRetry(task.query, task.filters, task.cancelFlag);
+  if (isCancelled()) return;
+
+  let allJobs = [];
+  const errors = [];
+
+  for (const result of parserResults) {
+    if (result.success) {
+      allJobs.push(...result.jobs);
+    } else {
+      errors.push(result.source);
+    }
+  }
+
+  const { uniqueJobs, stats } = deduplicateJobs(allJobs);
+  allJobs = uniqueJobs;
+  console.log(`[Pipeline] 🔄 Дедупликация: ${stats.totalBefore} → ${stats.totalAfter} (удалено ${stats.duplicatesRemoved} дублей)`);
+  console.log(`[Pipeline] 📊 Собрано вакансий: ${allJobs.length}. Ошибок источников: ${errors.length}`);
+  if (isCancelled()) return;
+
+  emitUpdate({ ...task, step: 'AI-анализ вакансий...' });
+  const enrichedJobs = await extractMetadataFromJobs(allJobs, (current, total) => {
+    const percentage = Math.round((current / total) * 100);
+    emitUpdate({
+      ...task,
+      step: `AI-анализ вакансий: обработано ${current} из ${total} батчей...`,
+      progress: percentage
+    });
+  });
+
+  if (isCancelled()) return;
+
+  let sumSalaryRub = 0;
+  let countSalary = 0;
+  for (const job of enrichedJobs) {
+    if (job.salary && (job.salary.min || job.salary.max)) {
+      const avg = job.salary.min && job.salary.max ? (job.salary.min + job.salary.max) / 2 : job.salary.min || job.salary.max;
+      const inRub = convertCurrency(avg, job.salary.currency, 'RUB', exchangeRates.rates);
+      sumSalaryRub += inRub;
+      countSalary++;
+    }
+  }
+  const avgSalaryNormalized = countSalary > 0 ? Math.round(sumSalaryRub / countSalary) : null;
+
+  const status = (errors.length > 0 && allJobs.length > 0) ? 'partial'
+    : (allJobs.length === 0) ? 'failed'
+      : 'completed';
+
+  let failMessage = null;
+  if (status === 'failed') {
+    if (errors.length > 0) {
+      failMessage = `Все выбранные источники (${errors.join(', ')}) вернули ошибку или заблокировали доступ.`;
+    } else {
+      failMessage = 'По вашему запросу не найдено ни одной вакансии.';
+    }
+  }
+
+  const report = {
+    id: task.id,
+    query: task.query,
+    filters: task.filters,
+    status,
+    createdAt: task.createdAt,
+    completedAt: new Date().toISOString(),
+    exchangeRates,
+    stats: {
+      totalFound: enrichedJobs.length,
+      avgSalaryNormalized,
+      sources: {
+        hh: enrichedJobs.filter((j) => j.source === 'hh').length,
+        rabotaby: enrichedJobs.filter((j) => j.source === 'rabotaby').length,
+        habr: enrichedJobs.filter((j) => j.source === 'habr').length,
+      },
+    },
+    errors,
+    error: failMessage,
+    jobs: enrichedJobs,
+  };
+
+  emitUpdate({ ...task, step: 'Сохранение отчёта...' });
+  await saveReport(report);
+  
+  task.status = report.status;
+  task.error = failMessage;
+  console.log(`[Pipeline] ✅ Конвейер завершен: ${task.id} (статус: ${task.status})`);
+  emitUpdate({ ...task, reportId: task.id, errors, error: failMessage });
+}
+
+module.exports = {
+  runPipeline
+};

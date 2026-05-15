@@ -82,15 +82,14 @@ function setupButtonEffects() {
   document.addEventListener('mousedown', (e) => {
     const btn = e.target.closest('.btn');
     if (btn) {
-      btn.style.transform = 'scale(0.96)';
+      btn.style.scale = '0.96';
     }
   });
 
-  document.addEventListener('mouseup', (e) => {
-    const btn = e.target.closest('.btn');
-    if (btn) {
-      btn.style.transform = '';
-    }
+  document.addEventListener('mouseup', () => {
+    document.querySelectorAll('.btn').forEach(btn => {
+      if (btn.style.scale) btn.style.scale = '';
+    });
   });
 
   const cards = document.querySelectorAll('.kpi-card');

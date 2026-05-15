@@ -1,18 +1,20 @@
 import { DOM } from './dom.js';
 import { initializeTheme } from './ui/theme.js';
-import { loadSettings } from './utils/settings.js';
-import { setCurrentCurrency, currentReport } from './state.js';
+import { loadSettings, initSettings } from './utils/settings.js';
+import { appStore } from './state.js';
 import { loadReportsList, loadReportById } from './report.js';
 
 import { openModal, closeModal, handleFormSubmit } from './ui/modal.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { showScreen } from './ui/common.js';
 import { setupSidebarListeners, loadQueueUI } from './ui/sidebar.js';
+import { setupSSE } from './ui/sse.js';
 import { setupSettingsListeners, setupStepperListeners, setupSegmentedControlListeners } from './ui/settings.js';
 import { initializePremiumUI } from './ui/ui-premium.js';
 import { setupWelcomeScreen, updateWelcomeStats } from './ui/welcome.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  await initSettings(); // Fetch settings from server first
   initializeTheme();
 
   initializeSettings();
@@ -20,6 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupEventListeners();
   setupLimitValidation();
   setupWelcomeScreen();
+  setupSSE();
 
   let isRestoredProgress = false;
 
@@ -58,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initializeSettings() {
   const settings = loadSettings();
 
-  setCurrentCurrency(settings.defaultCurrency);
+  appStore.setState({ currentCurrency: settings.defaultCurrency });
 
   DOM.currencyBtns?.forEach((b) => {
     b.classList.toggle('active', b.dataset.currency === settings.defaultCurrency);
@@ -102,10 +105,11 @@ function setupEventListeners() {
 
   DOM.currencyBtns?.forEach((btn) => {
     btn.addEventListener('click', () => {
-      setCurrentCurrency(btn.dataset.currency);
+      appStore.setState({ currentCurrency: btn.dataset.currency });
       DOM.currencyBtns.forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
 
+      const { currentReport } = appStore.getState();
       if (currentReport) {
         renderDashboard(currentReport);
       }
@@ -133,8 +137,7 @@ function setupEventListeners() {
   setupStepperListeners();
   setupSegmentedControlListeners();
   setupSidebarListeners();
-  if (DOM.sidebarLogs)
-    DOM.sidebarLogs.classList.add('collapsed');
+
 }
 
 function setupLimitValidation() {

@@ -5,7 +5,7 @@
  * Что содержит: Логику вычисления сводных показателей (KPI), интеграцию с модулем AI-саммари, экспорт в CSV и основную функцию renderDashboard.
  */
 import { DOM } from '../dom.js';
-import { charts, currentCurrency } from '../state.js';
+import { appStore } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
 import { formatSalary, escapeHtml, parseMarkdown } from '../utils/formatters.js';
 import {
@@ -17,6 +17,7 @@ import {
   renderChartEnglishSalary,
   renderChartTechCategory,
   destroyAllCharts,
+  updateChartColors,
 } from './charts.js';
 import { renderJobsTable } from './table.js';
 
@@ -60,7 +61,9 @@ export function renderDashboard(report) {
   renderAiSummary(report);
 
   destroyAllCharts();
+  updateChartColors();
 
+  const { currentCurrency } = appStore.getState();
   renderChartSalary(jobs, rates, currentCurrency);
   renderChartSkills(jobs);
   renderChartSalaryVsExperience(jobs, rates, currentCurrency);
@@ -162,7 +165,7 @@ function exportToCSV(jobs, query) {
     return str;
   };
 
-  let csvContent = 'sep=;\r\n' + BOM + headers.join(delimiter) + '\r\n';
+  let csvContent = BOM + 'sep=;\r\n' + headers.join(delimiter) + '\r\n';
 
   jobs.forEach(j => {
     const row = [
@@ -212,11 +215,13 @@ function renderKPI(jobs, rates) {
       const avg = j.salary.min && j.salary.max
         ? (j.salary.min + j.salary.max) / 2
         : j.salary.min || j.salary.max;
+      const { currentCurrency } = appStore.getState();
       return convertCurrency(avg, j.salary.currency, currentCurrency, rates);
     })
     .filter((s) => s > 0);
 
   if (salaries.length > 0) {
+    const { currentCurrency } = appStore.getState();
     const sym = getCurrencySymbol(currentCurrency);
     const avg = Math.round(salaries.reduce((a, b) => a + b, 0) / salaries.length);
     DOM.kpiAvgSalary.textContent = `${formatSalary(avg)} ${sym}`;

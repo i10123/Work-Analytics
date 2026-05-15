@@ -5,7 +5,7 @@
  * Что содержит: Настройку рисования на Canvas (setupCanvasBackground), typewriter-эффект для плейсхолдера, анимацию счетчиков (animateValue) и расчет суммарной статы updateWelcomeStats.
  */
 import { DOM } from '../dom.js';
-import { allReports, currentCurrency } from '../state.js';
+import { appStore } from '../state.js';
 import { openModal } from './modal.js';
 import { getCurrencySymbol, convertCurrency } from '../utils/currency.js';
 import { formatSalary } from '../utils/formatters.js';
@@ -62,6 +62,19 @@ function setupCanvasBackground() {
 
   targetMouseX = width / 2;
 
+  let animationId;
+  if (welcomeScreen) {
+    const observer = new MutationObserver(() => {
+      if (welcomeScreen.style.display === 'none') {
+        cancelAnimationFrame(animationId);
+      } else {
+        cancelAnimationFrame(animationId);
+        animate();
+      }
+    });
+    observer.observe(welcomeScreen, { attributes: true, attributeFilter: ['style'] });
+  }
+
   function drawWave(wave) {
     ctx.beginPath();
 
@@ -109,7 +122,6 @@ function setupCanvasBackground() {
 
   function animate() {
     if (welcomeScreen && welcomeScreen.style.display === 'none') {
-      requestAnimationFrame(animate);
       return;
     }
 
@@ -124,7 +136,7 @@ function setupCanvasBackground() {
     waves.forEach(wave => drawWave(wave));
 
     time += 1;
-    requestAnimationFrame(animate);
+    animationId = requestAnimationFrame(animate);
   }
 
   animate();
@@ -307,6 +319,8 @@ export function updateWelcomeStats() {
 
   if (!reportsCountEl || !jobsCountEl || !topTechEl) return;
 
+  const { allReports, currentCurrency } = appStore.getState();
+
   if (!allReports || allReports.length === 0) {
     reportsCountEl.textContent = '0';
     jobsCountEl.textContent = '0';
@@ -321,11 +335,24 @@ export function updateWelcomeStats() {
   let totalJobs = 0;
   let allSalaries = [];
 
+  let latestRates = { RUB: 1, USD: 93.5, EUR: 100.2, BYN: 28.5 };
+  let latestTimestamp = 0;
+
+  allReports.forEach(report => {
+    if (report.exchangeRates) {
+      const ts = report.exchangeRates.timestamp || (report.createdAt ? new Date(report.createdAt).getTime() : 0);
+      if (ts >= latestTimestamp && report.exchangeRates.rates) {
+        latestTimestamp = ts;
+        latestRates = report.exchangeRates.rates;
+      }
+    }
+  });
+
   allReports.forEach(report => {
     const count = report.stats?.totalFound || report.jobCount || 0;
     totalJobs += count;
 
-    const rates = report.exchangeRates?.rates || { RUB: 1, USD: 93.5, EUR: 100.2, BYN: 28.5 };
+    const rates = latestRates;
     if (report.jobs && Array.isArray(report.jobs)) {
       report.jobs.forEach(j => {
         if (j.salary && (j.salary.min || j.salary.max)) {

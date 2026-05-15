@@ -8,7 +8,7 @@
 
 import { showScreen } from './ui/common.js';
 import { renderDashboard } from './ui/dashboard.js';
-import { setCurrentReport, setAllReports } from './state.js';
+import { appStore } from './state.js';
 import { renderReportsList } from './ui/sidebar.js';
 
 export async function loadReportsList() {
@@ -17,7 +17,7 @@ export async function loadReportsList() {
     const data = await response.json();
 
     if (data.success) {
-      setAllReports(data.reports);
+      appStore.setState({ allReports: data.reports });
       renderReportsList(data.reports);
       return data.reports;
     }
@@ -34,7 +34,7 @@ export async function loadReportById(reportId, skipHistory = false) {
     const data = await response.json();
 
     if (data.success) {
-      setCurrentReport(data.report);
+      appStore.setState({ currentReport: data.report });
       localStorage.setItem('lastReportId', reportId);
 
       if (!skipHistory) {

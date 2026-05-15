@@ -80,8 +80,17 @@ function mapExperienceToLevel(exp) {
   return null;
 }
 
+let currentTextColor = null;
+
+export function updateChartColors() {
+  currentTextColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || '#94a3b8';
+}
+
 function commonOptions(opts = {}) {
-  const textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || '#94a3b8';
+  if (!currentTextColor) {
+    updateChartColors();
+  }
+  const textColor = currentTextColor;
   const gridColor = 'rgba(148, 163, 184, 0.08)';
 
   return {

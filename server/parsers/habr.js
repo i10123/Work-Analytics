@@ -30,7 +30,7 @@ class HabrParser extends BaseParser {
   async parse(query, filters = {}, cancelFlag = null) {
     const limit = filters.limit || 50;
     const stopRegexes = this.compileStopWords(filters.stopWords || '');
-    const maxPages = this.MAX_PAGES_TO_SCAN;
+    let maxPages = this.MAX_PAGES_TO_SCAN;
 
     console.log(`[Parser:Habr] 🔍 Поиск: "${query}", лимит: ${limit}`);
 
@@ -64,6 +64,31 @@ class HabrParser extends BaseParser {
         });
 
         const html = response.data;
+
+        if (page === 1) {
+          const $paginate = cheerio.load(html);
+          let foundMaxPage = 0;
+          $paginate('a').each((_, el) => {
+            const href = $paginate(el).attr('href');
+            if (href) {
+              const match = href.match(/[?&]page=(\d+)/);
+              if (match) {
+                const pNum = parseInt(match[1], 10);
+                if (pNum > foundMaxPage) {
+                  foundMaxPage = pNum;
+                }
+              }
+            }
+          });
+          if (foundMaxPage > 1 && foundMaxPage < maxPages) {
+            maxPages = foundMaxPage;
+            console.log(`[Parser:Habr] 📄 Обновлен лимит страниц из пагинации: ${maxPages}`);
+          } else if (foundMaxPage === 0) {
+            maxPages = 1;
+            console.log(`[Parser:Habr] 📄 Пагинация не найдена. Ограничиваем до 1 страницы.`);
+          }
+        }
+
         const jobsOnPage = this.parseHabrHTML(html);
         console.log(`[Parser:Habr] 📊 Страница ${page}: получено ${jobsOnPage.length} вакансий (до фильтрации)`);
 
@@ -94,7 +119,7 @@ class HabrParser extends BaseParser {
 
         if (page < maxPages) {
           const delay = this.getRandomDelay();
-          await this.delay(delay);
+          await this.delay(delay, cancelFlag);
         }
       } catch (error) {
         if (error.response && (error.response.status === 429 || error.response.status === 403)) {
@@ -117,15 +142,38 @@ class HabrParser extends BaseParser {
     const $ = cheerio.load(html);
     const jobs = [];
 
-    $('.vacancy-card').each((_, element) => {
+    let $cards = $('.vacancy-card');
+
+    if ($cards.length === 0) {
+      const fallbackCards = [];
+      $('a[href^="/vacancies/"]').each((_, link) => {
+        const $parent = $(link).closest('div, article, section');
+        if ($parent.length && !fallbackCards.includes($parent[0])) {
+          if ($parent.text().length < 5000) {
+            fallbackCards.push($parent[0]);
+          }
+        }
+      });
+
+      if (fallbackCards.length > 0) {
+        $cards = $(fallbackCards);
+        console.warn(`[Parser:Habr] ⚠️ Класс .vacancy-card не найден. Используется fallback-поиск (${$cards.length} возможных карточек).`);
+      } else {
+        console.warn(`[Parser:Habr] ❌ Не найдено ни одной карточки вакансии. Вёрстка Habr могла измениться.`);
+      }
+    }
+
+    $cards.each((_, element) => {
       try {
         const $card = $(element);
 
         const title = $card.find('.vacancy-card__title a').text().trim() ||
-          $card.find('[class*="title"] a').text().trim();
+          $card.find('[class*="title"] a').text().trim() ||
+          $card.find('a[href^="/vacancies/"]').first().text().trim();
 
         const url = $card.find('.vacancy-card__title a').attr('href') ||
-          $card.find('[class*="title"] a').attr('href') || '';
+          $card.find('[class*="title"] a').attr('href') ||
+          $card.find('a[href^="/vacancies/"]').first().attr('href') || '';
 
         let company = $card.find('.vacancy-card__company-title a').text().trim() ||
           $card.find('[class*="company"] a').text().trim() || 'Не указана';
@@ -218,7 +266,7 @@ class HabrParser extends BaseParser {
       if (cancelFlag?.isStopped) return;
 
       try {
-        await this.delay(DEEP_SCRAPE_DELAY_MS);
+        await this.delay(DEEP_SCRAPE_DELAY_MS, cancelFlag);
 
         const response = await axios.get(job.url, {
           headers: {
@@ -241,7 +289,7 @@ class HabrParser extends BaseParser {
       }
     };
 
-    await this.fetchDeepWithConcurrency(jobs, fetchFn, 2);
+    await this.fetchDeepWithConcurrency(jobs, fetchFn, 2, cancelFlag);
   }
 
   parseSalaryText(text) {

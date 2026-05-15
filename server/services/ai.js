@@ -1,25 +1,9 @@
-/**
- * @file ai.js — Модуль интеграции с ИИ-провайдерами (Gemini, DeepSeek, OpenRouter).
- * @description Извлекает структурированные метаданные из текстовых описаний вакансий:
- *              skills, softSkills, workFormat, experience, englishLevel, techCategory, education.
- *              Поддерживает ротацию ключей Gemini и резервные провайдеры (DeepSeek, OpenRouter).
- */
-
 const axios = require('axios');
 
-/** Количество вакансий в одном батче (уменьшено для стабильности — 7 полей на вакансию) */
 const BATCH_SIZE = 5;
-
-/** Задержка между батчами (мс) */
 const BATCH_DELAY_MS = 4500;
-
-/** Текущий индекс используемого ключа OpenRouter */
 let currentOpenRouterKeyIndex = 0;
 
-/**
- * Значения по умолчанию для AI-метаданных.
- * Используются, когда ИИ не вернул конкретное поле.
- */
 const DEFAULT_METADATA = {
   skills: [],
   softSkills: [],
@@ -30,20 +14,11 @@ const DEFAULT_METADATA = {
   education: 'Не указано',
 };
 
-/**
- * Извлекает структурированные метаданные из массива вакансий через AI.
- * Результат содержит все 7 полей для каждой вакансии.
- * Данные AI полностью перезаписывают данные HTML-парсера.
- *
- * @param {Array<Object>} jobs — Массив вакансий с полем description.
- * @returns {Promise<Array<Object>>} — Обогащённые вакансии с AI-метаданными.
- */
 async function extractMetadataFromJobs(jobs, onProgress = null) {
   const openRouterKeys = getOpenRouterKeys();
 
   if (!openRouterKeys.length) {
     console.warn('[AI] ⚠️ Провайдеры (OpenRouter) не настроены. Метаданные не будут извлечены.');
-    // Проставляем дефолтные значения, сохраняя навыки парсера
     return jobs.map((job) => ({
       ...job,
       skills: job.skills || [],
@@ -60,39 +35,46 @@ async function extractMetadataFromJobs(jobs, onProgress = null) {
 
   const batches = splitIntoBatches(jobs, BATCH_SIZE);
   const enrichedJobs = [];
+  const results = new Array(batches.length);
 
-  for (let i = 0; i < batches.length; i++) {
-    const batch = batches[i];
-    console.log(`[AI] 📦 Обработка батча ${i + 1}/${batches.length}...`);
-    if (onProgress) onProgress(i + 1, batches.length);
+  let processedBatchesCount = 0;
+  let currentIndex = 0;
+  const CONCURRENCY_LIMIT = 5;
 
-    let metadataMap = null;
+  async function worker() {
+    while (currentIndex < batches.length) {
+      const batchIndex = currentIndex++;
+      const batch = batches[batchIndex];
 
-    // 1. Попытка через OpenRouter (с ротацией ключей)
-    if (openRouterKeys.length > 0) {
-      try {
-        metadataMap = await processBatchOpenRouterWithRotation(batch, openRouterKeys);
-      } catch (orError) {
-        console.warn(`[AI] ⚠️ Ошибка OpenRouter (все ключи исчерпаны или сбой): ${orError.message}`);
+      let metadataMap = null;
+      if (openRouterKeys.length > 0) {
+        try {
+          metadataMap = await processBatchOpenRouterWithRotation(batch, openRouterKeys);
+          console.log(`[AI] ✅ Батч ${batchIndex + 1}/${batches.length} обработан.`);
+        } catch (orError) {
+          console.warn(`[AI] ⚠️ Ошибка батча ${batchIndex + 1}: ${orError.message}`);
+        }
       }
+
+      results[batchIndex] = { batch, metadataMap };
+
+      processedBatchesCount++;
+      if (onProgress) onProgress(processedBatchesCount, batches.length);
     }
+  }
 
+  const workers = [];
+  for (let i = 0; i < Math.min(CONCURRENCY_LIMIT, batches.length); i++) {
+    workers.push(worker());
+  }
 
-    /** Присваиваем метаданные (или дефолтные при фиаско) */
+  await Promise.all(workers);
+
+  for (let i = 0; i < results.length; i++) {
+    const { batch, metadataMap } = results[i];
     for (let j = 0; j < batch.length; j++) {
       const aiData = metadataMap ? (metadataMap[String(j)] || {}) : {};
       enrichedJobs.push(mergeAiMetadata(batch[j], aiData));
-    }
-
-    if (metadataMap) {
-      console.log(`[AI] ✅ Батч ${i + 1} обработан.`);
-    } else {
-      console.error(`[AI] ❌ Батч ${i + 1} не удалось обработать ни одним провайдером.`);
-    }
-
-    /** Пауза между батчами */
-    if (i < batches.length - 1) {
-      await delay(BATCH_DELAY_MS);
     }
   }
 
@@ -102,15 +84,6 @@ async function extractMetadataFromJobs(jobs, onProgress = null) {
   return enrichedJobs;
 }
 
-/**
- * Объединяет данные вакансии с AI-метаданными.
- * AI-данные полностью перезаписывают данные HTML-парсера,
- * ЕСЛИ ИИ вернул непустое значение.
- *
- * @param {Object} job — Исходная вакансия.
- * @param {Object} aiData — Метаданные от ИИ.
- * @returns {Object} — Обогащённая вакансия.
- */
 function mergeAiMetadata(job, aiData) {
   const mergedSkills = Array.from(new Set([
     ...(job.skills || []),
@@ -119,30 +92,21 @@ function mergeAiMetadata(job, aiData) {
 
   return {
     ...job,
-    // Hard Skills: AI skills are merged with parser skills using a Set
     skills: mergedSkills.length > 0 ? mergedSkills : DEFAULT_METADATA.skills,
-    // Soft Skills: новое поле, только от AI
     softSkills: Array.isArray(aiData.softSkills)
       ? aiData.softSkills
       : DEFAULT_METADATA.softSkills,
-    // Формат работы: AI перезаписывает
     workFormat: (aiData.workFormat && aiData.workFormat !== 'Не указано')
       ? aiData.workFormat
       : (job.workFormat || DEFAULT_METADATA.workFormat),
-    // Опыт: AI перезаписывает
     experience: (aiData.experience && aiData.experience !== 'Не указано')
       ? aiData.experience
       : (job.experience || DEFAULT_METADATA.experience),
-    // Уровень английского: только от AI
     englishLevel: aiData.englishLevel || DEFAULT_METADATA.englishLevel,
-    // Техническая категория: только от AI
     techCategory: aiData.techCategory || DEFAULT_METADATA.techCategory,
-    // Образование: только от AI
     education: aiData.education || DEFAULT_METADATA.education,
   };
 }
-
-// --- OPENROUTER LOGIC ---
 
 function getOpenRouterKeys() {
   const keysStr = process.env.OPENROUTER_API_KEY || '';
@@ -151,30 +115,28 @@ function getOpenRouterKeys() {
 
 async function processBatchOpenRouterWithRotation(batch, keys) {
   let attempts = 0;
-  const maxAttempts = keys.length;
+  const maxAttempts = Math.max(keys.length * 2, 3);
 
   while (attempts < maxAttempts) {
     const currentKey = keys[currentOpenRouterKeyIndex % keys.length];
     try {
-      // Используем Gemini 2.0 Flash через OpenRouter
       return await processBatchOpenAI(batch, currentKey, 'https://openrouter.ai/api/v1/chat/completions', 'google/gemini-2.0-flash-001');
     } catch (error) {
       const isQuotaError = error.response && [401, 402, 403, 429].includes(error.response.status);
-      currentOpenRouterKeyIndex++;
+      currentOpenRouterKeyIndex = (currentOpenRouterKeyIndex + 1) % keys.length;
       attempts++;
       if (isQuotaError) {
-        console.warn(`[AI] 🔁 Лимит OpenRouter ключа #${(currentOpenRouterKeyIndex) } исчерпан/ошибка квоты. Переключаюсь...`);
+        console.warn(`[AI] 🔁 429/Квота. Попытка ${attempts}/${maxAttempts}. Переключаюсь/жду...`);
+        await delay(1500 * attempts);
         continue;
       }
-      console.warn(`[AI] ⚠️ Сетевая ошибка OpenRouter (не квота): ${error.message}. Переключаюсь на следующий ключ, ждём 2 сек...`);
+      console.warn(`[AI] ⚠️ Ошибка: ${error.message}. Попытка ${attempts}/${maxAttempts}.`);
       await delay(2000);
       continue;
     }
   }
-  throw new Error('OpenRouter quota exhausted or all keys failed');
+  throw new Error('OpenRouter quota exhausted or all keys failed (including parse errors)');
 }
-
-// --- OPENAI-COMPATIBLE LOGIC (DeepSeek, OpenRouter) ---
 
 async function processBatchOpenAI(batch, apiKey, url, model) {
   const prompt = generatePrompt(batch);
@@ -185,8 +147,7 @@ async function processBatchOpenAI(batch, apiKey, url, model) {
       { role: 'system', content: 'Ты — эксперт по анализу IT-вакансий. Возвращай ТОЛЬКО JSON.' },
       { role: 'user', content: prompt }
     ],
-    temperature: 0.1,
-    response_format: { type: 'json_object' } // DeepSeek поддерживает это
+    temperature: 0.1
   }, {
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -199,9 +160,6 @@ async function processBatchOpenAI(batch, apiKey, url, model) {
   return parseJsonFromAi(rawText, batch.length);
 }
 
-
-// --- HELPERS ---
-
 function safeTruncate(text, maxLength) {
   if (!text) return '';
   if (text.length <= maxLength) return text;
@@ -211,7 +169,7 @@ function safeTruncate(text, maxLength) {
 function generatePrompt(batch) {
   const payload = batch.map((job, idx) => ({
     id: String(idx),
-    text: safeTruncate(job.description || job.title || '', 1500)
+    text: safeTruncate(`${job.title || ''}\n${job.description || ''}`.trim(), 1500)
   }));
 
   return `Проанализируй описания ${batch.length} вакансий. Для КАЖДОЙ извлеки структурированные метаданные.
@@ -246,6 +204,15 @@ function generatePrompt(batch) {
     "englishLevel": "Не указано",
     "techCategory": "Backend",
     "education": "Высшее"
+  },
+  "2": {
+    "skills": [],
+    "softSkills": [],
+    "workFormat": "Не указано",
+    "experience": "Не указано",
+    "englishLevel": "Не указано",
+    "techCategory": "Другое",
+    "education": "Не указано"
   }
 }
 
@@ -259,13 +226,23 @@ function parseJsonFromAi(rawText, expectedLength) {
   try {
     const firstBrace = rawText.indexOf('{');
     const lastBrace = rawText.lastIndexOf('}');
-    const jsonStr = (firstBrace !== -1 && lastBrace > firstBrace)
-      ? rawText.slice(firstBrace, lastBrace + 1)
-      : '{}';
-    return JSON.parse(jsonStr);
+
+    if (firstBrace === -1 || lastBrace <= firstBrace) {
+      throw new Error('No JSON object found in AI response');
+    }
+
+    const jsonStr = rawText.slice(firstBrace, lastBrace + 1);
+    const parsed = JSON.parse(jsonStr);
+
+    if (Object.keys(parsed).length === 0 && expectedLength > 0) {
+      throw new Error('Parsed JSON is empty, expected data');
+    }
+
+    return parsed;
   } catch (e) {
-    console.error('[AI] ❌ Ошибка парсинга JSON:', e.message);
-    return {};
+    console.error(`[AI] ❌ Ошибка валидации/парсинга JSON: ${e.message}`);
+    console.error(`[AI] 📝 Сырой ответ ИИ (первые 300 символов): ${rawText.substring(0, 300)}...`);
+    throw new Error(`Parse AI JSON Error: ${e.message}`);
   }
 }
 
@@ -281,11 +258,6 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Генерирует "Портрет идеального кандидата" (AI Сводка) по отчёту.
- * @param {Object} report - Отчёт с массивом jobs.
- * @returns {Promise<string>} - Markdown строка.
- */
 async function generateCandidateProfile(report) {
   const jobs = report.jobs || [];
   if (!jobs.length) return "Нет данных для анализа.";
@@ -350,7 +322,7 @@ async function generateTextFromAI(prompt) {
         return response.data?.choices?.[0]?.message?.content || "Не удалось сгенерировать сводку.";
       } catch (error) {
         const isQuotaError = error.response && [401, 402, 403, 429].includes(error.response.status);
-        currentOpenRouterKeyIndex++;
+        currentOpenRouterKeyIndex = (currentOpenRouterKeyIndex + 1) % openRouterKeys.length;
         attempts++;
         if (isQuotaError) {
           console.warn(`[AI] 🔁 Лимит OpenRouter ключа исчерпан/ошибка квоты (генерация сводки). Переключаюсь...`);
@@ -369,7 +341,6 @@ async function generateTextFromAI(prompt) {
 
 module.exports = {
   extractMetadataFromJobs,
-  // Обратная совместимость
   extractSkillsFromJobs: extractMetadataFromJobs,
   generateCandidateProfile,
 };

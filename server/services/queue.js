@@ -1,10 +1,6 @@
 const EventEmitter = require('events');
-const { fetchExchangeRates, convertCurrency } = require('./currency');
-const { extractMetadataFromJobs } = require('./ai');
-const { saveReport } = require('./storage');
-const { HhParser } = require('../parsers/hh');
-const { RabotaByParser } = require('../parsers/rabotaby');
-const { HabrParser } = require('../parsers/habr');
+const { runPipeline } = require('./pipeline');
+const { transliterate } = require('./dedup');
 
 const taskEmitter = new EventEmitter();
 taskEmitter.setMaxListeners(50);
@@ -16,8 +12,8 @@ let isProcessing = false;
 let currentTask = null;
 
 function sanitizeQueryForId(query) {
-  let sanitized = query
-    .replace(/[^a-zA-Z0-9а-яА-ЯёЁ]+/g, '_')
+  let sanitized = transliterate(query)
+    .replace(/[^a-zA-Z0-9_]+/g, '_')
     .replace(/^_+|_+$/g, '');
   return sanitized || 'query';
 }
@@ -44,6 +40,7 @@ function enqueueTask(params) {
 
   const task = {
     id: taskId,
+    clientId: params.clientId || null,
     query: params.query,
     filters: {
       period: params.period || '7days',
@@ -70,7 +67,7 @@ function enqueueTask(params) {
   return task;
 }
 
-async function processNext() {
+function processNext() {
   if (isProcessing) return;
 
   const taskIndex = taskQueue.findIndex(t => t.status === 'pending');
@@ -80,6 +77,10 @@ async function processNext() {
   const task = taskQueue[taskIndex];
   currentTask = task;
 
+  _processTask(task);
+}
+
+async function _processTask(task) {
   task.cancelFlag.isStopped = false;
   task.cancelFlag.abortController = new AbortController();
 
@@ -89,121 +90,32 @@ async function processNext() {
   console.log(`[Queue] ⚙️ Начинаю обработку: ${task.id}`);
   emitUpdate(task);
 
+  let taskTimeout;
+
   try {
-    console.log(`[Queue] 💱 Получение курсов валют...`);
-    emitUpdate({ ...task, step: 'Получение курсов валют...' });
-    const exchangeRates = await fetchExchangeRates();
-    if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} удалена во время получения курсов валют. Прерываем.`);
-      removeTaskFromQueue(task.id);
-      return;
-    }
-
-    console.log(`[Queue] 🔍 Запуск парсеров для запроса: "${task.query}"...`);
-    emitUpdate({ ...task, step: 'Парсинг вакансий...' });
-
-    const parserResults = await runParsersWithRetry(task.query, task.filters, task.cancelFlag);
-
-    if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} удалена после парсинга. Данные выброшены.`);
-      removeTaskFromQueue(task.id);
-      return;
-    }
-
-    let allJobs = [];
-    const errors = [];
-
-    for (const result of parserResults) {
-      if (result.success) {
-        allJobs.push(...result.jobs);
-      } else {
-        errors.push(result.source);
-      }
-    }
-
-    const normalize = (str) => {
-      if (!str) return '';
-      return str.toLowerCase().replace(/[^\p{L}\d]/gu, '').trim();
-    };
-    allJobs = Array.from(new Map(allJobs.map(job => [`${normalize(job.company)}-${normalize(job.title)}-${normalize(job.city)}`, job])).values());
-
-    console.log(`[Queue] 📊 Собрано вакансий: ${allJobs.length}. Ошибок источников: ${errors.length}`);
-
-    if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} удалена после дедупликации. Данные выброшены.`);
-      removeTaskFromQueue(task.id);
-      return;
-    }
-
-    emitUpdate({ ...task, step: 'AI-анализ вакансий...' });
-    const enrichedJobs = await extractMetadataFromJobs(allJobs, (current, total) => {
-      emitUpdate({ ...task, step: `AI-анализ вакансий: батч ${current} из ${total}...` });
-    });
-
-    if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} удалена после AI-анализа. Данные выброшены.`);
-      removeTaskFromQueue(task.id);
-      return;
-    }
-
-    let sumSalaryRub = 0;
-    let countSalary = 0;
-    for (const job of enrichedJobs) {
-      if (job.salary && (job.salary.min || job.salary.max)) {
-        const avg = job.salary.min && job.salary.max ? (job.salary.min + job.salary.max) / 2 : job.salary.min || job.salary.max;
-        const inRub = convertCurrency(avg, job.salary.currency, 'RUB', exchangeRates.rates);
-        sumSalaryRub += inRub;
-        countSalary++;
-      }
-    }
-    const avgSalaryNormalized = countSalary > 0 ? Math.round(sumSalaryRub / countSalary) : null;
-
-    const status = (errors.length > 0 && allJobs.length > 0) ? 'partial'
-      : (allJobs.length === 0) ? 'failed'
-        : 'completed';
-
-    let failMessage = null;
-    if (status === 'failed') {
-      if (errors.length > 0) {
-        failMessage = `Все выбранные источники (${errors.join(', ')}) вернули ошибку или заблокировали доступ.`;
-      } else {
-        failMessage = 'По вашему запросу не найдено ни одной вакансии.';
-      }
-    }
-
-    const report = {
-      id: task.id,
-      query: task.query,
-      filters: task.filters,
-      status,
-      createdAt: task.createdAt,
-      completedAt: new Date().toISOString(),
-      exchangeRates,
-      stats: {
-        totalFound: enrichedJobs.length,
-        avgSalaryNormalized,
-        sources: {
-          hh: enrichedJobs.filter((j) => j.source === 'hh').length,
-          rabotaby: enrichedJobs.filter((j) => j.source === 'rabotaby').length,
-          habr: enrichedJobs.filter((j) => j.source === 'habr').length,
-        },
-      },
-      errors,
-      error: failMessage,
-      jobs: enrichedJobs,
-    };
-
-    emitUpdate({ ...task, step: 'Сохранение отчёта...' });
-    await saveReport(report);
-    task.status = report.status;
-    task.error = failMessage;
-    console.log(`[Queue] ✅ Задача завершена: ${task.id} (статус: ${task.status})`);
-    emitUpdate({ ...task, reportId: task.id, errors, error: failMessage });
-
-    removeTaskFromQueue(task.id);
+    await Promise.race([
+      (async () => {
+        await runPipeline(task, emitUpdate);
+        removeTaskFromQueue(task.id);
+      })(),
+      new Promise((_, reject) => {
+        taskTimeout = setTimeout(() => {
+          console.error(`[Queue] ⏱️ Задача ${task.id} превысила лимит времени. Принудительное прерывание.`);
+          task.cancelFlag.isStopped = true;
+          if (task.cancelFlag.abortController) {
+            try {
+              task.cancelFlag.abortController.abort();
+            } catch (e) {
+              console.error(`[Queue] ⚠️ Ошибка при вызове abort() по таймауту:`, e);
+            }
+          }
+          reject(new Error('Превышен лимит времени на обработку задачи.'));
+        }, 15 * 60 * 1000); // 15 минут
+      })
+    ]);
   } catch (error) {
     if (task.cancelFlag.isStopped) {
-      console.log(`[Queue] 🛑 Задача ${task.id} прервана (abort). Данные выброшены.`);
+      console.log(`[Queue] 🛑 Задача ${task.id} прервана (abort/timeout). Данные выброшены.`);
       removeTaskFromQueue(task.id);
     } else {
       task.status = 'failed';
@@ -212,67 +124,12 @@ async function processNext() {
       removeTaskFromQueue(task.id);
     }
   } finally {
+    if (taskTimeout) clearTimeout(taskTimeout);
     isProcessing = false;
     currentTask = null;
     processNext();
   }
 }
-
-async function runParsersWithRetry(query, filters, cancelFlag) {
-  const allowedSources = filters.sources || { hh: true, rabotaby: true, habr: true };
-
-  const parsers = [
-    { name: 'hh', fn: (q, f, cf) => new HhParser().parse(q, f, cf) },
-    { name: 'rabotaby', fn: (q, f, cf) => new RabotaByParser().parse(q, f, cf) },
-    { name: 'habr', fn: (q, f, cf) => new HabrParser().parse(q, f, cf) },
-  ].filter(p => allowedSources[p.name] === true);
-
-  if (parsers.length === 0) {
-    console.warn(`[Queue] ⚠️ Для запроса "${query}" не выбрано ни одного источника.`);
-    return [];
-  }
-
-  const MAX_RETRIES = 3;
-
-  const results = await Promise.all(
-    parsers.map(async (parser) => {
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        if (cancelFlag.isStopped) {
-          console.log(`[Queue] 🛑 ${parser.name}: задача остановлена, прерываем retry.`);
-          return { source: parser.name, success: false, jobs: [] };
-        }
-
-        try {
-          console.log(`[Queue] 🔄 ${parser.name}: попытка ${attempt}/${MAX_RETRIES}...`);
-          const jobs = await parser.fn(query, filters, cancelFlag);
-          console.log(`[Queue] ✅ ${parser.name}: получено ${jobs.length} вакансий.`);
-          return { source: parser.name, success: true, jobs };
-        } catch (error) {
-          if (cancelFlag.isStopped || error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
-            console.log(`[Queue] 🛑 ${parser.name}: задача остановлена (abort).`);
-            return { source: parser.name, success: false, jobs: [] };
-          }
-
-          console.warn(`[Queue] ⚠️ ${parser.name}: попытка ${attempt} не удалась — ${error.message}`);
-          if (attempt < MAX_RETRIES) {
-            const backoff = attempt * 3000;
-            console.log(`[Queue] ⏳ ${parser.name}: ожидание ${backoff}мс перед повтором...`);
-            await new Promise((r) => setTimeout(r, backoff));
-          }
-        }
-      }
-
-      console.error(`[Queue] ❌ ${parser.name}: все ${MAX_RETRIES} попытки провалились.`);
-      return { source: parser.name, success: false, jobs: [] };
-    })
-  );
-
-  return results;
-}
-
-// ────────────────────────────────────────────────
-//  ФУНКЦИИ УПРАВЛЕНИЯ ЗАДАЧАМИ
-// ────────────────────────────────────────────────
 
 function abortTask(id) {
   const task = findTask(id);
@@ -281,7 +138,11 @@ function abortTask(id) {
   if (task.status === 'processing') {
     task.cancelFlag.isStopped = true;
     if (task.cancelFlag.abortController) {
-      task.cancelFlag.abortController.abort();
+      try {
+        task.cancelFlag.abortController.abort();
+      } catch (e) {
+        console.error(`[Queue] ⚠️ Ошибка при вызове abort() для задачи ${id}:`, e);
+      }
     }
     console.log(`[Queue] 🛑 Задача ${id} отмечена для прерывания (удаление).`);
     return true;
@@ -358,10 +219,6 @@ function getFullQueueState() {
   };
 }
 
-// ────────────────────────────────────────────────
-//  ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-// ────────────────────────────────────────────────
-
 function findTask(id) {
   return taskQueue.find(t => t.id === id) || null;
 }
@@ -375,6 +232,7 @@ function removeTaskFromQueue(id) {
 
 function emitUpdate(task) {
   taskEmitter.emit('taskUpdate', task);
+  taskEmitter.emit('queueStatus', getQueueStatus());
 }
 
 function getQueueStatus() {

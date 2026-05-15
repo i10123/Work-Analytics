@@ -11,10 +11,53 @@ import { showErrorModal } from './modal.js';
 import { updateWelcomeStats } from './welcome.js';
 import { loadQueueUI } from './sidebar.js';
 import { formatDuration } from '../utils/formatters.js';
+import { appStore, clientId } from '../state.js';
 
 export function setupSSE() {
   console.log('[App] 📡 Подключение к SSE...');
-  const eventSource = new EventSource('/api/events');
+  const eventSource = new EventSource('/api/events?clientId=' + clientId);
+
+
+  let isDisconnected = false;
+
+  eventSource.onopen = async () => {
+    console.log('[App] 📡 SSE-соединение установлено.');
+    if (isDisconnected) {
+      console.log('[App] 🔄 Восстановление после обрыва. Синхронизация состояния...');
+      isDisconnected = false;
+      import('./common.js').then(({ showToast }) => {
+        showToast('Соединение восстановлено. Синхронизация...', 'success');
+      });
+
+      try {
+        const res = await fetch('/api/queue');
+        const data = await res.json();
+        
+        if (data.success) {
+          if (data.currentTask) {
+            handleTaskUpdate(data.currentTask);
+          } else if (progressTimerInterval) {
+            // Была задача, но теперь её нет в очереди — значит она завершилась
+            await loadReportsList();
+            const { allReports } = appStore.getState();
+            if (allReports.length > 0) {
+              const latest = allReports[0];
+              // Имитируем событие завершения для UI
+              handleTaskUpdate({
+                status: latest.status,
+                reportId: latest.id,
+                error: latest.error
+              });
+            }
+          }
+          
+          updateQueueBadge(data);
+        }
+      } catch (err) {
+        console.error('[App] ❌ Ошибка синхронизации очереди:', err);
+      }
+    }
+  };
 
   eventSource.addEventListener('taskUpdate', (event) => {
     const task = JSON.parse(event.data);
@@ -28,11 +71,21 @@ export function setupSSE() {
   });
 
   eventSource.onerror = () => {
-    console.warn('[App] ⚠️ SSE-соединение потеряно. Переподключение...');
-    import('./common.js').then(({ showToast }) => {
-      showToast('Соединение с сервером потеряно. Переподключение...', 'warning');
-    });
+    if (!isDisconnected) {
+      console.warn('[App] ⚠️ SSE-соединение потеряно. Переподключение...');
+      isDisconnected = true;
+      import('./common.js').then(({ showToast }) => {
+        showToast('Соединение с сервером потеряно. Переподключение...', 'warning');
+      });
+    }
   };
+
+  window.addEventListener('beforeunload', (e) => {
+    if (progressTimerInterval) {
+      e.preventDefault();
+      e.returnValue = ''; // Required for Chrome and standard browsers
+    }
+  });
 }
 
 let progressTimerInterval = null;
@@ -44,6 +97,10 @@ async function handleTaskUpdate(task) {
     if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${task.query || ''}"`;
     if (task.step && DOM.progressStep) {
       DOM.progressStep.textContent = task.step;
+    }
+    
+    if (task.progress !== undefined && DOM.progressFill) {
+      DOM.progressFill.style.width = `${task.progress}%`;
     }
     
     if (!progressTimerInterval) {

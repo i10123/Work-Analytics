@@ -31,16 +31,16 @@ class HhParser extends BaseParser {
     return ua;
   }
 
-  async getAccessToken() {
+  getAccessToken() {
     const clientId = process.env.HH_CLIENT_ID;
     const clientSecret = process.env.HH_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      return null;
+      return Promise.resolve(null);
     }
 
     if (sharedToken && sharedTokenExpiresAt && Date.now() < sharedTokenExpiresAt) {
-      return sharedToken;
+      return Promise.resolve(sharedToken);
     }
 
     if (sharedTokenPromise) {
@@ -130,7 +130,7 @@ class HhParser extends BaseParser {
             `Ждём ${backoffMs}мс...`
           );
 
-          await this.delay(backoffMs);
+          await this.delay(backoffMs, cancelFlag);
           continue;
         }
 
@@ -153,7 +153,7 @@ class HhParser extends BaseParser {
     const limit = filters.limit || 50;
     const period = this.mapPeriodToDays(filters.period);
     const perPage = 20;
-    const maxPages = this.MAX_PAGES_TO_SCAN;
+    let maxPages = this.MAX_PAGES_TO_SCAN;
 
     console.log(`[Parser:HH] 🔍 Поиск: "${query}", период: ${period} дн., лимит: ${limit}`);
 
@@ -186,6 +186,13 @@ class HhParser extends BaseParser {
 
         const response = await this._requestWithRetry(`${HH_API_BASE}/vacancies`, params, token, cancelFlag);
 
+        if (page === 0 && response.data.pages) {
+          if (response.data.pages < maxPages) {
+            maxPages = response.data.pages;
+            console.log(`[Parser:HH] 📄 Обновлен лимит страниц из API: ${maxPages}`);
+          }
+        }
+
         const vacancies = response.data.items || [];
         console.log(`[Parser:HH] 📊 Страница ${page + 1}: получено ${vacancies.length} вакансий (до фильтрации)`);
 
@@ -217,7 +224,7 @@ class HhParser extends BaseParser {
         if (page < maxPages - 1) {
           const pageDelay = this._getRandomDelay(700, 1500);
           console.log(`[Parser:HH] ⏳ Пауза ${pageDelay}мс перед следующей страницей...`);
-          await this.delay(pageDelay);
+          await this.delay(pageDelay, cancelFlag);
         }
       } catch (error) {
         const status = error.response?.status;
@@ -247,7 +254,7 @@ class HhParser extends BaseParser {
 
       try {
         const deepDelay = this._getRandomDelay(1000, 2000);
-        await this.delay(deepDelay);
+        await this.delay(deepDelay, cancelFlag);
 
         const response = await this._requestWithRetry(
           `${HH_API_BASE}/vacancies/${job.sourceId}`,
@@ -279,7 +286,7 @@ class HhParser extends BaseParser {
       }
     };
 
-    await this.fetchDeepWithConcurrency(jobs, fetchFn, 3);
+    await this.fetchDeepWithConcurrency(jobs, fetchFn, 3, cancelFlag);
   }
 
   normalizeVacancy(vacancy) {

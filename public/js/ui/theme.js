@@ -5,11 +5,13 @@
  * Что содержит: Функции initializeTheme и setAppTheme для смены data-атрибута темы на корневом элементе.
  */
 import { renderDashboard } from './dashboard.js';
-import { currentReport } from '../state.js';
+import { appStore } from '../state.js';
+
+import { loadSettings } from '../utils/settings.js';
 
 export function initializeTheme() {
-  const savedTheme = localStorage.getItem('app-theme') || 'slate-modernity';
-  setAppTheme(savedTheme);
+  const settings = loadSettings();
+  setAppTheme(settings.theme || 'slate-modernity');
 }
 
 export function setAppTheme(theme) {
@@ -22,6 +24,7 @@ export function setAppTheme(theme) {
       Chart.defaults.font.family = rootStyles.getPropertyValue('--font-family').trim() || "'Outfit', 'nbrb', sans-serif";
     }
 
+    const { currentReport } = appStore.getState();
     if (currentReport) {
       renderDashboard(currentReport);
     }

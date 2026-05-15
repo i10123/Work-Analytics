@@ -9,6 +9,7 @@ import { loadSettings } from '../utils/settings.js';
 import { showScreen } from './common.js';
 import { validateForm, showValidationTooltip } from './ui-premium.js';
 import { loadQueueUI } from './sidebar.js';
+import { clientId } from '../state.js';
 
 export function openModal(prefillQuery) {
   const settings = loadSettings();
@@ -60,7 +61,7 @@ export async function handleFormSubmit(e) {
     const response = await fetch('/api/parse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, period, limit, sources: settings.sources, stopWords: settings.stopWords, deepScrape: settings.deepScrape }),
+      body: JSON.stringify({ query, period, limit, sources: settings.sources, stopWords: settings.stopWords, deepScrape: settings.deepScrape, clientId }),
     });
 
     const data = await response.json();
