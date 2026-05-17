@@ -90,5 +90,4 @@ function buildRatesResponse(rates, isFallback) {
 module.exports = {
   fetchExchangeRates,
   convertCurrency,
-  FALLBACK_RATES,
 };

@@ -69,6 +69,7 @@ export function openSettings() {
   const periodRadio = document.querySelector(`input[name="settings_period"][value="${settings.defaultPeriod}"]`);
   if (periodRadio) {
     periodRadio.checked = true;
+    periodRadio.dispatchEvent(new Event('change'));
   }
   if (DOM.settingsDefaultLimit) DOM.settingsDefaultLimit.value = settings.defaultLimit;
 
@@ -223,6 +224,7 @@ async function handleSaveSettings() {
   const mainPeriodRadio = document.querySelector(`input[name="period"][value="${settings.defaultPeriod}"]`);
   if (mainPeriodRadio) {
     mainPeriodRadio.checked = true;
+    mainPeriodRadio.dispatchEvent(new Event('change'));
   }
   if (DOM.inputLimit) DOM.inputLimit.value = settings.defaultLimit;
 }
@@ -394,6 +396,7 @@ async function handleResetSettings() {
   const defaultRadio = document.querySelector(`input[name="period"][value="${DEFAULT_SETTINGS.defaultPeriod}"]`);
   if (defaultRadio) {
     defaultRadio.checked = true;
+    defaultRadio.dispatchEvent(new Event('change'));
   }
 
   openSettings();

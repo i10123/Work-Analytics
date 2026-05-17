@@ -207,11 +207,61 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   letter-spacing: -0.01em;
 }
+
+.report-item__query-wrapper {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  white-space: nowrap;
+}
+
+.report-item__query-wrapper span {
+  display: inline-block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.report-item__query-dup {
+  display: none !important;
+}
+
+.report-item__query-wrapper.has-marquee {
+  position: relative;
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to right, rgba(0,0,0,1) 85%, rgba(0,0,0,0) 100%);
+}
+
+.report-item__query-wrapper.has-marquee span {
+  text-overflow: clip;
+  overflow: visible;
+  max-width: none;
+  padding-right: 32px;
+  flex-shrink: 0;
+}
+
+.report-item__query-wrapper.has-marquee .report-item__query-dup {
+  display: inline-block !important;
+}
+
+.report-item:hover .report-item__query-wrapper.has-marquee span {
+  animation: sidebar-infinite-marquee 3s linear infinite;
+}
+
+@keyframes sidebar-infinite-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
 
 .report-item__icon {
   flex-shrink: 0;

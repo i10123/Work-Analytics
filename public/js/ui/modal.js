@@ -28,6 +28,11 @@ export function openModal(prefillQuery) {
     DOM.inputLimit.value = settings.defaultLimit;
   }
 
+  if (DOM.parseSourceHH) DOM.parseSourceHH.checked = settings.sources?.hh !== false;
+  if (DOM.parseSourceRabotaby) DOM.parseSourceRabotaby.checked = settings.sources?.rabotaby !== false;
+  if (DOM.parseSourceHabr) DOM.parseSourceHabr.checked = settings.sources?.habr !== false;
+  if (DOM.parseDeepScrape) DOM.parseDeepScrape.checked = settings.deepScrape;
+
   if (DOM.modalOverlay) DOM.modalOverlay.style.display = 'flex';
 }
 
@@ -52,6 +57,19 @@ export async function handleFormSubmit(e) {
   const limit = parseInt(DOM.inputLimit.value, 10) || 50;
   const settings = loadSettings();
 
+  const parseSources = {
+    hh: DOM.parseSourceHH ? DOM.parseSourceHH.checked : true,
+    rabotaby: DOM.parseSourceRabotaby ? DOM.parseSourceRabotaby.checked : true,
+    habr: DOM.parseSourceHabr ? DOM.parseSourceHabr.checked : true
+  };
+
+  if (!parseSources.hh && !parseSources.rabotaby && !parseSources.habr) {
+    showErrorModal('Ошибка', 'Выберите хотя бы один источник для парсинга.');
+    return;
+  }
+
+  const parseDeepScrape = DOM.parseDeepScrape ? DOM.parseDeepScrape.checked : settings.deepScrape;
+
   if (!validateForm(e.target)) return;
 
   DOM.btnSubmitParse.disabled = true;
@@ -61,7 +79,7 @@ export async function handleFormSubmit(e) {
     const response = await fetch('/api/parse', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, period, limit, sources: settings.sources, stopWords: settings.stopWords, deepScrape: settings.deepScrape, clientId }),
+      body: JSON.stringify({ query, period, limit, sources: parseSources, stopWords: settings.stopWords, deepScrape: parseDeepScrape, clientId }),
     });
 
     const data = await response.json();

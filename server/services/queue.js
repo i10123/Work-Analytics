@@ -113,16 +113,25 @@ async function _processTask(task) {
         }, 15 * 60 * 1000); // 15 минут
       })
     ]);
+
+    if (task.cancelFlag.isStopped) {
+      task.status = 'failed';
+      task.error = 'Сбор данных остановлен пользователем.';
+      console.log(`[Queue] 🛑 Задача ${task.id} досрочно завершена пользователем.`);
+      emitUpdate(task);
+    }
   } catch (error) {
+    task.status = 'failed';
+    task.error = error.message || 'Ошибка сбора данных.';
+    
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} прервана (abort/timeout). Данные выброшены.`);
-      removeTaskFromQueue(task.id);
     } else {
-      task.status = 'failed';
       console.error(`[Queue] ❌ Критическая ошибка при обработке ${task.id}:`, error.message);
-      emitUpdate({ ...task, error: error.message });
-      removeTaskFromQueue(task.id);
     }
+    
+    emitUpdate(task);
+    removeTaskFromQueue(task.id);
   } finally {
     if (taskTimeout) clearTimeout(taskTimeout);
     isProcessing = false;
@@ -148,6 +157,25 @@ function abortTask(id) {
     return true;
   }
 
+  return false;
+}
+
+function gracefulStop(id) {
+  const task = findTask(id);
+  if (!task) return false;
+  
+  if (task.status === 'processing') {
+    task.cancelFlag.isStopped = true;
+    if (task.cancelFlag.abortController) {
+      try {
+        task.cancelFlag.abortController.abort();
+      } catch (e) {
+        console.error(`[Queue] ⚠️ Ошибка при вызове abort() для задачи ${id}:`, e);
+      }
+    }
+    console.log(`[Queue] 🛑 Задача ${id} отмечена для досрочного завершения (graceful stop).`);
+    return true;
+  }
   return false;
 }
 
@@ -247,6 +275,7 @@ module.exports = {
   getQueueStatus,
   getFullQueueState,
   deleteTask,
+  gracefulStop,
   prioritizeTask,
   updateTask,
   taskEmitter,

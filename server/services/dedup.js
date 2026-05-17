@@ -88,26 +88,26 @@ const JACCARD_THRESHOLD_TITLE = 0.7;
 const JACCARD_THRESHOLD_TITLE_HIGH = 0.85;
 const JACCARD_THRESHOLD_COMPANY = 0.7;
 
-function areDuplicates(a, b) {
-  if (a.sourceId && b.sourceId && a.sourceId === b.sourceId && a.source !== b.source) {
-    return true;
-  }
-
+// ПЕРЕИМЕНОВАННАЯ И ОЧИЩЕННАЯ ФУНКЦИЯ: Теперь здесь ТОЛЬКО текстовое сравнение
+function areFuzzyDuplicates(a, b) {
   const titleTokensA = a._norm.titleTokens;
   const titleTokensB = b._norm.titleTokens;
   const companyA = a._norm.company;
   const companyB = b._norm.company;
 
+  // Точное совпадение очищенных названий и компаний
   if (a._norm.titleKey === b._norm.titleKey && companyA === companyB) {
     return true;
   }
 
   const titleSimilarity = jaccardSimilarity(titleTokensA, titleTokensB);
 
+  // Схожее название (>= 70%) и одинаковая компания
   if (titleSimilarity >= JACCARD_THRESHOLD_TITLE && companyA === companyB) {
     return true;
   }
 
+  // Очень схожее название (>= 85%) и схожее название компании (>= 70%)
   if (titleSimilarity >= JACCARD_THRESHOLD_TITLE_HIGH) {
     const companyTokensA = tokenize(companyA);
     const companyTokensB = tokenize(companyB);
@@ -120,18 +120,29 @@ function areDuplicates(a, b) {
   return false;
 }
 
+// ДОРАБОТАННАЯ ФУНКЦИЯ: Убрано дублирование в массиве mergedFrom
 function mergeJobs(primary, duplicate) {
-  if (primary.salary && duplicate.salary) {
-    if (!primary.salary.min && duplicate.salary.min) {
-      primary.salary.min = duplicate.salary.min;
-    }
-    if (!primary.salary.max && duplicate.salary.max) {
-      primary.salary.max = duplicate.salary.max;
-    }
-    if (!primary.salary.min && !primary.salary.max && (duplicate.salary.min || duplicate.salary.max)) {
-      primary.salary = { ...duplicate.salary };
+  // Слияние зарплат
+  if (duplicate.salary) {
+    const pSal = primary.salary;
+    const dSal = duplicate.salary;
+
+    if (!pSal || (!pSal.min && !pSal.max && !pSal.currency)) {
+      if (dSal.min || dSal.max) primary.salary = { ...dSal };
+    } else {
+      const pHasBoth = pSal.min && pSal.max;
+      const dHasBoth = dSal.min && dSal.max;
+      
+      if (!pHasBoth && dHasBoth) {
+        primary.salary = { ...dSal };
+      } else if (!pHasBoth && !dHasBoth) {
+        if (!pSal.min && dSal.min) pSal.min = dSal.min;
+        if (!pSal.max && dSal.max) pSal.max = dSal.max;
+      }
     }
   }
+
+  // Слияние навыков
   if (duplicate.skills && duplicate.skills.length > 0) {
     const existingLower = new Set((primary.skills || []).map(s => s.toLowerCase()));
     for (const skill of duplicate.skills) {
@@ -141,28 +152,35 @@ function mergeJobs(primary, duplicate) {
       }
     }
   }
+
+  // Берем более длинное описание
   if (duplicate.description && (!primary.description || duplicate.description.length > primary.description.length)) {
     primary.description = duplicate.description;
   }
+  
   if ((!primary.experience || primary.experience === 'Не указан') && duplicate.experience && duplicate.experience !== 'Не указан') {
     primary.experience = duplicate.experience;
   }
+  
   if ((!primary.employment || primary.employment === 'Не указан') && duplicate.employment && duplicate.employment !== 'Не указан') {
     primary.employment = duplicate.employment;
   }
-  if (!primary.mergedFrom) {
-    primary.mergedFrom = [];
-  }
-  primary.mergedFrom.push({
-    source: duplicate.source,
-    sourceId: duplicate.sourceId,
-    url: duplicate.url,
-  });
-}
 
-function getBlockingKey(titleTokens) {
-  if (titleTokens.length === 0) return '__empty__';
-  return titleTokens.slice(0, 2).join('_');
+  // Защита от записи самого себя (при баге пагинации) или дублирования источников
+  const isSelf = primary.source === duplicate.source && primary.sourceId === duplicate.sourceId;
+  
+  if (!isSelf) {
+    if (!primary.mergedFrom) primary.mergedFrom = [];
+    const alreadyMerged = primary.mergedFrom.some(m => m.source === duplicate.source && m.sourceId === duplicate.sourceId);
+    
+    if (!alreadyMerged) {
+      primary.mergedFrom.push({
+        source: duplicate.source,
+        sourceId: duplicate.sourceId,
+        url: duplicate.url,
+      });
+    }
+  }
 }
 
 function precomputeNorms(jobs) {
@@ -172,7 +190,6 @@ function precomputeNorms(jobs) {
       titleTokens,
       titleKey: titleTokens.join(' '),
       company: normalizeCompany(job.company),
-      blockingKey: getBlockingKey(titleTokens),
     };
   }
 }
@@ -183,6 +200,7 @@ function cleanupNorms(jobs) {
   }
 }
 
+// НОВАЯ СОВЕРШЕННАЯ ФУНКЦИЯ ДЕДУПЛИКАЦИИ
 function deduplicateJobs(jobs) {
   if (!jobs || jobs.length === 0) {
     return { uniqueJobs: [], stats: { totalBefore: 0, totalAfter: 0, duplicatesRemoved: 0, mergedPairs: [] } };
@@ -190,61 +208,70 @@ function deduplicateJobs(jobs) {
 
   const totalBefore = jobs.length;
   const mergedPairs = [];
-
   precomputeNorms(jobs);
-
   const isDuplicate = new Set();
-  const sourceIdMap = new Map();
+
+  // ЭТАП 1: Строгое слияние по ID
+  const idMap = new Map(); // Храним массив индексов для каждого sourceId
+  
   for (let i = 0; i < jobs.length; i++) {
     if (isDuplicate.has(i)) continue;
     const job = jobs[i];
     if (!job.sourceId) continue;
 
-    const key = String(job.sourceId);
-    if (sourceIdMap.has(key)) {
-      const primaryIdx = sourceIdMap.get(key);
-      if (jobs[primaryIdx].source !== job.source) {
-        mergeJobs(jobs[primaryIdx], job);
-        isDuplicate.add(i);
-        mergedPairs.push({
-          primary: `${jobs[primaryIdx].source}:${jobs[primaryIdx].sourceId}`,
-          duplicate: `${job.source}:${job.sourceId}`,
-          reason: 'sourceId',
-        });
-      }
+    const idStr = String(job.sourceId);
+    if (!idMap.has(idStr)) {
+      idMap.set(idStr, [i]);
     } else {
-      sourceIdMap.set(key, i);
+      const existingIndices = idMap.get(idStr);
+      let merged = false;
+
+      for (const idx of existingIndices) {
+        const existingJob = jobs[idx];
+        
+        // Склеиваем, если это тот же сайт (сдвиг пагинации)
+        const isSameSource = existingJob.source === job.source;
+        
+        // Склеиваем HH и Rabotaby, т.к. это одна и та же платформа физически
+        const isHhRabotaCross = (existingJob.source === 'hh' && job.source === 'rabotaby') ||
+                                (existingJob.source === 'rabotaby' && job.source === 'hh');
+
+        // Хабр не склеиваем с HH/Rabotaby по ID, чтобы избежать случайных коллизий чисел
+        if (isSameSource || isHhRabotaCross) {
+          mergeJobs(existingJob, job);
+          isDuplicate.add(i);
+          mergedPairs.push({
+            primary: `${existingJob.source}:${existingJob.sourceId}`,
+            duplicate: `${job.source}:${job.sourceId}`,
+            reason: isSameSource ? 'sourceId_exact' : 'sourceId_cross',
+          });
+          merged = true;
+          break;
+        }
+      }
+
+      if (!merged) {
+        existingIndices.push(i); // Если это коллизия (например, Habr и HH совпали по ID), просто добавляем
+      }
     }
   }
 
-  const blocks = new Map();
+  // ЭТАП 2: Попарное нечеткое сравнение O(N^2) (Fuzzy Match)
+  // Без "блокирующих ключей", проверяем каждую с каждой для максимальной точности
   for (let i = 0; i < jobs.length; i++) {
     if (isDuplicate.has(i)) continue;
-    const key = jobs[i]._norm.blockingKey;
-    if (!blocks.has(key)) blocks.set(key, []);
-    blocks.get(key).push(i);
-  }
+    
+    for (let j = i + 1; j < jobs.length; j++) {
+      if (isDuplicate.has(j)) continue;
 
-  for (const [, indices] of blocks) {
-    if (indices.length < 2) continue;
-
-    for (let i = 0; i < indices.length; i++) {
-      const idxA = indices[i];
-      if (isDuplicate.has(idxA)) continue;
-
-      for (let j = i + 1; j < indices.length; j++) {
-        const idxB = indices[j];
-        if (isDuplicate.has(idxB)) continue;
-
-        if (areDuplicates(jobs[idxA], jobs[idxB])) {
-          mergeJobs(jobs[idxA], jobs[idxB]);
-          isDuplicate.add(idxB);
-          mergedPairs.push({
-            primary: `${jobs[idxA].source}:${jobs[idxA].title}`,
-            duplicate: `${jobs[idxB].source}:${jobs[idxB].title}`,
-            reason: 'fuzzy',
-          });
-        }
+      if (areFuzzyDuplicates(jobs[i], jobs[j])) {
+        mergeJobs(jobs[i], jobs[j]);
+        isDuplicate.add(j);
+        mergedPairs.push({
+          primary: `${jobs[i].source}:${jobs[i].title}`,
+          duplicate: `${jobs[j].source}:${jobs[j].title}`,
+          reason: 'fuzzy',
+        });
       }
     }
   }
@@ -265,10 +292,4 @@ function deduplicateJobs(jobs) {
 module.exports = {
   deduplicateJobs,
   transliterate,
-  normalizeText,
-  normalizeTitle,
-  normalizeCompany,
-  jaccardSimilarity,
-  areDuplicates,
-  mergeJobs,
 };

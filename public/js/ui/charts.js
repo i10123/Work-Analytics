@@ -295,6 +295,63 @@ export function renderChartSalaryVsExperience(jobs, rates, currency) {
   });
 }
 
+export function renderChartExperienceScatter(jobs, rates, currency) {
+  const validJobs = jobs.filter(j => 
+    j.salary && (j.salary.min > 0 || j.salary.max > 0) &&
+    (typeof j.experience_years_min === 'number' || typeof j.experience_years_max === 'number')
+  );
+
+  if (validJobs.length === 0) {
+    toggleChartCardVisibility('chartExperienceScatter', false);
+    return;
+  }
+  toggleChartCardVisibility('chartExperienceScatter', true);
+
+  const data = validJobs.map(j => {
+    const avgSalaryObj = j.salary.min && j.salary.max ? (j.salary.min + j.salary.max) / 2 : (j.salary.min || j.salary.max);
+    const y = convertCurrency(avgSalaryObj, j.salary.currency, currency, rates);
+    const x = typeof j.experience_years_min === 'number' ? j.experience_years_min : j.experience_years_max;
+    return { x, y, job: j };
+  });
+
+  safeCreateChart('experienceScatter', 'chartExperienceScatter', {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: `Зарплата (${currency}) от опыта`,
+        data: data,
+        backgroundColor: 'rgba(99, 102, 241, 0.6)',
+        borderColor: 'rgba(99, 102, 241, 1)',
+        pointRadius: 5,
+        pointHoverRadius: 7,
+      }]
+    },
+    options: commonOptions({
+      legend: false,
+      extra: {
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const pt = ctx.raw;
+                return `${pt.job.title}: ${pt.x} лет -> ${formatNumber(pt.y)} ${currency}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Опыт (годы)' }
+          },
+          y: {
+            title: { display: true, text: `Зарплата (${currency})` }
+          }
+        }
+      }
+    })
+  });
+}
+
 export function renderChartWorkFormatDoughnut(jobs) {
   const valid = filterValid(jobs, 'workFormat');
   if (valid.length === 0) {

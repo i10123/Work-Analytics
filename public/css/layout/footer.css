@@ -15,6 +15,14 @@
     width: 100%;
 }
 
+.footer-signature__link {
+    color: inherit;
+    text-decoration: none;
+    display: inline-block;
+    width: 100%;
+    transition: inherit;
+}
+
 .footer-signature:hover {
     opacity: 0.9;
     color: var(--color-primary);

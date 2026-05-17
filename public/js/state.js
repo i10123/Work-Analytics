@@ -38,11 +38,11 @@ export const charts = {
   salary: null,
   skills: null,
   salaryVsExp: null,
+  experienceScatter: null,
   workFormatDoughnut: null,
   workFormatBar: null,
   englishSalary: null,
   techCategory: null,
-  dynamics: null,
 };
 
 export const clientId = (() => {

@@ -88,23 +88,43 @@ async function runPipeline(task, emitUpdate) {
     }
   }
 
+  if (isCancelled() && allJobs.length === 0) {
+    console.log('[Pipeline] Задача отменена, вакансий не собрано.');
+    return;
+  }
+
   const { uniqueJobs, stats } = deduplicateJobs(allJobs);
   allJobs = uniqueJobs;
   console.log(`[Pipeline] 🔄 Дедупликация: ${stats.totalBefore} → ${stats.totalAfter} (удалено ${stats.duplicatesRemoved} дублей)`);
   console.log(`[Pipeline] 📊 Собрано вакансий: ${allJobs.length}. Ошибок источников: ${errors.length}`);
-  if (isCancelled()) return;
 
   emitUpdate({ ...task, step: 'AI-анализ вакансий...' });
-  const enrichedJobs = await extractMetadataFromJobs(allJobs, (current, total) => {
-    const percentage = Math.round((current / total) * 100);
-    emitUpdate({
-      ...task,
-      step: `AI-анализ вакансий: обработано ${current} из ${total} батчей...`,
-      progress: percentage
-    });
-  });
+  let enrichedJobs = [];
+  try {
+    enrichedJobs = await extractMetadataFromJobs(
+      allJobs,
+      (current, total) => {
+        const percentage = Math.round((current / total) * 100);
+        emitUpdate({
+          ...task,
+          step: `AI-анализ вакансий: обработано ${current} из ${total} батчей...`,
+          progress: percentage
+        });
+      },
+      task.filters.deepScrape,
+      task.cancelFlag
+    );
+  } catch (err) {
+    console.warn(`[Pipeline] ⚠️ Ошибка или прерывание AI: ${err.message}`);
+  }
 
-  if (isCancelled()) return;
+  // Fallback for jobs that missed enrichment (e.g. if AI was cancelled)
+  const enrichedIds = new Set(enrichedJobs.map(j => j.sourceId));
+  for (const job of allJobs) {
+    if (!enrichedIds.has(job.sourceId)) {
+      enrichedJobs.push(job);
+    }
+  }
 
   let sumSalaryRub = 0;
   let countSalary = 0;
@@ -118,9 +138,13 @@ async function runPipeline(task, emitUpdate) {
   }
   const avgSalaryNormalized = countSalary > 0 ? Math.round(sumSalaryRub / countSalary) : null;
 
-  const status = (errors.length > 0 && allJobs.length > 0) ? 'partial'
+  let status = (errors.length > 0 && allJobs.length > 0) ? 'partial'
     : (allJobs.length === 0) ? 'failed'
       : 'completed';
+      
+  if (isCancelled() && allJobs.length > 0) {
+    status = 'partial';
+  }
 
   let failMessage = null;
   if (status === 'failed') {

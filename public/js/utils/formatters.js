@@ -3,7 +3,6 @@
  * 
  * Содержит функции:
  * - formatSalary: форматирование суммы (с разделением групп разрядов).
- * - formatSalaryShort: сокращенный формат суммы (с суффиксами K, M).
  * - escapeHtml: экранирование спецсимволов HTML для безопасности.
  * - formatDuration: форматирование секунд в читаемую строку (минуты/секунды).
  * - parseMarkdown: базовая конвертация Markdown-разметки в HTML.
@@ -15,13 +14,6 @@ export function formatSalary(value) {
   return value.toLocaleString('ru-RU');
 }
 
-export function formatSalaryShort(value) {
-  if (value >= 1000000)
-    return `${(value / 1000000).toFixed(2)}M`;
-  if (value >= 1000)
-    return `${(value / 1000).toFixed(2)}K`;
-  return String(value);
-}
 
 const HTML_ENTITIES = {
   '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'

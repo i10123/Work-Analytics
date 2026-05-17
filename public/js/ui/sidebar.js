@@ -131,7 +131,10 @@ export function renderReportsList(reports, updateCache = true) {
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <span>${escapeHtml(report.query)}</span>
+            <div class="report-item__query-wrapper">
+              <span>${escapeHtml(report.query)}</span>
+              <span class="report-item__query-dup" aria-hidden="true">${escapeHtml(report.query)}</span>
+            </div>
           </div>
           <div class="report-item__meta">
             <span class="report-item__date">${escapeHtml(dateStr)} <span class="report-item__at">в</span> ${escapeHtml(timeStr)}</span>
@@ -151,6 +154,13 @@ export function renderReportsList(reports, updateCache = true) {
       `;
 
       DOM.reportsList.insertBefore(div, DOM.reportsEmpty);
+
+      // Measure if it overflows after inserting to the DOM to ensure exact sizes
+      const wrapper = div.querySelector('.report-item__query-wrapper');
+      const span = wrapper ? wrapper.querySelector('span') : null;
+      if (wrapper && span && span.scrollWidth > wrapper.clientWidth) {
+        wrapper.classList.add('has-marquee');
+      }
     });
   });
 }

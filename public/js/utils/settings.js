@@ -22,6 +22,16 @@ export const DEFAULT_SETTINGS = {
 
 let currentSettings = { ...DEFAULT_SETTINGS };
 
+// Синхронно загружаем локальные настройки при старте, чтобы не блокировать UI
+try {
+  const raw = localStorage.getItem(SETTINGS_KEY);
+  if (raw) {
+    currentSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  }
+} catch (e) {
+  console.warn('[Settings] ⚠️ Ошибка чтения локальных настроек:', e);
+}
+
 export async function initSettings() {
   try {
     const res = await fetch('/api/settings');
@@ -35,16 +45,6 @@ export async function initSettings() {
     }
   } catch (err) {
     console.warn('[Settings] ⚠️ Ошибка загрузки настроек с сервера:', err);
-  }
-  
-  // Fallback to local
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) {
-      currentSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-    }
-  } catch (e) {
-    console.warn('[Settings] ⚠️ Ошибка чтения локальных настроек:', e);
   }
   return currentSettings;
 }

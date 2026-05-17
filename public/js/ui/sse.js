@@ -60,14 +60,22 @@ export function setupSSE() {
   };
 
   eventSource.addEventListener('taskUpdate', (event) => {
-    const task = JSON.parse(event.data);
-    console.log(`[App] 📡 SSE taskUpdate:`, task);
-    handleTaskUpdate(task);
+    try {
+      const task = JSON.parse(event.data);
+      console.log(`[App] 📡 SSE taskUpdate:`, task);
+      handleTaskUpdate(task);
+    } catch (e) {
+      console.error('[App] ❌ Ошибка разбора SSE taskUpdate:', e, event.data);
+    }
   });
 
   eventSource.addEventListener('queueStatus', (event) => {
-    const status = JSON.parse(event.data);
-    updateQueueBadge(status);
+    try {
+      const status = JSON.parse(event.data);
+      updateQueueBadge(status);
+    } catch (e) {
+      console.error('[App] ❌ Ошибка разбора SSE queueStatus:', e, event.data);
+    }
   });
 
   eventSource.onerror = () => {
@@ -86,6 +94,23 @@ export function setupSSE() {
       e.returnValue = ''; // Required for Chrome and standard browsers
     }
   });
+
+  if (DOM.btnStopParsing) {
+    DOM.btnStopParsing.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/queue');
+        const data = await res.json();
+        if (data.currentTask) {
+          await fetch(`/api/queue/${data.currentTask.id}/stop`, { method: 'POST' });
+          const { showToast } = await import('./common.js');
+          showToast('Остановка сбора данных...', 'warning');
+          DOM.btnStopParsing.disabled = true;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  }
 }
 
 let progressTimerInterval = null;
@@ -93,7 +118,11 @@ let progressStartTime = null;
 
 async function handleTaskUpdate(task) {
   if (task.status === 'processing') {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     showScreen('progress');
+    if (DOM.btnStopParsing) DOM.btnStopParsing.disabled = false;
     if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${task.query || ''}"`;
     if (task.step && DOM.progressStep) {
       DOM.progressStep.textContent = task.step;
@@ -123,10 +152,17 @@ async function handleTaskUpdate(task) {
 
     const msg = task.status === 'completed' 
       ? `Сбор успешно завершен за ${formatDuration(totalSeconds)}` 
-      : `Сбор завершен с ошибками некоторых источников за ${formatDuration(totalSeconds)}`;
+      : `Сбор завершен (или прерван) за ${formatDuration(totalSeconds)}`;
     
+    if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification("Work Analytics", { 
+        body: msg, 
+        icon: '/favicon.ico' 
+      });
+    }
+
     const { showToast } = await import('./common.js');
-    showToast(msg, 'success');
+    showToast(msg, task.status === 'completed' ? 'success' : 'warning');
 
     if (task.reportId) {
       loadReportById(task.reportId);

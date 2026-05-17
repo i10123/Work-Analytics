@@ -7,7 +7,6 @@
 export function initializePremiumUI() {
   console.log('[UI] ✨ Инициализация премиальных эффектов...');
   setupCustomValidation();
-  setupButtonEffects();
 }
 
 export function validateForm(form) {
@@ -78,28 +77,3 @@ function hideValidationTooltip(input) {
   }
 }
 
-function setupButtonEffects() {
-  document.addEventListener('mousedown', (e) => {
-    const btn = e.target.closest('.btn');
-    if (btn) {
-      btn.style.scale = '0.96';
-    }
-  });
-
-  document.addEventListener('mouseup', () => {
-    document.querySelectorAll('.btn').forEach(btn => {
-      if (btn.style.scale) btn.style.scale = '';
-    });
-  });
-
-  const cards = document.querySelectorAll('.kpi-card');
-  cards.forEach(card => {
-    card.addEventListener('mousemove', (e) => {
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      card.style.setProperty('--mouse-x', `${x}px`);
-      card.style.setProperty('--mouse-y', `${y}px`);
-    });
-  });
-}

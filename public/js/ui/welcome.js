@@ -16,6 +16,7 @@ export function setupWelcomeScreen() {
   setupQuickTags();
   setupSearchInput();
   setupTiltEffect();
+  setupMarqueeObserver();
   updateWelcomeStats();
 }
 
@@ -400,4 +401,51 @@ export function updateWelcomeStats() {
 
   topTechEl.textContent = topQuery;
   topTechEl.title = topQuery;
+
+  const topTechDupEl = document.getElementById('welcomeStatTopTechDup');
+  const topTechWrapper = document.getElementById('welcomeStatTopTechWrapper');
+  if (topTechDupEl) {
+    topTechDupEl.textContent = topQuery;
+  }
+  
+  adjustMarquee();
 }
+
+let marqueeObserver = null;
+
+function setupMarqueeObserver() {
+  const topTechWrapper = document.getElementById('welcomeStatTopTechWrapper');
+  if (!topTechWrapper) return;
+
+  if (marqueeObserver) {
+    marqueeObserver.disconnect();
+  }
+
+  marqueeObserver = new ResizeObserver(() => {
+    adjustMarquee();
+  });
+  
+  marqueeObserver.observe(topTechWrapper);
+}
+
+export function adjustMarquee() {
+  const topTechEl = document.getElementById('welcomeStatTopTech');
+  const topTechWrapper = document.getElementById('welcomeStatTopTechWrapper');
+  if (!topTechEl || !topTechWrapper) return;
+
+  // Если элемент скрыт (width = 0), не можем измерить точно
+  if (topTechWrapper.clientWidth === 0) return;
+
+  // Временно удаляем класс, чтобы корректно измерить scrollWidth без влияния стилей marquee
+  const hadMarquee = topTechWrapper.classList.contains('has-marquee');
+  topTechWrapper.classList.remove('has-marquee');
+
+  const shouldScroll = topTechEl.scrollWidth > topTechWrapper.clientWidth;
+
+  if (shouldScroll) {
+    topTechWrapper.classList.add('has-marquee');
+  } else if (hadMarquee) {
+    topTechWrapper.classList.remove('has-marquee');
+  }
+}
+

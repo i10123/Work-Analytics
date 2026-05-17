@@ -77,7 +77,8 @@
       <div class="sidebar__section-header">
         <div class="sidebar__section-title">История отчётов</div>
         <div class="sidebar__search-wrapper">
-          <input type="text" id="reportsSearch" class="sidebar__search-input" placeholder="Поиск..." autocomplete="off" spellcheck="true">
+          <input type="text" id="reportsSearch" class="sidebar__search-input" placeholder="Поиск..." autocomplete="off"
+            spellcheck="true">
           <svg class="sidebar__search-icon" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor"
             stroke-width="2.5" fill="none">
             <circle cx="11" cy="11" r="8"></circle>
@@ -122,8 +123,23 @@
         <span>Настройки</span>
       </button>
     </aside>
+    <script>
+      (function () {
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+          var sidebar = document.getElementById('sidebar');
+          if (sidebar) sidebar.classList.add('collapsed');
+        }
+      })();
+    </script>
 
     <main class="main-content" id="mainContent">
+      <div class="page-loader" id="pageLoader">
+        <div class="page-loader__spinner">
+          <div class="page-loader__orb"></div>
+        </div>
+        <div class="page-loader__text">Обновление...</div>
+      </div>
+
       <button class="absolute-toggle" id="sidebarToggle" aria-label="Меню">
         <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
           stroke-linecap="round" stroke-linejoin="round">
@@ -132,7 +148,7 @@
           <line x1="3" y1="18" x2="21" y2="18"></line>
         </svg>
       </button>
-      <section class="welcome-screen" id="welcomeScreen">
+      <section class="welcome-screen" id="welcomeScreen" style="display: none;">
 
         <div class="welcome-screen__inner">
           <div class="welcome-screen__header">
@@ -187,8 +203,8 @@
                 <button class="welcome-tag" data-query="Machine Learning">
                   <span class="welcome-tag__icon">🧠</span> ML & AI
                 </button>
-                <button class="welcome-tag" data-query="Java Spring">
-                  <span class="welcome-tag__icon">☕</span> Java Spring
+                <button class="welcome-tag" data-query="Java">
+                  <span class="welcome-tag__icon">☕</span> Java
                 </button>
                 <button class="welcome-tag" data-query="Node.js">
                   <span class="welcome-tag__icon">🟢</span> Node.js
@@ -203,7 +219,7 @@
                   <span class="welcome-tag__icon">📊</span> Data Analyst
                 </button>
                 <button class="welcome-tag" data-query="Go">
-                  <span class="welcome-tag__icon">🐹</span> Golang
+                  <span class="welcome-tag__icon">🐹</span> Go
                 </button>
                 <button class="welcome-tag" data-query="iOS Swift">
                   <span class="welcome-tag__icon">🍏</span> iOS Swift
@@ -264,7 +280,10 @@
               </div>
               <div class="welcome-stat-card__info">
                 <span class="welcome-stat-card__label">Топ технология</span>
-                <span class="welcome-stat-card__value" id="welcomeStatTopTech">—</span>
+                <div class="welcome-stat-card__value-wrapper" id="welcomeStatTopTechWrapper">
+                  <span class="welcome-stat-card__value" id="welcomeStatTopTech">—</span>
+                  <span class="welcome-stat-card__value-dup" id="welcomeStatTopTechDup" aria-hidden="true">—</span>
+                </div>
               </div>
             </div>
             <div class="welcome-stat-card">
@@ -360,6 +379,32 @@
               </div>
             </div>
 
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label class="form-label">Источники данных</label>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+                <label class="compact-source-label">
+                  <input type="checkbox" id="parseSourceHH" value="hh" class="sr-only compact-source-checkbox" checked />
+                  <span class="compact-source-badge source-badge--hh">HH.ru</span>
+                </label>
+                <label class="compact-source-label">
+                  <input type="checkbox" id="parseSourceRabotaby" value="rabotaby" class="sr-only compact-source-checkbox" checked />
+                  <span class="compact-source-badge source-badge--rabotaby">Rabota.by</span>
+                </label>
+                <label class="compact-source-label">
+                  <input type="checkbox" id="parseSourceHabr" value="habr" class="sr-only compact-source-checkbox" checked />
+                  <span class="compact-source-badge source-badge--habr">Хабр Карьера</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+              <label class="compact-deep-scrape">
+                <span class="compact-deep-scrape__title">Глубокий парсинг</span>
+                <input type="checkbox" class="settings-toggle" id="parseDeepScrape" />
+                <span class="settings-toggle-visual"></span>
+              </label>
+            </div>
+
             <button class="btn btn--primary btn--full btn--lg" type="submit" id="btnSubmitParse">
               🚀 Запустить сбор
             </button>
@@ -372,12 +417,14 @@
           <div class="progress-card">
             <div class="progress-card__spinner"></div>
             <h3 class="progress-card__title" id="progressTitle">Сбор данных...</h3>
-            <p class="progress-card__step" id="progressStep">Инициализация...</p>
+            <p class="progress-card__step" id="progressStep">Обновление...</p>
             <p class="progress-card__time" id="progressTime"
               style="font-size: 1.1rem; color: var(--color-primary); font-weight: 600; margin-top: 0.5rem;"></p>
             <div class="progress-bar">
               <div class="progress-bar__fill" id="progressFill"></div>
             </div>
+            <button id="btnStopParsing" class="btn btn--danger" style="margin-top: 1.5rem; width: 100%;">Остановить и
+              сохранить</button>
           </div>
         </div>
       </section>
@@ -527,6 +574,15 @@
           </div>
         </div>
 
+        <div class="charts-grid">
+          <div class="chart-card chart-card--wide">
+            <h3 class="chart-card__title">Точечная диаграмма: Опыт и Зарплата</h3>
+            <div class="chart-card__body">
+              <canvas id="chartExperienceScatter"></canvas>
+            </div>
+          </div>
+        </div>
+
         <!-- 4. Формат работы (Combo: Doughnut + Bar) -->
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
@@ -597,7 +653,9 @@
 
       <!-- Footer Signature -->
       <footer class="footer-signature">
-        create by NIFRANCHIN
+        <a href="https://github.com/i10123" target="_blank" rel="noopener noreferrer" class="footer-signature__link">
+          create by NIFRANCHIN
+        </a>
       </footer>
     </main>
   </div>
@@ -871,7 +929,7 @@
           <div class="settings-section">
             <div class="settings-api-status" id="settingsOpenrouterStatus">
               <div class="settings-api-status__row">
-                <span class="settings-api-status__label">OpenRouter</span>
+                <span class="settings-api-status__label">Groq AI (Llama 3)</span>
                 <span class="settings-api-status__value settings-api-status__value--loading" id="openrouterStatusText">
                   <span class="settings-api-status__dot"></span>
                   Проверка...
@@ -971,24 +1029,6 @@
     </div>
   </div>
 
-  <!-- Модальное окно ошибки (Error Modal) -->
-  <div class="modal-overlay--error" id="errorModalOverlay" style="display: none;">
-    <div class="error-modal" id="errorModal">
-      <div class="error-modal__icon-container">
-        <svg class="error-modal__svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="15" y1="9" x2="9" y2="15"></line>
-          <line x1="9" y1="9" x2="15" y2="15"></line>
-        </svg>
-      </div>
-      <h3 class="error-modal__title" id="errorTitle">Произошла ошибка</h3>
-      <p class="error-modal__text" id="errorText">Что-то пошло не так при выполнении операции.</p>
-      <div class="error-modal__actions">
-        <button class="btn btn--primary" id="btnErrorOk">Понятно</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Кастомное окно подтверждения (Confirm Modal) -->
   <div class="modal-overlay--confirm" id="confirmModalOverlay" style="display: none;">
@@ -998,16 +1038,12 @@
       <p class="confirm-modal__text" id="confirmText">Вы изменили настройки. Хотите сохранить их перед выходом?</p>
 
       <div class="confirm-modal__actions" id="confirmActions">
-        <!-- Кнопки будут вставляться динамически для универсальности -->
-        <button class="btn btn--primary" id="btnConfirmSave">Сохранить и выйти</button>
-        <button class="btn btn--outline" id="btnConfirmDiscard">Не сохранять</button>
-        <button class="btn btn--ghost" id="btnConfirmCancel">Вернуться</button>
+        <!-- Кнопки вставляются динамически через showConfirm() -->
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-wordcloud@4.4.4/build/index.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>

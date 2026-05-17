@@ -8,7 +8,7 @@ const rateLimit = require('express-rate-limit');
 
 const parseLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 15,
   message: {
     success: false,
     error: 'Слишком много запросов на парсинг. Пожалуйста, подождите 15 минут.'
@@ -177,6 +177,14 @@ router.post('/queue/:id/delete', (req, res) => {
   return res.json({ success: true, message: 'Задача удалена.' });
 });
 
+router.post('/queue/:id/stop', (req, res) => {
+  const { id } = req.params;
+  const { gracefulStop } = require('../services/queue');
+  const ok = gracefulStop(id);
+  if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена или не выполняется.' });
+  return res.json({ success: true, message: 'Сбор данных будет завершен досрочно.' });
+});
+
 router.post('/queue/:id/priority', (req, res) => {
   const { id } = req.params;
   const ok = prioritizeTask(id);
@@ -195,7 +203,8 @@ router.put('/queue/:id', (req, res) => {
 router.get('/status', (req, res) => {
   const currencyKeysStr = process.env.EXCHANGE_RATE_API_KEYS || '';
   const currencyKeys = currencyKeysStr.split(',').map((k) => k.trim()).filter(Boolean);
-  const openrouterKey = process.env.OPENROUTER_API_KEY || '';
+  const groqKeysStr = process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '';
+  const openrouterKeys = groqKeysStr.split(',').map(k => k.trim()).filter(Boolean);
 
   const maskKey = (key) => {
     if (!key) return null;
@@ -209,8 +218,8 @@ router.get('/status', (req, res) => {
       keys: currencyKeys.map(maskKey),
     },
     openrouter: {
-      configured: !!openrouterKey,
-      key: maskKey(openrouterKey),
+      configured: openrouterKeys.length > 0,
+      keys: openrouterKeys.map(maskKey),
     }
   });
 });

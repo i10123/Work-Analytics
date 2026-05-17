@@ -12,6 +12,7 @@ import {
   renderChartSalary,
   renderChartSkills,
   renderChartSalaryVsExperience,
+  renderChartExperienceScatter,
   renderChartWorkFormatDoughnut,
   renderChartWorkFormatBar,
   renderChartEnglishSalary,
@@ -20,6 +21,7 @@ import {
   updateChartColors,
 } from './charts.js';
 import { renderJobsTable } from './table.js';
+import { restoreScrollPosition } from './common.js';
 
 export function renderDashboard(report) {
   const jobs = report.jobs || [];
@@ -67,6 +69,7 @@ export function renderDashboard(report) {
   renderChartSalary(jobs, rates, currentCurrency);
   renderChartSkills(jobs);
   renderChartSalaryVsExperience(jobs, rates, currentCurrency);
+  renderChartExperienceScatter(jobs, rates, currentCurrency);
   renderChartWorkFormatDoughnut(jobs);
   renderChartWorkFormatBar(jobs, rates, currentCurrency);
   renderChartEnglishSalary(jobs, rates, currentCurrency);
@@ -79,6 +82,8 @@ export function renderDashboard(report) {
   if (DOM.btnExportCsv) {
     DOM.btnExportCsv.onclick = () => exportToCSV(jobs, report.query);
   }
+
+  restoreScrollPosition('dashboard');
 }
 
 function renderAiSummary(report) {

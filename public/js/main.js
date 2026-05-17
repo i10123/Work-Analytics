@@ -6,17 +6,17 @@ import { loadReportsList, loadReportById } from './report.js';
 
 import { openModal, closeModal, handleFormSubmit } from './ui/modal.js';
 import { renderDashboard } from './ui/dashboard.js';
-import { showScreen } from './ui/common.js';
+import { showScreen, initScrollRestoration } from './ui/common.js';
 import { setupSidebarListeners, loadQueueUI } from './ui/sidebar.js';
 import { setupSSE } from './ui/sse.js';
 import { setupSettingsListeners, setupStepperListeners, setupSegmentedControlListeners } from './ui/settings.js';
 import { initializePremiumUI } from './ui/ui-premium.js';
 import { setupWelcomeScreen, updateWelcomeStats } from './ui/welcome.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
-  await initSettings(); // Fetch settings from server first
+document.addEventListener('DOMContentLoaded', () => {
+  // Инициализируем UI мгновенно, не дожидаясь ответа от сервера
   initializeTheme();
-
+  initScrollRestoration();
   initializeSettings();
   initializePremiumUI();
   setupEventListeners();
@@ -24,38 +24,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupWelcomeScreen();
   setupSSE();
 
-  let isRestoredProgress = false;
+  // Запускаем асинхронные задачи в фоне
+  (async () => {
+    await initSettings(); // Запрашиваем настройки с сервера
+    initializeSettings(); // Обновляем UI, если настройки с сервера отличаются
 
-  try {
-    const queueRes = await fetch('/api/queue');
-    const queueData = await queueRes.json();
+    let isRestoredProgress = false;
 
-    if (queueData.success && queueData.currentTask && queueData.currentTask.status === 'processing') {
-      showScreen('progress');
-      if (DOM.progressTitle)
-        DOM.progressTitle.textContent = `Сбор данных: "${queueData.currentTask.query || ''}"`;
-      isRestoredProgress = true;
+    try {
+      const queueRes = await fetch('/api/queue');
+      const queueData = await queueRes.json();
+
+      if (queueData.success && queueData.currentTask && queueData.currentTask.status === 'processing') {
+        showScreen('progress');
+        if (DOM.progressTitle)
+          DOM.progressTitle.textContent = `Сбор данных: "${queueData.currentTask.query || ''}"`;
+        isRestoredProgress = true;
+      }
+    } catch (e) {
+      console.warn('[App] ⚠️ Не удалось проверить состояние очереди:', e.message);
     }
-  } catch (e) {
-    console.warn('[App] ⚠️ Не удалось проверить состояние очереди:', e.message);
-  }
 
-  await loadReportsList();
-  updateWelcomeStats();
+    await loadReportsList();
+    updateWelcomeStats();
+    await loadQueueUI();
 
-  await loadQueueUI();
+    if (!isRestoredProgress) {
+      const hash = window.location.hash;
 
-  if (!isRestoredProgress) {
-    const hash = window.location.hash;
-
-    if (hash && hash.startsWith('#report=')) {
-      const reportId = hash.replace('#report=', '');
-      loadReportById(reportId, true);
-    } else {
-      showScreen('welcome');
-      history.replaceState({ type: 'welcome' }, '', window.location.pathname);
+      if (hash && hash.startsWith('#report=')) {
+        const reportId = hash.replace('#report=', '');
+        loadReportById(reportId, true);
+      } else {
+        showScreen('welcome');
+        history.replaceState({ type: 'welcome' }, '', window.location.pathname);
+      }
     }
-  }
+  })();
 });
 
 function initializeSettings() {
@@ -67,8 +72,11 @@ function initializeSettings() {
     b.classList.toggle('active', b.dataset.currency === settings.defaultCurrency);
   });
 
-  if (DOM.selectPeriod)
-    DOM.selectPeriod.value = settings.defaultPeriod;
+  const periodRadio = document.querySelector(`input[name="period"][value="${settings.defaultPeriod}"]`);
+  if (periodRadio) {
+    periodRadio.checked = true;
+    periodRadio.dispatchEvent(new Event('change'));
+  }
   if (DOM.inputLimit)
     DOM.inputLimit.value = settings.defaultLimit;
 }
@@ -76,7 +84,8 @@ function initializeSettings() {
 function setupEventListeners() {
 
   DOM.sidebarToggle?.addEventListener('click', () => {
-    DOM.sidebar?.classList.toggle('collapsed');
+    const isCollapsed = DOM.sidebar?.classList.toggle('collapsed');
+    localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
   });
 
   DOM.btnNewReport?.addEventListener('click', openModal);
