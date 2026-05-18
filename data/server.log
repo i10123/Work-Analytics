@@ -3441,3 +3441,4 @@
 [2026-05-17 18:50:28] [INFO] [Server] ✅ Сервер запущен: http://localhost:3000
 [2026-05-17 18:50:28] [INFO] [Server] 📂 Статика: D:\GitHub PROJECTS\Work-Analytics\public
 [2026-05-17 18:50:30] [INFO] [21:50:30] [HTTP] GET    /api/queue — 304 Not Modified (2.0 ms) [IP: ::ffff:127.0.0.1]
+[2026-05-17 18:56:00] [INFO] [21:56:00] [HTTP] GET    /favicon.ico — 404 Not Found (1.4 ms) [IP: ::ffff:127.0.0.1]
