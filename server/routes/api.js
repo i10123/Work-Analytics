@@ -129,7 +129,7 @@ router.post('/reports/:id/summary', async (req, res) => {
     return res.json({ success: true, summary });
   } catch (error) {
     console.error(`[API] ❌ Ошибка генерации сводки для ${id}:`, error.message);
-    return res.status(500).json({ success: false, error: 'Ошибка генерации сводки.' });
+    return res.status(500).json({ success: false, error: error.message || 'Ошибка генерации сводки.' });
   }
 });
 

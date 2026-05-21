@@ -170,7 +170,23 @@ async function loadReport(reportId) {
   try {
     const raw = await fs.promises.readFile(filepath, 'utf-8');
     console.log(`[Storage] 📖 Отчёт загружен: ${reportId}`);
-    return JSON.parse(raw);
+    const report = JSON.parse(raw);
+    
+    // Динамическое обогащение навыками для обратной совместимости и полноты данных
+    if (report && Array.isArray(report.jobs)) {
+      try {
+        const { extractLocalSkills } = require('./skillsExtractor');
+        report.jobs.forEach(job => {
+          if (!job.skills || job.skills.length === 0) {
+            job.skills = extractLocalSkills(job.title, job.description);
+          }
+        });
+      } catch (err) {
+        console.warn(`[Storage] ⚠️ Не удалось запустить локальное обогащение навыков: ${err.message}`);
+      }
+    }
+    
+    return report;
   } catch (error) {
     if (error.code === 'ENOENT') {
       console.warn(`[Storage] ⚠️ Отчёт не найден: ${reportId}`);

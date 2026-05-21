@@ -12,10 +12,11 @@
 2. **Настройте переменные окружения** (создайте файл `.env` в корне проекта):
    ```env
    PORT=3000
-   HH_CLIENT_ID=your_id
-   HH_CLIENT_SECRET=your_secret
+   HH_CLIENT_ID=your_hh_id
+   HH_CLIENT_SECRET=your_hh_secret
    EXCHANGE_RATE_API_KEYS=your_exchange_keys
-   OPENROUTER_API_KEYS=your_openrouter_keys
+   GROQ_API_KEYS=your_groq_keys
+   GROQ_MODELS=llama-3.3-70b-versatile,llama-3.1-8b-instant
    ```
 
 3. **Запустите приложение**:

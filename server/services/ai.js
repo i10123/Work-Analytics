@@ -174,15 +174,45 @@ function mergeAiMetadata(job, aiData) {
   
   const mergedSkills = Array.from(mergedSkillsMap.values());
   const cleanSoftSkills = sanitizeStringArray(aiData.softSkills);
+
+  const titleLower = (job.title || '').toLowerCase();
+  let gradeFromTitle = null;
+  if (titleLower.match(/\b(intern|стажер|стажёр)\b/)) gradeFromTitle = 'Intern';
+  else if (titleLower.match(/\b(junior|джуниор|младший|джун)\b/)) gradeFromTitle = 'Junior';
+  else if (titleLower.match(/\b(middle|мидл|средний)\b/)) gradeFromTitle = 'Middle';
+  else if (titleLower.match(/\b(senior|сеньор|синьор|старший)\b/)) gradeFromTitle = 'Senior';
+  else if (titleLower.match(/\b(lead|лид|ведущий)\b/)) gradeFromTitle = 'Lead';
+
+  let finalGrade = getValidEnum(aiData.grade, VALID_EXPERIENCES, DEFAULT_METADATA.grade);
+  if (finalGrade === 'Не указано' && gradeFromTitle) {
+    finalGrade = gradeFromTitle;
+  }
+
+  let finalExperience = job.experience && job.experience !== 'Не указан' && job.experience !== 'Не указано' 
+    ? job.experience 
+    : (aiData.experience && aiData.experience !== 'Не указано' ? aiData.experience : null);
+    
+  if (finalGrade !== 'Не указано') {
+      if (finalExperience && !finalExperience.includes(finalGrade)) {
+          finalExperience = `${finalGrade} (${finalExperience})`;
+      } else if (!finalExperience) {
+          finalExperience = finalGrade;
+      }
+  }
+  
+  if (!finalExperience) {
+      finalExperience = 'Не указано';
+  }
+
   return {
     ...job,
     skills: mergedSkills.length > 0 ? mergedSkills : DEFAULT_METADATA.skills,
     softSkills: cleanSoftSkills.length > 0 ? cleanSoftSkills : DEFAULT_METADATA.softSkills,
     workFormat: getValidEnumPreferJob(aiData.workFormat, job.workFormat, VALID_WORK_FORMATS, DEFAULT_METADATA.workFormat),
-    grade: getValidEnum(aiData.grade, VALID_EXPERIENCES, DEFAULT_METADATA.grade),
+    grade: finalGrade,
     experience_years_min: typeof aiData.experience_years_min === 'number' ? aiData.experience_years_min : DEFAULT_METADATA.experience_years_min,
     experience_years_max: typeof aiData.experience_years_max === 'number' ? aiData.experience_years_max : DEFAULT_METADATA.experience_years_max,
-    experience: getValidEnumPreferJob(aiData.experience, job.experience, VALID_EXPERIENCES, DEFAULT_METADATA.experience),
+    experience: finalExperience,
     englishLevel: getValidEnum(aiData.englishLevel, VALID_ENGLISH_LEVELS, DEFAULT_METADATA.englishLevel),
     techCategory: getValidEnum(aiData.techCategory, VALID_TECH_CATEGORIES, DEFAULT_METADATA.techCategory),
     education: getValidEnum(aiData.education, VALID_EDUCATIONS, DEFAULT_METADATA.education),
@@ -348,8 +378,8 @@ function cancellableDelay(ms, cancelFlag) {
 
 async function generateCandidateProfile(report, cancelFlag = null) {
   const jobs = report.jobs || [];
-  if (!jobs.length) return "Нет данных для анализа.";
-  if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
+  if (!jobs.length) throw new Error("Нет данных для анализа.");
+  if (cancelFlag && cancelFlag.isStopped) throw new Error("Анализ отменён.");
 
   const skillsCount = {};
   const formats = {};
@@ -401,7 +431,7 @@ async function generateTextFromAI(prompt, cancelFlag = null) {
     for (let attempt = 0; attempt < 3; attempt++) {
       const key = getRandomGroqKey();
       const model = config.models[0] || 'llama-3.3-70b-versatile';
-      if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
+      if (cancelFlag && cancelFlag.isStopped) throw new Error("Анализ отменён.");
 
       try {
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
@@ -412,24 +442,25 @@ async function generateTextFromAI(prompt, cancelFlag = null) {
 
         return response.data?.choices?.[0]?.message?.content || "Не удалось сгенерировать сводку.";
       } catch (error) {
-        if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
+        if (cancelFlag && cancelFlag.isStopped) throw new Error("Анализ отменён.");
 
         const isQuotaError = error.response && [401, 402, 403, 429].includes(error.response.status);
 
         if (isQuotaError) {
           console.warn(`[AI] 🔁 Лимит ключа исчерпан (генерация сводки). Переключаюсь...`);
-          try { await cancellableDelay(1500, cancelFlag); } catch { return "Анализ отменён."; }
+          try { await cancellableDelay(1500, cancelFlag); } catch { throw new Error("Анализ отменён."); }
           continue;
         }
         console.warn(`[AI] ⚠️ Ошибка генерации текста (без деталей). Переключаюсь...`);
-        try { await cancellableDelay(2000, cancelFlag); } catch { return "Анализ отменён."; }
+        try { await cancellableDelay(2000, cancelFlag); } catch { throw new Error("Анализ отменён."); }
         continue;
       }
     }
     console.warn('[AI] ❌ Все попытки исчерпаны для генерации сводки.');
+    throw new Error("Все попытки исчерпаны для генерации сводки.");
   }
 
-  return "Ошибка: Не настроен AI провайдер (Groq) для генерации сводки.";
+  throw new Error("Не настроен AI провайдер (Groq) для генерации сводки.");
 }
 
 module.exports = {

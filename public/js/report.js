@@ -6,7 +6,7 @@
  * - loadReportById: Загружает детальную информацию об отчете, переключает экран на дашборд и рендерит данные.
  */
 
-import { showScreen } from './ui/common.js';
+import { showScreen, showToast } from './ui/common.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { appStore } from './state.js';
 import { renderReportsList } from './ui/sidebar.js';
@@ -49,8 +49,14 @@ export async function loadReportById(reportId, skipHistory = false) {
       });
     } else {
       localStorage.removeItem('lastReportId');
+      showScreen('welcome');
+      history.replaceState({ type: 'welcome' }, '', window.location.pathname);
+      showToast('Отчёт не найден', 'error');
     }
   } catch (error) {
     console.error(`[App] ❌ Ошибка загрузки отчёта ${reportId}:`, error);
+    showScreen('welcome');
+    history.replaceState({ type: 'welcome' }, '', window.location.pathname);
+    showToast('Ошибка загрузки отчёта', 'error');
   }
 }

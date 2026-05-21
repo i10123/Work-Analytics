@@ -111,7 +111,12 @@ function renderAiSummary(report) {
     }
   }
 
-  if (report.aiSummary) {
+  const hasValidSummary = report.aiSummary && 
+    !report.aiSummary.startsWith('Ошибка:') && 
+    !report.aiSummary.startsWith('Анализ отменён.') && 
+    !report.aiSummary.startsWith('Все попытки исчерпаны');
+
+  if (hasValidSummary) {
     DOM.aiSummaryContent.innerHTML = parseMarkdown(report.aiSummary);
     DOM.aiSummaryContent.style.display = 'none';
     DOM.btnGenerateAiSummary.style.display = 'none';
