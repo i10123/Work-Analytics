@@ -157,25 +157,22 @@
   bottom: 3px;
 }
 
-/* Выравниваем текст СТРОГО по верхнему краю, чтобы он не прыгал */
 .data-table td {
-  padding: 16px;
-  border-bottom: 1px solid var(--color-border);
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   color: var(--color-text-secondary);
-  vertical-align: top; /* <-- Главное исправление здесь (было middle) */
+  vertical-align: middle;
   font-size: var(--font-size-sm);
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .data-table tr:last-child td {
   border-bottom: none;
 }
 
-/* Делаем яркий и адаптивный эффект при наведении на строку */
 .data-table tr:hover td {
-  background: var(--color-surface-hover);
+  background: rgba(255, 255, 255, 0.02);
   color: var(--color-text);
-  cursor: pointer;
 }
 
 .source-badge {
@@ -189,31 +186,15 @@
 .source-badge--rabotaby { color: #86efac; }
 .source-badge--habr { color: #a5b4fc; }
 
-/* Обновляем вид самих плашек с навыками */
 .skill-tag {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
   background: var(--color-accent-soft);
   color: var(--color-accent);
   font-size: var(--font-size-xs);
-  padding: 4px 8px;
-  border-radius: 6px;
-  /* Убрали margin, так как теперь используем gap у родителя */
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin: 1px 2px;
   white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  user-select: none;
-}
-
-.skill-tag:hover:not(.skill-tag--more) {
-  background: var(--color-accent);
-  color: #fff;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(var(--color-accent-rgb, 99, 102, 241), 0.3);
-}
-
-.skill-tag:active:not(.skill-tag--more) {
-  transform: translateY(0);
 }
 
 .btn--export-csv {
@@ -243,29 +224,4 @@
 .btn--export-csv:active {
   transform: translateY(0);
 }
-
-.td-truncate {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.td-title { max-width: 250px; }
-.td-company { max-width: 150px; }
-.td-experience { max-width: 120px; }
-
-/* Ячейка снова становится обычной частью таблицы, границы больше не ломаются */
-.td-skills {
-  min-width: 250px;
-  /* УБРАЛИ display: flex и gap отсюда */
-}
-
-/* Новый контейнер-обертка для самих плашек */
-.skills-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: -2px; /* Компенсируем внутренний отступ тегов, чтобы их текст был на одной линии с остальным текстом */
-}
-
 

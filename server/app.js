@@ -4,10 +4,7 @@ process.on('uncaughtException', (err) => console.error('[Fatal] Непойман
 process.on('unhandledRejection', (err) => console.error('[Fatal] Необработанный промис:', err));
 const path = require('path');
 const apiRouter = require('./routes/api');
-const { requestLogger } = require('./middleware/logger');
-const security = require('./middleware/security');
-const logger = require('./middleware/logger');
-const notFoundHandler = require('./middleware/notFoundHandler');
+const requestLogger = require('./middleware/requestLogger');
 const { ensureDataDirs } = require('./services/storage');
 const fs = require('fs');
 
@@ -20,8 +17,24 @@ function formatLogMessage(level, args) {
   return `[${timestamp}] [${level}] ${msg}\n`;
 }
 
-// Logging is now handled by Winston (see middleware/logger.js)
-// Console overrides removed.
+const originalLog = console.log;
+const originalWarn = console.warn;
+const originalError = console.error;
+
+console.log = function(...args) {
+  originalLog.apply(console, args);
+  logStream.write(formatLogMessage('INFO', args));
+};
+
+console.warn = function(...args) {
+  originalWarn.apply(console, args);
+  logStream.write(formatLogMessage('WARN', args));
+};
+
+console.error = function(...args) {
+  originalError.apply(console, args);
+  logStream.write(formatLogMessage('ERROR', args));
+};
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,11 +42,9 @@ const PORT = process.env.PORT || 3000;
 app.set('trust proxy', false);
 
 app.use(requestLogger);
-security(app);
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api', apiRouter);
-app.use(notFoundHandler);
 
 async function startServer() {
   try {
@@ -49,11 +60,3 @@ async function startServer() {
 }
 
 startServer();
-
-// Graceful shutdown handlers
-function shutdown(signal) {
-  logger.info(`[Server] ⚡ Received ${signal}. Shutting down...`);
-  process.exit(0);
-}
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));

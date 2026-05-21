@@ -1,6 +1,6 @@
 {
-  "theme": "solar-coral",
-  "defaultCurrency": "BYN",
+  "theme": "slate-modernity",
+  "defaultCurrency": "RUB",
   "defaultPeriod": "7days",
   "defaultLimit": 50,
   "sources": {

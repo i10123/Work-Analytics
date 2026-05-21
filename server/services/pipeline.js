@@ -5,7 +5,6 @@ const { deduplicateJobs } = require('./dedup');
 const { HhParser } = require('../parsers/hh');
 const { RabotaByParser } = require('../parsers/rabotaby');
 const { HabrParser } = require('../parsers/habr');
-const { extractLocalSkills } = require('./skillsExtractor');
 
 async function runParsersWithRetry(query, filters, cancelFlag) {
   const allowedSources = filters.sources || { hh: true, rabotaby: true, habr: true };
@@ -96,16 +95,6 @@ async function runPipeline(task, emitUpdate) {
 
   const { uniqueJobs, stats } = deduplicateJobs(allJobs);
   allJobs = uniqueJobs;
-
-  // Локальное извлечение навыков как надежный fallback и дополнение
-  allJobs.forEach(job => {
-    const local = extractLocalSkills(job.title, job.description);
-    if (local.length > 0) {
-      const merged = new Set([...(job.skills || []), ...local]);
-      job.skills = Array.from(merged);
-    }
-  });
-
   console.log(`[Pipeline] 🔄 Дедупликация: ${stats.totalBefore} → ${stats.totalAfter} (удалено ${stats.duplicatesRemoved} дублей)`);
   console.log(`[Pipeline] 📊 Собрано вакансий: ${allJobs.length}. Ошибок источников: ${errors.length}`);
 

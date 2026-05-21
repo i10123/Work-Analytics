@@ -30,7 +30,7 @@ const TableManager = (() => {
           const filtered = currentJobs.filter(j =>
             (j.title || '').toLowerCase().includes(q) ||
             (j.company || '').toLowerCase().includes(q) ||
-            (j.experience || '').toLowerCase().includes(q) ||
+            (j.city || '').toLowerCase().includes(q) ||
             (j.skills || []).join(' ').toLowerCase().includes(q)
           );
 
@@ -69,7 +69,7 @@ const TableManager = (() => {
       const filtered = currentJobs.filter(j =>
         (j.title || '').toLowerCase().includes(q) ||
         (j.company || '').toLowerCase().includes(q) ||
-        (j.experience || '').toLowerCase().includes(q) ||
+        (j.city || '').toLowerCase().includes(q) ||
         (j.skills || []).join(' ').toLowerCase().includes(q)
       );
 
@@ -78,115 +78,15 @@ const TableManager = (() => {
     });
   }
 
-  let activePopoverTarget = null;
-
-  function getOrCreatePopover() {
-    let popover = document.getElementById('skills-popover');
-    if (!popover) {
-      popover = document.createElement('div');
-      popover.id = 'skills-popover';
-      popover.className = 'skills-popover';
-      document.body.appendChild(popover);
-
-      // Close popover when clicking anywhere else
-      document.addEventListener('click', (e) => {
-        if (activePopoverTarget && !popover.contains(e.target) && !e.target.closest('.skill-tag--more')) {
-          hideSkillsPopover();
-        }
-      });
-
-      // Handle clicking a skill inside the popover to filter the table
-      popover.addEventListener('click', (e) => {
-        const tag = e.target.closest('.skill-tag');
-        if (tag) {
-          const skillName = tag.textContent.trim();
-          const searchInput = document.getElementById('jobsTableSearch');
-          if (searchInput) {
-            searchInput.value = skillName;
-            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-            searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-          hideSkillsPopover();
-        }
-      });
-    }
-    return popover;
-  }
-
-  function hideSkillsPopover() {
-    const popover = document.getElementById('skills-popover');
-    if (popover) {
-      popover.classList.remove('active');
-      activePopoverTarget = null;
-    }
-  }
-
-  function toggleSkillsPopover(target) {
-    const popover = getOrCreatePopover();
-
-    if (activePopoverTarget === target) {
-      hideSkillsPopover();
-      return;
-    }
-
-    activePopoverTarget = target;
-    const skillsData = JSON.parse(target.dataset.skills || '[]');
-
-    popover.innerHTML = `
-      <div class="skills-popover__title">Все навыки (${skillsData.length})</div>
-      <div class="skills-popover__list">
-        ${skillsData.map(s => `<span class="skill-tag" style="cursor: pointer;" title="Нажмите для фильтрации">${escapeHtml(s)}</span>`).join('')}
-      </div>
-    `;
-
-    popover.classList.add('active');
-
-    // Position popover perfectly above the target
-    const rect = target.getBoundingClientRect();
-    const scrollX = window.scrollX || window.pageXOffset;
-    const scrollY = window.scrollY || window.pageYOffset;
-
-    const popoverWidth = Math.min(280, window.innerWidth - 40);
-    popover.style.width = `${popoverWidth}px`;
-    
-    // Quick layout pass
-    const popoverHeight = popover.offsetHeight || 120;
-
-    const left = rect.left + scrollX + (rect.width / 2) - (popoverWidth / 2);
-    const top = rect.top + scrollY - popoverHeight - 10; // 10px spacing
-
-    popover.style.left = `${Math.max(10, Math.min(window.innerWidth - popoverWidth - 10, left))}px`;
-    popover.style.top = `${top}px`;
-  }
-
   function initTableBodyDelegation() {
     if (globalTableBodyListenerAdded || !DOM.jobsTableBody) return;
     globalTableBodyListenerAdded = true;
 
     DOM.jobsTableBody.addEventListener('click', (e) => {
-      // 1. Clicked a regular skill tag -> Filter table by this skill name
-      const skillTag = e.target.closest('.skill-tag:not(.skill-tag--more)');
-      if (skillTag && !e.target.closest('#skills-popover')) {
-        const skillName = skillTag.textContent.trim();
-        const searchInput = document.getElementById('jobsTableSearch');
-        if (searchInput) {
-          searchInput.value = skillName;
-          searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-          searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        return;
+      const btn = e.target.closest('button');
+      if (btn) {
+        // e.g. e.stopPropagation();
       }
-
-      // 2. Clicked the "+N" tag -> Toggle popover
-      const moreTag = e.target.closest('.skill-tag--more');
-      if (moreTag) {
-        toggleSkillsPopover(moreTag);
-        e.stopPropagation();
-        return;
-      }
-
-      // 3. Otherwise hide popover
-      hideSkillsPopover();
     });
   }
 
@@ -257,20 +157,10 @@ const TableManager = (() => {
         }
       }
 
-      const allSkills = job.skills || [];
-      let skillsHtml = '';
-
-      if (allSkills.length === 0) {
-        skillsHtml = '<span style="color: var(--color-text-muted);">—</span>';
-      } else {
-        // Оборачиваем все теги в div.skills-wrapper
-        const tagsHtml = allSkills
-          .map((s) => `<span class="skill-tag" title="Нажмите для фильтрации">${escapeHtml(s)}</span>`)
-          .join('');
-          
-        skillsHtml = `<div class="skills-wrapper">${tagsHtml}</div>`;
-      }
-
+      const skillsHtml = (job.skills || [])
+        .slice(0, 5)
+        .map((s) => `<span class="skill-tag">${escapeHtml(s)}</span>`)
+        .join('');
       const sourceMap = { hh: 'HH.ru', rabotaby: 'Rabota.by', habr: 'Хабр' };
       const sourceName = escapeHtml(sourceMap[job.source] || job.source);
       const sourceClass = escapeHtml(`source-badge--${job.source}`);
@@ -289,12 +179,12 @@ const TableManager = (() => {
 
       tr.innerHTML = `
         <td><span class="source-badge ${sourceClass}">${sourceName}</span></td>
-        <td class="td-truncate td-title" title="${escapeHtml(job.title)}">${escapeHtml(job.title)}</td>
-        <td class="td-truncate td-company" title="${escapeHtml(job.company)}">${escapeHtml(job.company)}</td>
-        <td class="td-truncate td-experience" title="${escapeHtml(job.experience)}">${escapeHtml(job.experience)}</td>
+        <td>${escapeHtml(job.title)}</td>
+        <td>${escapeHtml(job.company)}</td>
+        <td>${escapeHtml(job.city)}</td>
         <td style="white-space: nowrap;">${escapeHtml(salaryStr)}</td>
-        <td class="td-skills">${skillsHtml}</td>
-        <td class="td-action">${safeUrl !== '#' ? `<a href="${safeUrl}" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: underline; font-weight: 500;">Откликнуться</a>` : '—'}</td>
+        <td>${skillsHtml || '<span style="color: #64748b;">—</span>'}</td>
+        <td>${safeUrl !== '#' ? `<a href="${safeUrl}" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: underline; font-weight: 500;">Откликнуться</a>` : '—'}</td>
       `;
 
       fragment.appendChild(tr);
