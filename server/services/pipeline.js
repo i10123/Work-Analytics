@@ -103,11 +103,11 @@ async function runPipeline(task, emitUpdate) {
   try {
     enrichedJobs = await extractMetadataFromJobs(
       allJobs,
-      (current, total) => {
+      (current, total, statusText) => {
         const percentage = Math.round((current / total) * 100);
         emitUpdate({
           ...task,
-          step: `AI-анализ вакансий: обработано ${current} из ${total} батчей...`,
+          step: statusText || `AI-анализ вакансий: обработано ${current} из ${total} батчей...`,
           progress: percentage
         });
       },

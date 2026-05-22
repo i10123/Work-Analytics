@@ -184,8 +184,15 @@ class HabrParser extends BaseParser {
 
         const skills = [];
         $card.find('.vacancy-card__skills .preserve-line, [class*="skill"]').each((_, skillEl) => {
-          const skill = $(skillEl).text().trim();
-          if (skill) skills.push(skill);
+          const $el = $(skillEl);
+          const className = $el.attr('class') || '';
+          if (className.includes('skills')) {
+            return;
+          }
+          const skill = $el.text().trim();
+          if (skill && !skills.includes(skill)) {
+            skills.push(skill);
+          }
         });
 
         const description = $card.find('.vacancy-card__description, [class*="snippet"]').text().trim();

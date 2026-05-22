@@ -21,6 +21,7 @@ const VALID_TECH_CATEGORIES = ['Frontend', 'Backend', 'Fullstack', 'QA', 'DevOps
 const VALID_EDUCATIONS = ['Высшее', 'Среднее', 'Не требуется', 'Не указано'];
 
 let cachedConfig = null;
+const bannedKeys = new Set();
 
 function getGroqConfig() {
   if (cachedConfig) return cachedConfig;
@@ -37,8 +38,10 @@ function getGroqConfig() {
 function getRandomGroqKey() {
   const config = getGroqConfig();
   if (!config.keys || config.keys.length === 0) return null;
-  const randomIndex = Math.floor(Math.random() * config.keys.length);
-  return config.keys[randomIndex];
+  const activeKeys = config.keys.filter(k => !bannedKeys.has(k));
+  if (activeKeys.length === 0) return null;
+  const randomIndex = Math.floor(Math.random() * activeKeys.length);
+  return activeKeys[randomIndex];
 }
 
 
@@ -46,7 +49,9 @@ const rateLimitChainByKey = new Map();
 
 function waitForRateLimit(apiKey, cancelFlag) {
   const prev = rateLimitChainByKey.get(apiKey) || Promise.resolve();
-  const next = prev.then(() => cancellableDelay(BATCH_DELAY_MS, cancelFlag).catch(() => {}));
+  // Случайная задержка в диапазоне 7-15 секунд (от 7000 до 15000 мс)
+  const randomDelayMs = Math.floor(Math.random() * (15000 - 7000 + 1)) + 7000;
+  const next = prev.then(() => cancellableDelay(randomDelayMs, cancelFlag).catch(() => {}));
   rateLimitChainByKey.set(apiKey, next);
   return prev;
 }
@@ -84,33 +89,69 @@ async function extractMetadataFromJobs(jobs, onProgress = null, isDeepScrape = f
     while (queue.length > 0) {
       if (cancelFlag && cancelFlag.isStopped) break;
 
+      const activeKeys = groqConfig.keys.filter(k => !bannedKeys.has(k));
+      if (activeKeys.length === 0) {
+        console.error('[AI] ❌ Все доступные API-ключи заблокированы!');
+        if (onProgress) {
+          onProgress(
+            processedBatchesCount,
+            batches.length,
+            '⚠️ Все ключи API заблокированы. Сбор продолжается без ИИ...'
+          );
+        }
+        // Очищаем оставшуюся очередь, записывая пустые результаты
+        while (queue.length > 0) {
+          const item = queue.shift();
+          if (item) {
+            results[item.batchIndex] = { batch: item.batch, metadataMap: {} };
+          }
+        }
+        break;
+      }
+
       const item = queue.shift();
       if (!item) break;
       const { batch, batchIndex } = item;
       let metadataMap = {};
-      const randomKey = getRandomGroqKey();
+
+      // Выделяем ключ строго по индексу воркера из списка активных ключей
+      const apiKey = activeKeys[workerIndex % activeKeys.length];
 
       try {
-        if (!randomKey) throw new Error("No Groq API keys available");
-        await waitForRateLimit(randomKey, cancelFlag);
+        await waitForRateLimit(apiKey, cancelFlag);
         metadataMap = await processBatchWithKey(
           batch,
-          randomKey,
+          apiKey,
           groqConfig.models,
           currentModelIndex,
           (newModelIdx) => { currentModelIndex = newModelIdx; },
           cancelFlag
         );
         console.log(`[AI] ✅ Батч ${batchIndex + 1}/${batches.length} обработан (поток ${workerIndex + 1}).`);
+        results[batchIndex] = { batch, metadataMap };
+        processedBatchesCount++;
+        if (onProgress) onProgress(processedBatchesCount, batches.length);
       } catch (orError) {
         if (cancelFlag && cancelFlag.isStopped) break;
-        console.warn(`[AI] ⚠️ Ошибка батча ${batchIndex + 1} в потоке ${workerIndex + 1}: ${orError.message}`);
+
+        const isBanError = orError.response && [401, 403].includes(orError.response.status);
+        if (isBanError) {
+          console.error(`[AI] ❌ Ключ ${apiKey.slice(0, 10)}... забанен (статус ${orError.response.status}). Добавляем в черный список.`);
+          bannedKeys.add(apiKey);
+        }
+
+        // Возвращаем батч в начало очереди для повторной попытки
+        item.attempts = (item.attempts || 0) + 1;
+        if (item.attempts < 3) {
+          console.warn(`[AI] 🔁 Ошибка батча ${batchIndex + 1} в потоке ${workerIndex + 1}: ${orError.message}. Возврат в очередь (попытка ${item.attempts}/3).`);
+          queue.unshift(item);
+        } else {
+          console.error(`[AI] ❌ Превышен лимит попыток (3) для батча ${batchIndex + 1}: ${orError.message}. Пропускаем с дефолтными значениями.`);
+          results[batchIndex] = { batch, metadataMap: {} };
+          processedBatchesCount++;
+          if (onProgress) onProgress(processedBatchesCount, batches.length);
+        }
       }
-
-      results[batchIndex] = { batch, metadataMap };
-
-      processedBatchesCount++;
-      if (onProgress) onProgress(processedBatchesCount, batches.length);
     }
   }
 
@@ -203,7 +244,13 @@ async function processBatchWithKey(batch, apiKey, models, startModelIndex, updat
     } catch (error) {
       if (cancelFlag && cancelFlag.isStopped) throw error;
 
-      const isQuotaError = error.response && [401, 402, 403, 429].includes(error.response.status);
+      // Если это ошибка авторизации или запрета доступа (бан ключа), выходим сразу
+      const isBanError = error.response && [401, 403].includes(error.response.status);
+      if (isBanError) {
+        throw error;
+      }
+
+      const isQuotaError = error.response && [402, 429].includes(error.response.status);
 
       attempts++;
       currentModelIdx = (currentModelIdx + 1) % models.length;
@@ -414,9 +461,15 @@ async function generateTextFromAI(prompt, cancelFlag = null) {
       } catch (error) {
         if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
 
-        const isQuotaError = error.response && [401, 402, 403, 429].includes(error.response.status);
+        const isBanError = error.response && [401, 403].includes(error.response.status);
+        if (isBanError) {
+          console.error(`[AI] ❌ Ключ ${key.slice(0, 10)}... забанен при генерации сводки (статус ${error.response.status}). Добавляем в черный список.`);
+          bannedKeys.add(key);
+        }
 
-        if (isQuotaError) {
+        const isQuotaError = error.response && [402, 429].includes(error.response.status);
+
+        if (isQuotaError || isBanError) {
           console.warn(`[AI] 🔁 Лимит ключа исчерпан (генерация сводки). Переключаюсь...`);
           try { await cancellableDelay(1500, cancelFlag); } catch { return "Анализ отменён."; }
           continue;

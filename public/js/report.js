@@ -34,6 +34,14 @@ export async function loadReportById(reportId, skipHistory = false) {
     const data = await response.json();
 
     if (data.success) {
+      if (data.report && Array.isArray(data.report.jobs)) {
+        data.report.jobs.forEach((job) => {
+          if (Array.isArray(job.skills)) {
+            job.skills = cleanSkills(job.skills);
+          }
+        });
+      }
+
       appStore.setState({ currentReport: data.report });
       localStorage.setItem('lastReportId', reportId);
 
@@ -53,4 +61,35 @@ export async function loadReportById(reportId, skipHistory = false) {
   } catch (error) {
     console.error(`[App] ❌ Ошибка загрузки отчёта ${reportId}:`, error);
   }
+}
+
+function cleanSkills(skills) {
+  if (!Array.isArray(skills) || skills.length <= 1) return skills || [];
+  return skills.filter((skill, index) => {
+    const strippedSkill = skill.replace(/\s+/g, '');
+    const otherSkills = skills.filter((_, idx) => idx !== index);
+    
+    // Check if this skill is the concatenation of all other skills (or a subset of them)
+    const concatOthersStripped = otherSkills.map(s => s.replace(/\s+/g, '')).join('');
+    if (strippedSkill === concatOthersStripped) {
+      return false;
+    }
+    
+    // Fallback: if it's very long and contains multiple other skills as substrings
+    if (skill.length > 30) {
+      let containedCount = 0;
+      let totalLengthOfContained = 0;
+      for (const other of otherSkills) {
+        if (other.length >= 3 && skill.includes(other)) {
+          containedCount++;
+          totalLengthOfContained += other.length;
+        }
+      }
+      if (containedCount >= 3 && totalLengthOfContained >= skill.length * 0.8) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
 }
