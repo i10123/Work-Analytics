@@ -402,3 +402,128 @@ td.col-salary {
   transform: translateY(0);
 }
 
+/* Salary Visual Gauge */
+.salary-cell-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.salary-value-text {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+/* Emerald glowing highlight for high-paying salaries */
+.salary-value-text--high {
+  color: #10b981; /* Emerald base */
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  font-weight: 700;
+}
+
+.salary-visual-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+:root[data-theme="slate-modernity"] .salary-visual-track {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.salary-visual-bar {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  border-radius: 2px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* If high salary, apply glowing emerald progress bar */
+.salary-value-text--high + .salary-visual-track .salary-visual-bar {
+  background: linear-gradient(90deg, #10b981, #059669);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+/* Apply Button */
+.apply-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm, 6px);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-decoration: none !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+:root[data-theme="slate-modernity"] .apply-btn {
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: var(--color-text-secondary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.apply-btn__icon {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apply-btn:hover {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  border-color: transparent;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.apply-btn:hover .apply-btn__icon {
+  transform: translate(1px, -1px);
+}
+
+/* Search Highlights */
+mark.search-highlight {
+  background-color: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+  border-bottom: 2px solid rgba(234, 179, 8, 0.4);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+:root[data-theme="slate-modernity"] mark.search-highlight {
+  background-color: rgba(234, 179, 8, 0.3);
+  color: #a16207;
+  border-bottom: 2px solid rgba(234, 179, 8, 0.6);
+}
+
+/* Table Row Interactive Transitions & Glows */
+.data-table tbody tr {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  position: relative;
+  z-index: 1;
+}
+
+:root[data-theme="slate-modernity"] .data-table tbody tr:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+

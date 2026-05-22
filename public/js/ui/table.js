@@ -36,7 +36,7 @@ const TableManager = (() => {
           );
 
           const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
-          renderTableRows(sorted, currentRates);
+          renderTableRows(sorted, currentRates, q);
         }, 300); // 300ms debounce
       });
     }
@@ -76,7 +76,7 @@ const TableManager = (() => {
       );
 
       const sorted = sortData(filtered, currentRates);
-      renderTableRows(sorted, currentRates);
+      renderTableRows(sorted, currentRates, q);
     });
   }
 
@@ -226,7 +226,27 @@ const TableManager = (() => {
     `;
   }
 
-  function renderTableRows(jobs, rates) {
+  function highlightText(text, query) {
+    if (!text) return '';
+    if (!query || !query.trim()) return escapeHtml(text);
+
+    const trimmedQuery = query.trim();
+    const escapedQuery = trimmedQuery.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    try {
+      const regex = new RegExp(`(${escapedQuery})`, 'gi');
+      const parts = text.split(regex);
+      return parts.map(part => {
+        if (part.toLowerCase() === trimmedQuery.toLowerCase()) {
+          return `<mark class="search-highlight">${escapeHtml(part)}</mark>`;
+        }
+        return escapeHtml(part);
+      }).join('');
+    } catch (e) {
+      return escapeHtml(text);
+    }
+  }
+
+  function renderTableRows(jobs, rates, query = '') {
     DOM.jobsTableBody.innerHTML = '';
 
     if (jobs.length === 0) {
@@ -234,30 +254,77 @@ const TableManager = (() => {
       return;
     }
 
+    // Dynamic Maximum Salary Calculation
+    let maxSalaryInDataset = 0;
+    jobs.forEach(job => {
+      if (job.salary) {
+        const { currentCurrency } = appStore.getState();
+        const min = job.salary.min ? convertCurrency(job.salary.min, job.salary.currency, currentCurrency, rates) : 0;
+        const max = job.salary.max ? convertCurrency(job.salary.max, job.salary.currency, currentCurrency, rates) : 0;
+        const val = Math.max(min, max);
+        if (val > maxSalaryInDataset) {
+          maxSalaryInDataset = val;
+        }
+      }
+    });
+
     const fragment = document.createDocumentFragment();
 
     jobs.forEach((job) => {
       const tr = document.createElement('tr');
 
-      let salaryStr = '—';
+      let salaryHtml = '—';
       if (job.salary && (job.salary.min || job.salary.max)) {
         const { currentCurrency } = appStore.getState();
-        const min = job.salary.min ? convertCurrency(job.salary.min, job.salary.currency, currentCurrency, rates) : null;
-        const max = job.salary.max ? convertCurrency(job.salary.max, job.salary.currency, currentCurrency, rates) : null;
+        const minConverted = job.salary.min ? convertCurrency(job.salary.min, job.salary.currency, currentCurrency, rates) : null;
+        const maxConverted = job.salary.max ? convertCurrency(job.salary.max, job.salary.currency, currentCurrency, rates) : null;
         const sym = getCurrencySymbol(currentCurrency);
 
-        if (min && max) {
-          salaryStr = `${formatSalary(min)} – ${formatSalary(max)} ${sym}`;
-        } else if (min) {
-          salaryStr = `от ${formatSalary(min)} ${sym}`;
-        } else if (max) {
-          salaryStr = `до ${formatSalary(max)} ${sym}`;
+        let salaryText = '';
+        if (minConverted && maxConverted) {
+          salaryText = `${formatSalary(minConverted)} – ${formatSalary(maxConverted)} ${sym}`;
+        } else if (minConverted) {
+          salaryText = `от ${formatSalary(minConverted)} ${sym}`;
+        } else if (maxConverted) {
+          salaryText = `до ${formatSalary(maxConverted)} ${sym}`;
         }
+
+        // Calculations for range progress bar
+        let left = 0;
+        let width = 0;
+        const refMax = maxSalaryInDataset || 1;
+
+        if (minConverted && maxConverted) {
+          left = (minConverted / refMax) * 100;
+          width = ((maxConverted - minConverted) / refMax) * 100;
+        } else if (minConverted) {
+          left = (minConverted / refMax) * 100;
+          width = Math.min(8, 100 - left);
+        } else if (maxConverted) {
+          left = 0;
+          width = (maxConverted / refMax) * 100;
+        }
+
+        left = Math.max(0, Math.min(100, left));
+        width = Math.max(2, Math.min(100 - left, width));
+
+        const jobVal = getSalarySortValue(job, rates);
+        const isHighSalary = maxSalaryInDataset > 0 && (jobVal >= maxSalaryInDataset * 0.7);
+        const textClass = isHighSalary ? 'salary-value-text salary-value-text--high' : 'salary-value-text';
+
+        salaryHtml = `
+          <div class="salary-cell-container">
+            <span class="${textClass}">${escapeHtml(salaryText)}</span>
+            <div class="salary-visual-track">
+              <div class="salary-visual-bar" style="left: ${left.toFixed(1)}%; width: ${width.toFixed(1)}%;"></div>
+            </div>
+          </div>
+        `;
       }
 
       const skillsHtml = (job.skills || [])
         .slice(0, 8)
-        .map((s) => `<span class="skill-tag">${escapeHtml(s)}</span>`)
+        .map((s) => `<span class="skill-tag">${highlightText(s, query)}</span>`)
         .join('');
       let sourceCapsuleHtml = '';
       if (job.source === 'hh') {
@@ -299,12 +366,20 @@ const TableManager = (() => {
 
       tr.innerHTML = `
         <td class="col-source">${sourceCapsuleHtml}</td>
-        <td class="col-title">${escapeHtml(job.title)}</td>
-        <td class="col-company">${escapeHtml(job.company)}</td>
+        <td class="col-title">${highlightText(job.title, query)}</td>
+        <td class="col-company">${highlightText(job.company, query)}</td>
         <td class="col-experience">${getExperienceHtml(job)}</td>
-        <td class="col-salary" style="white-space: nowrap;">${escapeHtml(salaryStr)}</td>
+        <td class="col-salary">${salaryHtml}</td>
         <td class="col-skills">${skillsHtml || '<span style="color: #64748b;">—</span>'}</td>
-        <td class="col-action">${safeUrl !== '#' ? `<a href="${safeUrl}" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: underline; font-weight: 500;">Откликнуться</a>` : '—'}</td>
+        <td class="col-action">${safeUrl !== '#' ? `
+          <a href="${safeUrl}" target="_blank" rel="noopener" class="apply-btn">
+            <span>Откликнуться</span>
+            <svg class="apply-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="7" y1="17" x2="17" y2="7"></line>
+              <polyline points="7 7 17 7 17 17"></polyline>
+            </svg>
+          </a>
+        ` : '—'}</td>
       `;
 
       fragment.appendChild(tr);
@@ -326,8 +401,10 @@ const TableManager = (() => {
       initSort();
       initTableBodyDelegation();
 
+      const searchInput = document.getElementById('jobsTableSearch');
+      const q = searchInput ? searchInput.value.toLowerCase() : '';
       const dataToRender = sortConfig.key ? sortData(jobs, rates) : jobs;
-      renderTableRows(dataToRender, rates);
+      renderTableRows(dataToRender, rates, q);
     }
   };
 })();
