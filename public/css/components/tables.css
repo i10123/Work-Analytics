@@ -82,7 +82,7 @@
 }
 
 /* Column Widths */
-.col-source { width: 110px; }
+.col-source { width: 135px; }
 .col-title { width: 22%; }
 .col-company { width: 15%; }
 .col-experience { width: 160px; }
@@ -110,7 +110,7 @@
 }
 
 .data-table th[data-sort]:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-bg-secondary);
   color: var(--color-primary);
 }
 
@@ -267,16 +267,101 @@ td.col-salary {
   background: linear-gradient(135deg, #64748b, #475569);
 }
 
-.source-badge {
-  font-size: var(--font-size-base);
-  font-weight: 800;
+.source-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+  user-select: none;
   white-space: nowrap;
-  letter-spacing: 0.2px;
 }
 
-.source-badge--hh { color: #fca5a5; }
-.source-badge--rabotaby { color: #86efac; }
-.source-badge--habr { color: #a5b4fc; }
+/* Light theme adaptations */
+:root[data-theme="slate-modernity"] .source-capsule {
+  background: rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.source-capsule__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.source-capsule__name {
+  font-size: var(--font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: filter 0.3s ease;
+}
+
+/* HH.ru Specific */
+.source-capsule--hh .source-capsule__icon {
+  background: linear-gradient(135deg, #e11d48, #991b1b);
+}
+.source-capsule--hh .source-capsule__name {
+  background-image: linear-gradient(135deg, #f87171, #ef4444);
+}
+.source-capsule--hh:hover {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.06);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+}
+.source-capsule--hh:hover .source-capsule__icon {
+  transform: scale(1.15) rotate(360deg);
+}
+
+/* Rabota.by Specific */
+.source-capsule--rabotaby .source-capsule__icon {
+  background: linear-gradient(135deg, #10b981, #065f46);
+}
+.source-capsule--rabotaby .source-capsule__name {
+  background-image: linear-gradient(135deg, #34d399, #10b981);
+}
+.source-capsule--rabotaby:hover {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.06);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}
+.source-capsule--rabotaby:hover .source-capsule__icon {
+  transform: scale(1.15) rotate(360deg);
+}
+
+/* Habr Specific */
+.source-capsule--habr .source-capsule__icon {
+  background: linear-gradient(135deg, #6366f1, #3730a3);
+  border-radius: 4px;
+}
+.source-capsule--habr .source-capsule__name {
+  background-image: linear-gradient(135deg, #a5b4fc, #6366f1);
+}
+.source-capsule--habr:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(99, 102, 241, 0.06);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
+}
+.source-capsule--habr:hover .source-capsule__icon {
+  transform: scale(1.15) rotate(360deg);
+}
 
 .skill-tag {
   display: inline-block;

@@ -259,9 +259,31 @@ const TableManager = (() => {
         .slice(0, 8)
         .map((s) => `<span class="skill-tag">${escapeHtml(s)}</span>`)
         .join('');
-      const sourceMap = { hh: 'HH.ru', rabotaby: 'Rabota.by', habr: 'Хабр' };
-      const sourceName = escapeHtml(sourceMap[job.source] || job.source);
-      const sourceClass = escapeHtml(`source-badge--${job.source}`);
+      let sourceCapsuleHtml = '';
+      if (job.source === 'hh') {
+        sourceCapsuleHtml = `
+          <div class="source-capsule source-capsule--hh">
+            <span class="source-capsule__icon">hh</span>
+            <span class="source-capsule__name">HH.ru</span>
+          </div>
+        `;
+      } else if (job.source === 'rabotaby') {
+        sourceCapsuleHtml = `
+          <div class="source-capsule source-capsule--rabotaby">
+            <span class="source-capsule__icon">R</span>
+            <span class="source-capsule__name">Rabota.by</span>
+          </div>
+        `;
+      } else if (job.source === 'habr') {
+        sourceCapsuleHtml = `
+          <div class="source-capsule source-capsule--habr">
+            <span class="source-capsule__icon">H</span>
+            <span class="source-capsule__name">Хабр</span>
+          </div>
+        `;
+      } else {
+        sourceCapsuleHtml = `<span style="color: var(--color-text-muted); font-weight: 700;">${escapeHtml(job.source)}</span>`;
+      }
 
       let safeUrl = '#';
       if (job.url) {
@@ -276,7 +298,7 @@ const TableManager = (() => {
       }
 
       tr.innerHTML = `
-        <td class="col-source"><span class="source-badge ${sourceClass}">${sourceName}</span></td>
+        <td class="col-source">${sourceCapsuleHtml}</td>
         <td class="col-title">${escapeHtml(job.title)}</td>
         <td class="col-company">${escapeHtml(job.company)}</td>
         <td class="col-experience">${getExperienceHtml(job)}</td>
