@@ -106,7 +106,7 @@ const TableManager = (() => {
     if (typeof job.experience_years_max === 'number') {
       return job.experience_years_max - 0.5;
     }
-    
+
     let grade = job.grade || 'Не указано';
     if (grade === 'Не указано' && job.experience) {
       const expLower = job.experience.toLowerCase();
@@ -116,7 +116,7 @@ const TableManager = (() => {
       else if (expLower.includes('senior') || expLower.includes('старший') || expLower.includes('от 3 до 6') || expLower.includes('3-6')) grade = 'Senior';
       else if (expLower.includes('lead') || expLower.includes('ведущий') || expLower.includes('более 6')) grade = 'Lead';
     }
-    
+
     const gradeWeights = {
       'Intern': 0.5,
       'Junior': 1,
@@ -187,7 +187,7 @@ const TableManager = (() => {
       else if (expLower.includes('senior') || expLower.includes('старший') || expLower.includes('от 3 до 6') || expLower.includes('3-6')) grade = 'Senior';
       else if (expLower.includes('lead') || expLower.includes('ведущий') || expLower.includes('более 6')) grade = 'Lead';
     }
-    
+
     let yearsText = '';
     if (typeof job.experience_years_min === 'number' && typeof job.experience_years_max === 'number') {
       if (job.experience_years_min === job.experience_years_max) {
@@ -244,6 +244,42 @@ const TableManager = (() => {
     } catch (e) {
       return escapeHtml(text);
     }
+  }
+
+  function cleanCompanyName(company) {
+    if (!company) return '';
+    // Strip corporate noise like ООО, ИП, ЗАО, ОАО and surrounding quotes
+    let cleaned = company.replace(/["'«»‘’“”]|(^|[\s"«'‘])(ооо|ип|зао|оао)([\s"»'’]|$)/gi, ' ').trim();
+    cleaned = cleaned.replace(/^["«'‘](.*)["»'’]$/, '$1').trim();
+
+    // Capitalize words correctly, keeping acronyms like IT, AI, ML, QA, UI, UX etc uppercase
+    return cleaned
+      .toLowerCase()
+      .replace(/(^|[\s\-\/])([a-zа-яё])/gi, (m, p, l) => p + l.toUpperCase())
+      .replace(/\b(it|ai|ml|hr|qa|ui|ux|pr|ceo|cto|coo)\b/gi, (m) => m.toUpperCase());
+  }
+
+  function getTitleHtml(title, query) {
+    if (!title) return '';
+
+    // Match text before brackets and the first bracket contents
+    const match = title.match(/^(.*?)\s*\((.*?)\)\s*$/);
+    if (match) {
+      const mainTitle = match[1];
+      const subtitle = match[2];
+      return `
+        <div class="title-cell">
+          <span class="title-main">${highlightText(mainTitle, query)}</span>
+          <span class="title-sub">${highlightText(subtitle, query)}</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="title-cell">
+        <span class="title-main">${highlightText(title, query)}</span>
+      </div>
+    `;
   }
 
   function renderTableRows(jobs, rates, query = '') {
@@ -366,8 +402,8 @@ const TableManager = (() => {
 
       tr.innerHTML = `
         <td class="col-source">${sourceCapsuleHtml}</td>
-        <td class="col-title">${highlightText(job.title, query)}</td>
-        <td class="col-company">${highlightText(job.company, query)}</td>
+        <td class="col-title">${getTitleHtml(job.title, query)}</td>
+        <td class="col-company"><span class="company-text">${highlightText(cleanCompanyName(job.company), query)}</span></td>
         <td class="col-experience">${getExperienceHtml(job)}</td>
         <td class="col-salary">${salaryHtml}</td>
         <td class="col-skills">${skillsHtml || '<span style="color: #64748b;">—</span>'}</td>

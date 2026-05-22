@@ -170,7 +170,7 @@ function exportToCSV(jobs, query) {
     return str;
   };
 
-  let csvContent = BOM + 'sep=;\r\n' + headers.join(delimiter) + '\r\n';
+  let csvContent = BOM + headers.join(delimiter) + '\r\n';
 
   jobs.forEach(j => {
     const row = [
