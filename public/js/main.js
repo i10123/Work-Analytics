@@ -176,4 +176,3 @@ function setupLimitValidation() {
     input.addEventListener('change', validate);
   });
 }
-

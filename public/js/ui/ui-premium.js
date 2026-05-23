@@ -76,4 +76,3 @@ function hideValidationTooltip(input) {
     setTimeout(() => tooltip.remove(), 200);
   }
 }
-

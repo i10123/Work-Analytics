@@ -71,6 +71,7 @@ async function listReports() {
 
     cacheInitPromise = (async () => {
       let reportsMap = new Map();
+      let totalLines = 0;
 
       try {
         const legacyIndex = await fs.promises.readFile(LEGACY_INDEX_FILE, 'utf-8');
@@ -88,6 +89,7 @@ async function listReports() {
         const rl = readline.createInterface({ input: fileStream, crlfDelay: Infinity });
         for await (const line of rl) {
           if (!line.trim()) continue;
+          totalLines++;
           try {
             const item = JSON.parse(line);
             if (item._deleted) {
@@ -111,7 +113,10 @@ async function listReports() {
 
       reportsCache = Array.from(reportsMap.values()).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      await _compactIndex();
+      if (totalLines > reportsCache.length * 1.5) {
+        console.log(`[Storage] 🧹 Компактизация index.jsonl (${totalLines} строк -> ${reportsCache.length} отчётов)...`);
+        await _compactIndex();
+      }
 
       return reportsCache;
     })();

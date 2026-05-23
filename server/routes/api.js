@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { enqueueTask, getQueueStatus, getFullQueueState, deleteTask, prioritizeTask, updateTask, taskEmitter } = require('../services/queue');
+const { enqueueTask, getQueueStatus, getFullQueueState, deleteTask, prioritizeTask, updateTask, taskEmitter, gracefulStop } = require('../services/queue');
 const { listReports, loadReport, deleteReport, deleteAllReports, saveReport } = require('../services/storage');
 const { getSettings, saveSettings: saveServerSettings } = require('../services/settings');
 const { generateCandidateProfile } = require('../services/ai');
@@ -179,7 +179,6 @@ router.post('/queue/:id/delete', (req, res) => {
 
 router.post('/queue/:id/stop', (req, res) => {
   const { id } = req.params;
-  const { gracefulStop } = require('../services/queue');
   const ok = gracefulStop(id);
   if (!ok) return res.status(404).json({ success: false, error: 'Задача не найдена или не выполняется.' });
   return res.json({ success: true, message: 'Сбор данных будет завершен досрочно.' });
@@ -204,7 +203,7 @@ router.get('/status', (req, res) => {
   const currencyKeysStr = process.env.EXCHANGE_RATE_API_KEYS || '';
   const currencyKeys = currencyKeysStr.split(',').map((k) => k.trim()).filter(Boolean);
   const groqKeysStr = process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '';
-  const openrouterKeys = groqKeysStr.split(',').map(k => k.trim()).filter(Boolean);
+  const groqKeys = groqKeysStr.split(',').map(k => k.trim()).filter(Boolean);
 
   const maskKey = (key) => {
     if (!key) return null;
@@ -217,9 +216,9 @@ router.get('/status', (req, res) => {
       configured: currencyKeys.length > 0,
       keys: currencyKeys.map(maskKey),
     },
-    openrouter: {
-      configured: openrouterKeys.length > 0,
-      keys: openrouterKeys.map(maskKey),
+    groq: {
+      configured: groqKeys.length > 0,
+      keys: groqKeys.map(maskKey),
     }
   });
 });
@@ -253,6 +252,11 @@ router.get('/events', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
+  // Heartbeat каждые 30 секунд для предотвращения закрытия соединения прокси (Nginx, Cloudflare)
+  const heartbeat = setInterval(() => {
+    res.write(`:heartbeat\n\n`);
+  }, 30000);
+
   const onTaskUpdate = (task) => {
     if (!task.clientId || task.clientId === clientId) {
       res.write(`event: taskUpdate\ndata: ${JSON.stringify(task)}\n\n`);
@@ -269,6 +273,7 @@ router.get('/events', (req, res) => {
   res.write(`event: queueStatus\ndata: ${JSON.stringify(getQueueStatus())}\n\n`);
 
   req.on('close', () => {
+    clearInterval(heartbeat);
     taskEmitter.off('taskUpdate', onTaskUpdate);
     taskEmitter.off('queueStatus', onQueueStatus);
   });

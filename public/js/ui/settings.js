@@ -269,10 +269,10 @@ async function loadApiStatus() {
 
     let hasApiError = false;
 
-    // OpenRouter
-    if (data.openrouter) {
-      updateStatus(DOM.openrouterStatusText, data.openrouter.configured);
-      if (!data.openrouter.configured) hasApiError = true;
+    // Groq
+    if (data.groq) {
+      updateStatus(DOM.groqStatusText, data.groq.configured);
+      if (!data.groq.configured) hasApiError = true;
     } else {
       hasApiError = true;
     }
@@ -290,7 +290,7 @@ async function loadApiStatus() {
   } catch (error) {
     console.error('[Settings] ❌ Ошибка загрузки статуса API:', error);
     updateApiTabIndicator(true);
-    const elements = [DOM.openrouterStatusText, DOM.currencyStatusText];
+    const elements = [DOM.groqStatusText, DOM.currencyStatusText];
     elements.forEach(el => {
       if (el) {
         el.className = 'settings-api-status__value settings-api-status__value--error';

@@ -93,33 +93,48 @@ function renderAiSummary(report) {
   DOM.aiSummaryContent.style.display = 'none';
   DOM.aiSummaryContent.innerHTML = '';
 
+  if (DOM.aiSummaryCardHeader && !DOM.aiSummaryCardHeader.dataset.initialized) {
+    DOM.aiSummaryCardHeader.dataset.initialized = 'true';
+    DOM.aiSummaryCardHeader.addEventListener('click', (event) => {
+      // Do nothing if the click targets the generate button or its children
+      if (event.target.closest('#btnGenerateAiSummary')) {
+        return;
+      }
+      // Only toggle collapse if header is currently clickable
+      if (!DOM.aiSummaryCardHeader.classList.contains('ai-summary-card__header--clickable')) {
+        return;
+      }
+
+      const isCollapsed = DOM.aiSummaryContent.style.display === 'none';
+      if (isCollapsed) {
+        DOM.aiSummaryContent.style.display = 'block';
+        if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(0deg)';
+      } else {
+        DOM.aiSummaryContent.style.display = 'none';
+        if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(180deg)';
+      }
+    });
+  }
+
   if (DOM.btnCollapseAiSummary) {
     DOM.btnCollapseAiSummary.style.display = 'none';
-
-    if (!DOM.btnCollapseAiSummary.dataset.initialized) {
-      DOM.btnCollapseAiSummary.dataset.initialized = 'true';
-      DOM.btnCollapseAiSummary.addEventListener('click', () => {
-        const isCollapsed = DOM.aiSummaryContent.style.display === 'none';
-        if (isCollapsed) {
-          DOM.aiSummaryContent.style.display = 'block';
-          if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(0deg)';
-        } else {
-          DOM.aiSummaryContent.style.display = 'none';
-          if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(180deg)';
-        }
-      });
-    }
   }
 
   if (report.aiSummary) {
     DOM.aiSummaryContent.innerHTML = parseMarkdown(report.aiSummary);
     DOM.aiSummaryContent.style.display = 'none';
     DOM.btnGenerateAiSummary.style.display = 'none';
+    if (DOM.aiSummaryCardHeader) {
+      DOM.aiSummaryCardHeader.classList.add('ai-summary-card__header--clickable');
+    }
     if (DOM.btnCollapseAiSummary) {
       DOM.btnCollapseAiSummary.style.display = 'inline-flex';
       if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(180deg)';
     }
   } else {
+    if (DOM.aiSummaryCardHeader) {
+      DOM.aiSummaryCardHeader.classList.remove('ai-summary-card__header--clickable');
+    }
     DOM.btnGenerateAiSummary.style.display = 'inline-flex';
     DOM.btnGenerateAiSummary.onclick = async () => {
       DOM.btnGenerateAiSummary.style.display = 'none';
@@ -134,6 +149,9 @@ function renderAiSummary(report) {
           report.aiSummary = data.summary;
           DOM.aiSummaryContent.innerHTML = parseMarkdown(data.summary);
           DOM.aiSummaryContent.style.display = 'block';
+          if (DOM.aiSummaryCardHeader) {
+            DOM.aiSummaryCardHeader.classList.add('ai-summary-card__header--clickable');
+          }
           if (DOM.btnCollapseAiSummary) {
             DOM.btnCollapseAiSummary.style.display = 'inline-flex';
             if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(0deg)';

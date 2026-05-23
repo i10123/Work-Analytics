@@ -6,13 +6,17 @@ const { HhParser } = require('../parsers/hh');
 const { RabotaByParser } = require('../parsers/rabotaby');
 const { HabrParser } = require('../parsers/habr');
 
+const hhParser = new HhParser();
+const rabotabyParser = new RabotaByParser();
+const habrParser = new HabrParser();
+
 async function runParsersWithRetry(query, filters, cancelFlag) {
   const allowedSources = filters.sources || { hh: true, rabotaby: true, habr: true };
 
   const parsers = [
-    { name: 'hh', fn: (q, f, cf) => new HhParser().parse(q, f, cf) },
-    { name: 'rabotaby', fn: (q, f, cf) => new RabotaByParser().parse(q, f, cf) },
-    { name: 'habr', fn: (q, f, cf) => new HabrParser().parse(q, f, cf) },
+    { name: 'hh', fn: (q, f, cf) => hhParser.parse(q, f, cf) },
+    { name: 'rabotaby', fn: (q, f, cf) => rabotabyParser.parse(q, f, cf) },
+    { name: 'habr', fn: (q, f, cf) => habrParser.parse(q, f, cf) },
   ].filter(p => allowedSources[p.name] === true);
 
   if (parsers.length === 0) {
@@ -24,6 +28,7 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
 
   const results = await Promise.all(
     parsers.map(async (parser) => {
+      let lastError = null;
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         if (cancelFlag.isStopped) {
           console.log(`[Pipeline] 🛑 ${parser.name}: задача остановлена, прерываем retry.`);
@@ -41,6 +46,7 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
             return { source: parser.name, success: false, jobs: [] };
           }
 
+          lastError = error;
           console.warn(`[Pipeline] ⚠️ ${parser.name}: попытка ${attempt} не удалась — ${error.message}`);
           if (attempt < MAX_RETRIES) {
             const backoff = attempt * 3000;
@@ -50,7 +56,7 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
         }
       }
 
-      console.error(`[Pipeline] ❌ ${parser.name}: все ${MAX_RETRIES} попытки провалились.`);
+      console.error(`[Pipeline] ❌ ${parser.name}: все ${MAX_RETRIES} попытки провалились. Последняя ошибка:`, lastError);
       return { source: parser.name, success: false, jobs: [] };
     })
   );
@@ -128,9 +134,19 @@ async function runPipeline(task, emitUpdate) {
 
   let sumSalaryRub = 0;
   let countSalary = 0;
+  const sourceCounts = { hh: 0, rabotaby: 0, habr: 0 };
+
   for (const job of enrichedJobs) {
+    // Подсчёт по источникам
+    if (sourceCounts[job.source] !== undefined) {
+      sourceCounts[job.source]++;
+    }
+
+    // Подсчёт зарплат
     if (job.salary && (job.salary.min || job.salary.max)) {
-      const avg = job.salary.min && job.salary.max ? (job.salary.min + job.salary.max) / 2 : job.salary.min || job.salary.max;
+      const avg = job.salary.min && job.salary.max
+        ? (job.salary.min + job.salary.max) / 2
+        : job.salary.min || job.salary.max;
       const inRub = convertCurrency(avg, job.salary.currency, 'RUB', exchangeRates.rates);
       sumSalaryRub += inRub;
       countSalary++;
@@ -166,11 +182,7 @@ async function runPipeline(task, emitUpdate) {
     stats: {
       totalFound: enrichedJobs.length,
       avgSalaryNormalized,
-      sources: {
-        hh: enrichedJobs.filter((j) => j.source === 'hh').length,
-        rabotaby: enrichedJobs.filter((j) => j.source === 'rabotaby').length,
-        habr: enrichedJobs.filter((j) => j.source === 'habr').length,
-      },
+      sources: sourceCounts,
     },
     errors,
     error: failMessage,

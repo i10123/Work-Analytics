@@ -7,8 +7,9 @@ taskEmitter.setMaxListeners(50);
 
 const taskQueue = [];
 const MAX_QUEUE_SIZE = 50;
+const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT_TASKS, 10) || 1;
 
-let isProcessing = false;
+let activeTasksCount = 0;
 let currentTask = null;
 
 function sanitizeQueryForId(query) {
@@ -68,16 +69,18 @@ function enqueueTask(params) {
 }
 
 function processNext() {
-  if (isProcessing) return;
+  if (activeTasksCount >= MAX_CONCURRENT) return;
 
   const taskIndex = taskQueue.findIndex(t => t.status === 'pending');
   if (taskIndex === -1) return;
 
-  isProcessing = true;
+  activeTasksCount++;
   const task = taskQueue[taskIndex];
   currentTask = task;
 
   _processTask(task);
+
+  processNext();
 }
 
 async function _processTask(task) {
@@ -127,15 +130,15 @@ async function _processTask(task) {
     if (task.cancelFlag.isStopped) {
       console.log(`[Queue] 🛑 Задача ${task.id} прервана (abort/timeout). Данные выброшены.`);
     } else {
-      console.error(`[Queue] ❌ Критическая ошибка при обработке ${task.id}:`, error.message);
+      console.error(`[Queue] ❌ Критическая ошибка при обработке ${task.id}:`, error);
     }
     
     emitUpdate(task);
     removeTaskFromQueue(task.id);
   } finally {
     if (taskTimeout) clearTimeout(taskTimeout);
-    isProcessing = false;
-    currentTask = null;
+    activeTasksCount--;
+    if (activeTasksCount === 0) currentTask = null;
     processNext();
   }
 }
@@ -242,7 +245,7 @@ function getFullQueueState() {
       createdAt: currentTask.createdAt,
       startedAt: currentTask.startedAt,
     } : null,
-    isProcessing,
+    isProcessing: activeTasksCount > 0,
     queueLength: taskQueue.filter(t => t.status === 'pending').length,
   };
 }
@@ -265,7 +268,7 @@ function emitUpdate(task) {
 
 function getQueueStatus() {
   return {
-    isProcessing,
+    isProcessing: activeTasksCount > 0,
     queueLength: taskQueue.filter(t => t.status === 'pending').length,
   };
 }

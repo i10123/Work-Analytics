@@ -52,4 +52,4 @@ export const clientId = (() => {
     sessionStorage.setItem('clientId', id);
   }
   return id;
-})();
+})();

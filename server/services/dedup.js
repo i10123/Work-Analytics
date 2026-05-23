@@ -68,19 +68,16 @@ function normalizeCompany(str) {
   return normalizeText(str);
 }
 
-function jaccardSimilarity(tokensA, tokensB) {
-  if (tokensA.length === 0 && tokensB.length === 0) return 1.0;
-  if (tokensA.length === 0 || tokensB.length === 0) return 0.0;
-
-  const setA = new Set(tokensA);
-  const setB = new Set(tokensB);
+function jaccardSimilarity(setA, setB) {
+  if (setA.size === 0 && setB.size === 0) return 1.0;
+  if (setA.size === 0 || setB.size === 0) return 0.0;
 
   let intersection = 0;
   for (const item of setA) {
     if (setB.has(item)) intersection++;
   }
 
-  const union = new Set([...setA, ...setB]).size;
+  const union = setA.size + setB.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
 
@@ -90,8 +87,6 @@ const JACCARD_THRESHOLD_COMPANY = 0.7;
 
 // ПЕРЕИМЕНОВАННАЯ И ОЧИЩЕННАЯ ФУНКЦИЯ: Теперь здесь ТОЛЬКО текстовое сравнение
 function areFuzzyDuplicates(a, b) {
-  const titleTokensA = a._norm.titleTokens;
-  const titleTokensB = b._norm.titleTokens;
   const companyA = a._norm.company;
   const companyB = b._norm.company;
 
@@ -100,7 +95,7 @@ function areFuzzyDuplicates(a, b) {
     return true;
   }
 
-  const titleSimilarity = jaccardSimilarity(titleTokensA, titleTokensB);
+  const titleSimilarity = jaccardSimilarity(a._norm.titleSet, b._norm.titleSet);
 
   // Схожее название (>= 70%) и одинаковая компания
   if (titleSimilarity >= JACCARD_THRESHOLD_TITLE && companyA === companyB) {
@@ -109,9 +104,7 @@ function areFuzzyDuplicates(a, b) {
 
   // Очень схожее название (>= 85%) и схожее название компании (>= 70%)
   if (titleSimilarity >= JACCARD_THRESHOLD_TITLE_HIGH) {
-    const companyTokensA = tokenize(companyA);
-    const companyTokensB = tokenize(companyB);
-    const companySimilarity = jaccardSimilarity(companyTokensA, companyTokensB);
+    const companySimilarity = jaccardSimilarity(a._norm.companySet, b._norm.companySet);
     if (companySimilarity >= JACCARD_THRESHOLD_COMPANY) {
       return true;
     }
@@ -186,10 +179,14 @@ function mergeJobs(primary, duplicate) {
 function precomputeNorms(jobs) {
   for (const job of jobs) {
     const titleTokens = normalizeTitle(job.title);
+    const company = normalizeCompany(job.company);
+    const companyTokens = tokenize(company);
     job._norm = {
       titleTokens,
       titleKey: titleTokens.join(' '),
-      company: normalizeCompany(job.company),
+      titleSet: new Set(titleTokens),
+      company,
+      companySet: new Set(companyTokens),
     };
   }
 }

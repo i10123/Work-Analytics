@@ -1,6 +1,5 @@
 const axios = require('axios');
 
-const BATCH_DELAY_MS = 2100;
 
 const DEFAULT_METADATA = {
   skills: [],
@@ -46,12 +45,36 @@ function getRandomGroqKey() {
 
 
 const rateLimitChainByKey = new Map();
+const currentDelayByKey = new Map();
+
+const BASE_DELAY_MS = 5000;
+const MAX_DELAY_MS = 15000;
+
+function getDelayForKey(apiKey) {
+  return currentDelayByKey.get(apiKey) || BASE_DELAY_MS;
+}
+
+function onRateLimitHit(apiKey) {
+  const current = getDelayForKey(apiKey);
+  const next = Math.min(current * 2, MAX_DELAY_MS);
+  currentDelayByKey.set(apiKey, next);
+  console.warn(`[AI] ⏳ Лимит запросов превышен для ключа ${apiKey.slice(0, 10)}... Увеличиваем задержку до ${next}мс`);
+}
+
+function onSuccess(apiKey) {
+  const current = getDelayForKey(apiKey);
+  if (current > BASE_DELAY_MS) {
+    const next = Math.max(current * 0.9, BASE_DELAY_MS);
+    currentDelayByKey.set(apiKey, next);
+  }
+}
 
 function waitForRateLimit(apiKey, cancelFlag) {
   const prev = rateLimitChainByKey.get(apiKey) || Promise.resolve();
-  // Случайная задержка в диапазоне 7-15 секунд (от 7000 до 15000 мс)
-  const randomDelayMs = Math.floor(Math.random() * (15000 - 7000 + 1)) + 7000;
-  const next = prev.then(() => cancellableDelay(randomDelayMs, cancelFlag).catch(() => {}));
+  const currentDelay = getDelayForKey(apiKey);
+  // Добавляем небольшой джиттер ±250мс для сглаживания пиков
+  const delay = currentDelay + Math.floor(Math.random() * 500) - 250;
+  const next = prev.then(() => cancellableDelay(Math.max(delay, 500), cancelFlag).catch(() => {}));
   rateLimitChainByKey.set(apiKey, next);
   return prev;
 }
@@ -240,7 +263,9 @@ async function processBatchWithKey(batch, apiKey, models, startModelIndex, updat
 
     const model = models[currentModelIdx];
     try {
-      return await processBatchOpenAI(batch, apiKey, 'https://api.groq.com/openai/v1/chat/completions', model, cancelFlag);
+      const result = await processBatchOpenAI(batch, apiKey, 'https://api.groq.com/openai/v1/chat/completions', model, cancelFlag);
+      onSuccess(apiKey);
+      return result;
     } catch (error) {
       if (cancelFlag && cancelFlag.isStopped) throw error;
 
@@ -259,6 +284,7 @@ async function processBatchWithKey(batch, apiKey, models, startModelIndex, updat
       const nextModel = models[currentModelIdx];
 
       if (isQuotaError) {
+        onRateLimitHit(apiKey);
         console.warn(`[AI] 🔁 Ошибка 429/Квота. Поток переключается на модель ${nextModel}...`);
         try { await cancellableDelay(1500 * attempts, cancelFlag); } catch { throw new Error('Canceled'); }
         continue;
@@ -285,6 +311,7 @@ function buildAxiosOptions(apiKey, cancelFlag) {
 
 async function processBatchOpenAI(batch, apiKey, url, model, cancelFlag) {
   const prompt = generatePrompt(batch);
+  console.log(`[AI] 🌐 Отправка батча из ${batch.length} вакансий к API Groq (модель: ${model})...`);
 
   const response = await axios.post(url, {
     model: model,
@@ -361,6 +388,7 @@ function parseJsonFromAi(rawText, expectedLength) {
       throw new Error('Parsed JSON is empty, expected data');
     }
 
+    console.log(`[AI] ✅ Успешно распарсен JSON-ответ от ИИ (извлечено объектов: ${Object.keys(parsed).length})`);
     return parsed;
   } catch (e) {
     console.error(`[AI] ❌ Ошибка валидации/парсинга JSON: ${e.message}`);
@@ -398,6 +426,12 @@ async function generateCandidateProfile(report, cancelFlag = null) {
   if (!jobs.length) return "Нет данных для анализа.";
   if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
 
+  const safeQuery = report.query
+    ? report.query.replace(/[\r\n"\\]/g, ' ').trim()
+    : '';
+
+  console.log(`[AI] ✨ Составление портрета идеального кандидата по запросу "${safeQuery}" на основе ${jobs.length} вакансий...`);
+
   const skillsCount = {};
   const formats = {};
   const experiences = {};
@@ -417,10 +451,6 @@ async function generateCandidateProfile(report, cancelFlag = null) {
 
   const topFormat = Object.entries(formats).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Неизвестно';
   const topExp = Object.entries(experiences).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Неизвестно';
-
-  const safeQuery = report.query
-    ? report.query.replace(/[\r\n"\\]/g, ' ').trim()
-    : '';
 
   const prompt = `Ты — экспертный IT-рекрутер и аналитик рынка труда.
 Я собрал данные по вакансиям по запросу "${safeQuery}".
@@ -451,12 +481,14 @@ async function generateTextFromAI(prompt, cancelFlag = null) {
       if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
 
       try {
+        console.log(`[AI] 🌐 Отправка запроса к API Groq (модель: ${model}, попытка ${attempt + 1})...`);
         const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
           model: model,
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7
         }, buildAxiosOptions(key, cancelFlag));
 
+        console.log(`[AI] ✅ Текст сводки успешно получен от ИИ (${response.data?.choices?.[0]?.message?.content?.length || 0} символов)`);
         return response.data?.choices?.[0]?.message?.content || "Не удалось сгенерировать сводку.";
       } catch (error) {
         if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";

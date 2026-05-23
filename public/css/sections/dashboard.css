@@ -555,6 +555,23 @@ html[data-theme="solar-coral"] .widget-dark {
   margin-bottom: 16px;
 }
 
+.ai-summary-card__header--clickable {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity var(--transition-fast), background-color var(--transition-fast);
+  border-radius: var(--border-radius);
+  padding: 8px 12px;
+  margin: -8px -12px;
+}
+
+.ai-summary-card__header--clickable:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.ai-summary-card__header--clickable:hover #btnCollapseAiSummary {
+  color: var(--color-primary);
+}
+
 .ai-summary-card__title {
   display: flex;
   align-items: center;
@@ -622,4 +639,4 @@ html[data-theme="solar-coral"] .widget-dark {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   box-shadow: 0 0 15px var(--color-primary-glow);
-}
+}

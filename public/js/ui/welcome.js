@@ -448,4 +448,3 @@ export function adjustMarquee() {
     topTechWrapper.classList.remove('has-marquee');
   }
 }
-
