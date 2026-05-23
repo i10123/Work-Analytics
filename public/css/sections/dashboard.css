@@ -458,9 +458,14 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
 
 .widget-container {
   height: 480px !important;
-  border-radius: var(--border-radius-sm);
-  overflow: auto;
-  
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  padding: 12px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), var(--shadow-sm);
 }
 
 
@@ -491,7 +496,8 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
 .widget-container>div {
   width: 100% !important;
   max-width: 100% !important;
-  
+  border-radius: var(--border-radius);
+  border: none;
 }
 
 
@@ -505,12 +511,14 @@ html[data-theme="slate-modernity"] .widget-light {
 
 
 html[data-theme="deep-aqua"] .widget-light,
-html[data-theme="solar-coral"] .widget-light {
+html[data-theme="solar-coral"] .widget-light,
+html[data-theme="midnight-purple"] .widget-light {
   display: none;
 }
 
 html[data-theme="deep-aqua"] .widget-dark,
-html[data-theme="solar-coral"] .widget-dark {
+html[data-theme="solar-coral"] .widget-dark,
+html[data-theme="midnight-purple"] .widget-dark {
   display: block;
 }
 
@@ -639,3 +647,4 @@ html[data-theme="solar-coral"] .widget-dark {
   animation: spin 1s linear infinite;
   box-shadow: 0 0 15px var(--color-primary-glow);
 }
+
