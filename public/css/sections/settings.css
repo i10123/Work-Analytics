@@ -1,5 +1,4 @@
-/*Файл задает оформление модального окна настроек: выбор тем, настройку валют, 
-мониторинг API-ключей, вкладки и инструменты администрирования.*/
+
 
 .settings-overlay {
   position: fixed;
@@ -694,7 +693,7 @@
   .settings-modal__footer { padding: 14px 16px; }
 }
 
-/* === PREMIUM SETTINGS CARDS === */
+
 .settings-premium-card {
   display: flex;
   gap: 16px;

@@ -1,9 +1,4 @@
-/**
- * charts.js
- * Суть: Модуль визуализации данных с помощью библиотеки Chart.js.
- * Что делает: Генерирует различные графики на основе данных о вакансиях (зарплаты, навыки, опыт, форматы работы).
- * Что содержит: Конфигурации цветов, общие настройки графиков, функции рендеринга конкретных диаграмм (столбчатые, круговые) и очистки графиков.
- */
+
 import { charts } from '../state.js';
 import { convertCurrency } from '../utils/currency.js';
 
@@ -73,8 +68,8 @@ function mapExperienceToLevel(exp) {
   if (!exp) return null;
   const l = exp.toLowerCase();
   if (['intern', 'junior', 'middle', 'senior', 'lead'].includes(exp)) return exp;
-  if (l.includes('нет опыта')) return 'Junior'; // Intern/Junior
-  if (l.includes('от 1 года') || l.includes('1-3')) return 'Middle'; // Обычно 1-3 года это Middle
+  if (l.includes('нет опыта')) return 'Junior'; 
+  if (l.includes('от 1 года') || l.includes('1-3')) return 'Middle'; 
   if (l.includes('от 3 до 6') || l.includes('3-6')) return 'Senior';
   if (l.includes('более 6')) return 'Lead';
   return null;
@@ -261,11 +256,11 @@ export function renderChartSalaryVsExperience(jobs, rates, currency) {
   toggleChartCardVisibility('chartSalaryVsExp', true);
 
   const colors = [
-    'rgba(34, 197, 94, 0.8)',    // Intern - green
-    'rgba(14, 165, 233, 0.8)',   // Junior - sky
-    'rgba(99, 102, 241, 0.8)',   // Middle - indigo
-    'rgba(236, 72, 153, 0.8)',   // Senior - pink
-    'rgba(249, 115, 22, 0.8)',   // Lead - orange
+    'rgba(34, 197, 94, 0.8)',    
+    'rgba(14, 165, 233, 0.8)',   
+    'rgba(99, 102, 241, 0.8)',   
+    'rgba(236, 72, 153, 0.8)',   
+    'rgba(249, 115, 22, 0.8)',   
   ];
 
   safeCreateChart('salaryVsExp', 'chartSalaryVsExp', {

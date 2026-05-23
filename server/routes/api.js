@@ -252,7 +252,7 @@ router.get('/events', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  // Heartbeat каждые 30 секунд для предотвращения закрытия соединения прокси (Nginx, Cloudflare)
+  
   const heartbeat = setInterval(() => {
     res.write(`:heartbeat\n\n`);
   }, 30000);

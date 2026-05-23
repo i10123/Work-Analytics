@@ -85,24 +85,24 @@ const JACCARD_THRESHOLD_TITLE = 0.7;
 const JACCARD_THRESHOLD_TITLE_HIGH = 0.85;
 const JACCARD_THRESHOLD_COMPANY = 0.7;
 
-// ПЕРЕИМЕНОВАННАЯ И ОЧИЩЕННАЯ ФУНКЦИЯ: Теперь здесь ТОЛЬКО текстовое сравнение
+
 function areFuzzyDuplicates(a, b) {
   const companyA = a._norm.company;
   const companyB = b._norm.company;
 
-  // Точное совпадение очищенных названий и компаний
+  
   if (a._norm.titleKey === b._norm.titleKey && companyA === companyB) {
     return true;
   }
 
   const titleSimilarity = jaccardSimilarity(a._norm.titleSet, b._norm.titleSet);
 
-  // Схожее название (>= 70%) и одинаковая компания
+  
   if (titleSimilarity >= JACCARD_THRESHOLD_TITLE && companyA === companyB) {
     return true;
   }
 
-  // Очень схожее название (>= 85%) и схожее название компании (>= 70%)
+  
   if (titleSimilarity >= JACCARD_THRESHOLD_TITLE_HIGH) {
     const companySimilarity = jaccardSimilarity(a._norm.companySet, b._norm.companySet);
     if (companySimilarity >= JACCARD_THRESHOLD_COMPANY) {
@@ -113,9 +113,9 @@ function areFuzzyDuplicates(a, b) {
   return false;
 }
 
-// ДОРАБОТАННАЯ ФУНКЦИЯ: Убрано дублирование в массиве mergedFrom
+
 function mergeJobs(primary, duplicate) {
-  // Слияние зарплат
+  
   if (duplicate.salary) {
     const pSal = primary.salary;
     const dSal = duplicate.salary;
@@ -135,7 +135,7 @@ function mergeJobs(primary, duplicate) {
     }
   }
 
-  // Слияние навыков
+  
   if (duplicate.skills && duplicate.skills.length > 0) {
     const existingLower = new Set((primary.skills || []).map(s => s.toLowerCase()));
     for (const skill of duplicate.skills) {
@@ -146,7 +146,7 @@ function mergeJobs(primary, duplicate) {
     }
   }
 
-  // Берем более длинное описание
+  
   if (duplicate.description && (!primary.description || duplicate.description.length > primary.description.length)) {
     primary.description = duplicate.description;
   }
@@ -159,7 +159,7 @@ function mergeJobs(primary, duplicate) {
     primary.employment = duplicate.employment;
   }
 
-  // Защита от записи самого себя (при баге пагинации) или дублирования источников
+  
   const isSelf = primary.source === duplicate.source && primary.sourceId === duplicate.sourceId;
   
   if (!isSelf) {
@@ -197,7 +197,7 @@ function cleanupNorms(jobs) {
   }
 }
 
-// НОВАЯ СОВЕРШЕННАЯ ФУНКЦИЯ ДЕДУПЛИКАЦИИ
+
 function deduplicateJobs(jobs) {
   if (!jobs || jobs.length === 0) {
     return { uniqueJobs: [], stats: { totalBefore: 0, totalAfter: 0, duplicatesRemoved: 0, mergedPairs: [] } };
@@ -208,8 +208,8 @@ function deduplicateJobs(jobs) {
   precomputeNorms(jobs);
   const isDuplicate = new Set();
 
-  // ЭТАП 1: Строгое слияние по ID
-  const idMap = new Map(); // Храним массив индексов для каждого sourceId
+  
+  const idMap = new Map(); 
   
   for (let i = 0; i < jobs.length; i++) {
     if (isDuplicate.has(i)) continue;
@@ -226,14 +226,14 @@ function deduplicateJobs(jobs) {
       for (const idx of existingIndices) {
         const existingJob = jobs[idx];
         
-        // Склеиваем, если это тот же сайт (сдвиг пагинации)
+        
         const isSameSource = existingJob.source === job.source;
         
-        // Склеиваем HH и Rabotaby, т.к. это одна и та же платформа физически
+        
         const isHhRabotaCross = (existingJob.source === 'hh' && job.source === 'rabotaby') ||
                                 (existingJob.source === 'rabotaby' && job.source === 'hh');
 
-        // Хабр не склеиваем с HH/Rabotaby по ID, чтобы избежать случайных коллизий чисел
+        
         if (isSameSource || isHhRabotaCross) {
           mergeJobs(existingJob, job);
           isDuplicate.add(i);
@@ -248,13 +248,13 @@ function deduplicateJobs(jobs) {
       }
 
       if (!merged) {
-        existingIndices.push(i); // Если это коллизия (например, Habr и HH совпали по ID), просто добавляем
+        existingIndices.push(i); 
       }
     }
   }
 
-  // ЭТАП 2: Попарное нечеткое сравнение O(N^2) (Fuzzy Match)
-  // Без "блокирующих ключей", проверяем каждую с каждой для максимальной точности
+  
+  
   for (let i = 0; i < jobs.length; i++) {
     if (isDuplicate.has(i)) continue;
     

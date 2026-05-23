@@ -1,12 +1,4 @@
-/**
- * Модуль для форматирования данных и текста.
- * 
- * Содержит функции:
- * - formatSalary: форматирование суммы (с разделением групп разрядов).
- * - escapeHtml: экранирование спецсимволов HTML для безопасности.
- * - formatDuration: форматирование секунд в читаемую строку (минуты/секунды).
- * - parseMarkdown: базовая конвертация Markdown-разметки в HTML.
- */
+
 
 export function formatSalary(value) {
   if (!value)
@@ -47,7 +39,7 @@ export function parseMarkdown(md) {
   if (typeof window !== 'undefined' && window.marked) {
     return window.marked.parse(md);
   }
-  // Fallback
+  
   let html = escapeHtml(md);
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');

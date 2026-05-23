@@ -1,9 +1,4 @@
-/**
- * settings.js
- * Суть: Модуль конфигурации приложения и пользовательских настроек.
- * Что делает: Управляет выбором темы, валюты, фильтров поиска по умолчанию, проверяет состояние API и очищает данные.
- * Что содержит: Слушатели событий формы настроек, синхронизацию настроек с UI, работу с подтверждениями (confirm modal) и кастомные степперы для полей ввода чисел.
- */
+
 import { DOM } from '../dom.js';
 import { loadSettings, saveSettings, DEFAULT_SETTINGS } from '../utils/settings.js';
 import { showToast, showScreen } from './common.js';
@@ -198,7 +193,7 @@ async function handleSaveSettings() {
     return;
   }
 
-  // Сохраняем настройки в localStorage и на сервер
+  
   saveSettings(settings).catch(err => {
     console.warn('[Settings] ⚠️ Ошибка сохранения настроек:', err);
   });
@@ -220,7 +215,7 @@ async function handleSaveSettings() {
   closeSettings(true);
   showToast('Настройки сохранены', 'success');
 
-  // Синхронизация полей поиска при сохранении настроек
+  
   const mainPeriodRadio = document.querySelector(`input[name="period"][value="${settings.defaultPeriod}"]`);
   if (mainPeriodRadio) {
     mainPeriodRadio.checked = true;
@@ -255,7 +250,7 @@ async function loadApiStatus() {
 
     if (!data.success) return;
 
-    /** Универсальная функция для обновления статуса */
+    
     const updateStatus = (element, configured, textOk = 'Настроен', textFail = 'Не настроен') => {
       if (!element) return;
       if (configured) {
@@ -269,7 +264,7 @@ async function loadApiStatus() {
 
     let hasApiError = false;
 
-    // Groq
+    
     if (data.groq) {
       updateStatus(DOM.groqStatusText, data.groq.configured);
       if (!data.groq.configured) hasApiError = true;
@@ -277,7 +272,7 @@ async function loadApiStatus() {
       hasApiError = true;
     }
 
-    // Currency
+    
     if (data.currency) {
       updateStatus(DOM.currencyStatusText, data.currency.configured, 'Настроены', 'Не настроены');
       if (!data.currency.configured) hasApiError = true;
@@ -392,7 +387,7 @@ async function handleResetSettings() {
   });
   if (DOM.inputLimit) DOM.inputLimit.value = DEFAULT_SETTINGS.defaultLimit;
 
-  // Обновляем состояние сегментированных контролов в форме поиска
+  
   const defaultRadio = document.querySelector(`input[name="period"][value="${DEFAULT_SETTINGS.defaultPeriod}"]`);
   if (defaultRadio) {
     defaultRadio.checked = true;
@@ -436,8 +431,8 @@ export function setupStepperListeners() {
 
     input.value = value;
     
-    // Удаляем вызов forced reflow
-    // Анимация будет воспроизводиться только при первом нажатии
+    
+    
 
     if (accelerationFactor < 10) accelerationFactor += 0.2;
 
@@ -503,10 +498,10 @@ export function setupSegmentedControlListeners() {
       input.addEventListener('change', updateIndicator);
     });
 
-    // Инициализация при загрузке
+    
     updateIndicator();
 
-    // Также обновляем при кастомных событиях, если они есть
+    
     control.addEventListener('updateIndicator', updateIndicator);
   });
 }

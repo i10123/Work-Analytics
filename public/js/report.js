@@ -1,10 +1,4 @@
-/**
- * Модуль для взаимодействия с API отчетов и управления их жизненным циклом.
- * 
- * Функции:
- * - loadReportsList: Загружает полный список отчетов, обновляет состояние и боковую панель.
- * - loadReportById: Загружает детальную информацию об отчете, переключает экран на дашборд и рендерит данные.
- */
+
 
 import { showScreen } from './ui/common.js';
 import { renderDashboard } from './ui/dashboard.js';
@@ -72,7 +66,7 @@ function cleanSkills(skills) {
   return skills.filter((skill, index) => {
     const strippedSkill = strippedAll[index];
     
-    // Check if this skill is the concatenation of all other skills
+    
     if (strippedSkill.length === totalLength - strippedSkill.length) {
       const concatOthers = strippedAll.filter((_, idx) => idx !== index).join('');
       if (strippedSkill === concatOthers) {
@@ -80,7 +74,7 @@ function cleanSkills(skills) {
       }
     }
     
-    // Fallback: if it's very long and contains multiple other skills as substrings
+    
     if (skill.length > 30) {
       let containedCount = 0;
       let totalLengthOfContained = 0;

@@ -15,7 +15,7 @@ class Store {
 
   subscribe(listener) {
     this.listeners.add(listener);
-    // Отправляем текущее состояние сразу при подписке (опционально, но удобно)
+    
     listener(this.state);
     return () => this.listeners.delete(listener);
   }

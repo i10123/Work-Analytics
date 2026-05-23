@@ -1,9 +1,4 @@
-/**
- * sse.js
- * Суть: Модуль реал-тайм обмена данными через Server-Sent Events.
- * Что делает: Слушает обновления статуса задач от бэкенда, динамически меняет отображение экранов при старте/завершении задач и обновляет таймеры прогресса.
- * Что содержит: Инициализацию EventSource (setupSSE), обработчики событий обновлений задач handleTaskUpdate и обновление счетчика очереди.
- */
+
 import { DOM } from '../dom.js';
 import { showScreen } from './common.js';
 import { loadReportById, loadReportsList } from '../report.js';
@@ -37,12 +32,12 @@ export function setupSSE() {
           if (data.currentTask) {
             handleTaskUpdate(data.currentTask);
           } else if (progressTimerInterval) {
-            // Была задача, но теперь её нет в очереди — значит она завершилась
+            
             await loadReportsList();
             const { allReports } = appStore.getState();
             if (allReports.length > 0) {
               const latest = allReports[0];
-              // Имитируем событие завершения для UI
+              
               handleTaskUpdate({
                 status: latest.status,
                 reportId: latest.id,
@@ -91,7 +86,7 @@ export function setupSSE() {
   window.addEventListener('beforeunload', (e) => {
     if (progressTimerInterval) {
       e.preventDefault();
-      e.returnValue = ''; // Required for Chrome and standard browsers
+      e.returnValue = ''; 
     }
   });
 

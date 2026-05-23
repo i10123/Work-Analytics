@@ -1,9 +1,4 @@
-/**
- * welcome.js
- * Суть: Логика стартового приветственного экрана (лендинга).
- * Что делает: Обеспечивает работу интерактивного фона с волнами, анимацию пишущейся строки поиска, быстрый выбор тегов и вывод глобальной статистики.
- * Что содержит: Настройку рисования на Canvas (setupCanvasBackground), typewriter-эффект для плейсхолдера, анимацию счетчиков (animateValue) и расчет суммарной статы updateWelcomeStats.
- */
+
 import { DOM } from '../dom.js';
 import { appStore } from '../state.js';
 import { openModal } from './modal.js';
@@ -433,10 +428,10 @@ export function adjustMarquee() {
   const topTechWrapper = document.getElementById('welcomeStatTopTechWrapper');
   if (!topTechEl || !topTechWrapper) return;
 
-  // Если элемент скрыт (width = 0), не можем измерить точно
+  
   if (topTechWrapper.clientWidth === 0) return;
 
-  // Временно удаляем класс, чтобы корректно измерить scrollWidth без влияния стилей marquee
+  
   const hadMarquee = topTechWrapper.classList.contains('has-marquee');
   topTechWrapper.classList.remove('has-marquee');
 

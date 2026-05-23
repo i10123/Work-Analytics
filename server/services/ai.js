@@ -5,9 +5,9 @@ const DEFAULT_METADATA = {
   skills: [],
   softSkills: [],
   workFormat: 'Не указано',
-  grade: 'Не указано', // НОВОЕ ПОЛЕ
-  experience_years_min: null, // НОВОЕ ПОЛЕ
-  experience_years_max: null, // НОВОЕ ПОЛЕ
+  grade: 'Не указано', 
+  experience_years_min: null, 
+  experience_years_max: null, 
   experience: 'Не указано',
   englishLevel: 'Не указано',
   techCategory: 'Другое',
@@ -72,7 +72,7 @@ function onSuccess(apiKey) {
 function waitForRateLimit(apiKey, cancelFlag) {
   const prev = rateLimitChainByKey.get(apiKey) || Promise.resolve();
   const currentDelay = getDelayForKey(apiKey);
-  // Добавляем небольшой джиттер ±250мс для сглаживания пиков
+  
   const delay = currentDelay + Math.floor(Math.random() * 500) - 250;
   const next = prev.then(() => cancellableDelay(Math.max(delay, 500), cancelFlag).catch(() => {}));
   rateLimitChainByKey.set(apiKey, next);
@@ -122,7 +122,7 @@ async function extractMetadataFromJobs(jobs, onProgress = null, isDeepScrape = f
             '⚠️ Все ключи API заблокированы. Сбор продолжается без ИИ...'
           );
         }
-        // Очищаем оставшуюся очередь, записывая пустые результаты
+        
         while (queue.length > 0) {
           const item = queue.shift();
           if (item) {
@@ -137,7 +137,7 @@ async function extractMetadataFromJobs(jobs, onProgress = null, isDeepScrape = f
       const { batch, batchIndex } = item;
       let metadataMap = {};
 
-      // Выделяем ключ строго по индексу воркера из списка активных ключей
+      
       const apiKey = activeKeys[workerIndex % activeKeys.length];
 
       try {
@@ -163,7 +163,7 @@ async function extractMetadataFromJobs(jobs, onProgress = null, isDeepScrape = f
           bannedKeys.add(apiKey);
         }
 
-        // Возвращаем батч в начало очереди для повторной попытки
+        
         item.attempts = (item.attempts || 0) + 1;
         if (item.attempts < 3) {
           console.warn(`[AI] 🔁 Ошибка батча ${batchIndex + 1} в потоке ${workerIndex + 1}: ${orError.message}. Возврат в очередь (попытка ${item.attempts}/3).`);
@@ -269,7 +269,7 @@ async function processBatchWithKey(batch, apiKey, models, startModelIndex, updat
     } catch (error) {
       if (cancelFlag && cancelFlag.isStopped) throw error;
 
-      // Если это ошибка авторизации или запрета доступа (бан ключа), выходим сразу
+      
       const isBanError = error.response && [401, 403].includes(error.response.status);
       if (isBanError) {
         throw error;

@@ -1,9 +1,4 @@
-/**
- * ui-premium.js
- * Суть: Модуль декоративных и улучшенных UI эффектов.
- * Что делает: Подменяет стандартную валидацию браузера на кастомные анимированные тултипы, добавляет микровзаимодействия для кнопок и карточек.
- * Что содержит: Функции setupCustomValidation, showValidationTooltip для генерации плавающих предупреждений и обработчики наведения/клика setupButtonEffects.
- */
+
 export function initializePremiumUI() {
   console.log('[UI] ✨ Инициализация премиальных эффектов...');
   setupCustomValidation();
@@ -15,7 +10,7 @@ export function validateForm(form) {
     if (firstInvalid) {
       showValidationTooltip(firstInvalid);
       firstInvalid.focus();
-      // Добавляем эффект тряски
+      
       firstInvalid.classList.add('shake');
       setTimeout(() => firstInvalid.classList.remove('shake'), 500);
     }

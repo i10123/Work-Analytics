@@ -1,5 +1,4 @@
-/*Файл содержит стили основного дашборда: заголовок панели, сетку виджетов, 
-карточки статистики, графики и инструменты фильтрации.*/
+
 
 .dashboard {
   animation: fadeIn 0.4s ease;
@@ -56,7 +55,7 @@
   flex-shrink: 0;
   position: relative;
 
-  /* 3D "Slab" Effect using stacked shadows */
+  
   box-shadow:
     0 1px 0 var(--color-border),
     0 2px 0 var(--color-border),
@@ -66,7 +65,7 @@
     0 12px 24px -6px rgba(0, 0, 0, 0.15);
 
   transform: translateY(-4px);
-  /* Lifted to compensate for shadow thickness */
+  
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -211,7 +210,7 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
   font-size: var(--font-size-md);
 }
 
-/* KPI CARDS */
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -282,7 +281,7 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
   font-weight: 500;
 }
 
-/* CHARTS GRID */
+
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -339,7 +338,7 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
   height: 480px;
 }
 
-/* Combo chart: two charts side-by-side */
+
 .chart-card__body--combo {
   display: flex;
   gap: 16px;
@@ -352,7 +351,7 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
   min-width: 0;
 }
 
-/* PROGRESS */
+
 .progress-section {
   display: flex;
   align-items: center;
@@ -456,15 +455,15 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
   }
 }
 
-/* Виджеты интеграции */
+
 .widget-container {
   height: 480px !important;
   border-radius: var(--border-radius-sm);
   overflow: auto;
-  /* Позволяем скролл, если контент не влезает */
+  
 }
 
-/* Custom Scrollbar for Widget Area (если все же появится переполнение) */
+
 .widget-container::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -487,15 +486,15 @@ html[data-theme="solar-coral"] .dashboard__icon-box::after {
   background-clip: content-box;
 }
 
-/* Делаем виджет адаптивным под любую ширину */
+
 .widget-container iframe,
 .widget-container>div {
   width: 100% !important;
   max-width: 100% !important;
-  /* Мы не форсируем высоту, чтобы скрипт hh.ru сам вычислял ее на основе контента */
+  
 }
 
-/* Логика для СВЕТЛОЙ темы (slate-modernity) */
+
 html[data-theme="slate-modernity"] .widget-dark {
   display: none;
 }
@@ -504,7 +503,7 @@ html[data-theme="slate-modernity"] .widget-light {
   display: block;
 }
 
-/* Логика для ТЕМНЫХ тем (deep-aqua, solar-coral) */
+
 html[data-theme="deep-aqua"] .widget-light,
 html[data-theme="solar-coral"] .widget-light {
   display: none;
@@ -515,7 +514,7 @@ html[data-theme="solar-coral"] .widget-dark {
   display: block;
 }
 
-/* AI SUMMARY CARD */
+
 .ai-summary-card {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);

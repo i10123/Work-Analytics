@@ -1,9 +1,4 @@
-/**
- * theme.js
- * Суть: Контроллер визуальных тем приложения.
- * Что делает: Отвечает за применение выбранной темы к документу, её сохранение в localStorage и перерисовку графиков под цветовую схему.
- * Что содержит: Функции initializeTheme и setAppTheme для смены data-атрибута темы на корневом элементе.
- */
+
 import { renderDashboard } from './dashboard.js';
 import { appStore } from '../state.js';
 

@@ -2,7 +2,7 @@ const { HhParser } = require('./hh');
 
 class RabotaByParser extends HhParser {
   constructor() {
-    super(16); // area = 16 (Беларусь)
+    super(16); 
     this.name = 'Rabota.by';
   }
 

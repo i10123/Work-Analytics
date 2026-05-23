@@ -1,10 +1,7 @@
-/**
- * Собирает все ссылки на HTML-элементы страницы через document.getElementById в один объект DOM.
- * Это позволяет избежать многократных поисков элементов в коде и упрощает поддержку имён идентификаторов.
- */
+
 
 export const DOM = {
-  // Сайдбар
+  
   get sidebar() { return document.getElementById('sidebar'); },
   get sidebarToggle() { return document.getElementById('sidebarToggle'); },
   get btnNewReport() { return document.getElementById('btnNewReport'); },
@@ -14,12 +11,12 @@ export const DOM = {
   get queueStatus() { return document.getElementById('queueStatus'); },
   get queueText() { return document.getElementById('queueText'); },
 
-  // Экраны
+  
   get welcomeScreen() { return document.getElementById('welcomeScreen'); },
   get progressSection() { return document.getElementById('progressSection'); },
   get dashboard() { return document.getElementById('dashboard'); },
 
-  // Модалка
+  
   get modalOverlay() { return document.getElementById('modalOverlay'); },
   get modalClose() { return document.getElementById('modalClose'); },
   get parseForm() { return document.getElementById('parseForm'); },
@@ -32,7 +29,7 @@ export const DOM = {
   get parseDeepScrape() { return document.getElementById('parseDeepScrape'); },
 
 
-  // Дашборд
+  
   get btnExportCsv() { return document.getElementById('btnExportCsv'); },
   get btnStopParsing() { return document.getElementById('btnStopParsing'); },
   get progressTitle() { return document.getElementById('progressTitle'); },
@@ -45,7 +42,7 @@ export const DOM = {
   get alertPartial() { return document.getElementById('alertPartial'); },
   get alertPartialText() { return document.getElementById('alertPartialText'); },
 
-  // AI Сводка
+  
   get aiSummaryCard() { return document.getElementById('aiSummaryCard'); },
   get aiSummaryCardHeader() { return document.getElementById('aiSummaryCardHeader'); },
   get btnGenerateAiSummary() { return document.getElementById('btnGenerateAiSummary'); },
@@ -54,7 +51,7 @@ export const DOM = {
   get btnCollapseAiSummary() { return document.getElementById('btnCollapseAiSummary'); },
   get aiSummaryCollapseIcon() { return document.getElementById('aiSummaryCollapseIcon'); },
 
-  // KPI
+  
   get kpiTotal() { return document.getElementById('kpiTotal'); },
   get kpiNoSalary() { return document.getElementById('kpiNoSalary'); },
   get kpiAvgSalary() { return document.getElementById('kpiAvgSalary'); },
@@ -62,16 +59,16 @@ export const DOM = {
   get kpiCompanies() { return document.getElementById('kpiCompanies'); },
   get kpiRemote() { return document.getElementById('kpiRemote'); },
 
-  // Валюты
+  
   get currencyBtns() { return document.querySelectorAll('.currency-btn'); },
 
-  // Таблица
+  
   get jobsTableBody() { return document.getElementById('jobsTableBody'); },
 
-  // Темы и мобильное меню
+  
   get mobileMenuToggle() { return document.getElementById('mobileMenuToggle'); },
 
-  // Настройки
+  
   get btnSettings() { return document.getElementById('btnSettings'); },
   get settingsOverlay() { return document.getElementById('settingsOverlay'); },
   get settingsClose() { return document.getElementById('settingsClose'); },
@@ -79,7 +76,7 @@ export const DOM = {
   get confirmModal() { return document.getElementById('confirmModal'); },
   get confirmModalOverlay() { return document.getElementById('confirmModalOverlay'); },
 
-  /** Элементы настроек */
+  
   get settingsTabs() { return document.getElementById('settingsTabs'); },
   get settingsThemeGrid() { return document.getElementById('settingsThemeGrid'); },
   get settingsDefaultCurrency() { return document.getElementById('settingsDefaultCurrency'); },

@@ -1,5 +1,4 @@
-/*Файл задает каркас веб-приложения: основной контейнер (.app-layout), 
-область основного контента и декоративные фоновые эффекты.*/
+
 
 .app-layout {
   display: flex;
@@ -12,9 +11,9 @@
 .main-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 32px 24px 80px; /* Base padding + space for toggle button on the left */
+  padding: 24px 32px 24px 80px; 
   position: relative;
-  padding-top: 24px; /* We can reduce top padding now that the button has horizontal space */
+  padding-top: 24px; 
   transition: opacity 0.18s ease-in-out;
 }
 
@@ -79,7 +78,7 @@
   }
 }
 
-/* Global Page Loader Splash Screen */
+
 .page-loader {
   position: absolute;
   top: 0;

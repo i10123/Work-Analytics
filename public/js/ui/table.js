@@ -1,9 +1,4 @@
-/**
- * table.js
- * Суть: Менеджер интерактивной таблицы со списком вакансий.
- * Что делает: Генерирует строки таблицы, поддерживает динамический поиск по тексту, сквозную сортировку по столбцам с учетом конвертации валют.
- * Что содержит: Паттерн модуль TableManager с внутренней инкапсуляцией состояния сортировки, методы отрисовки строк renderTableRows и настройки слушателей таблицы.
- */
+
 import { DOM } from '../dom.js';
 import { appStore } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
@@ -37,7 +32,7 @@ const TableManager = (() => {
 
           const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
           renderTableRows(sorted, currentRates, q);
-        }, 300); // 300ms debounce
+        }, 300); 
       });
     }
   }
@@ -50,7 +45,7 @@ const TableManager = (() => {
       const th = e.target.closest('th[data-sort]');
       if (!th) return;
       const table = th.closest('#jobsTable');
-      if (!table) return; // убеждаемся, что клик в нашей таблице
+      if (!table) return; 
 
       const key = th.dataset.sort;
 
@@ -248,11 +243,11 @@ const TableManager = (() => {
 
   function cleanCompanyName(company) {
     if (!company) return '';
-    // Strip corporate noise like ООО, ИП, ЗАО, ОАО and surrounding quotes
+    
     let cleaned = company.replace(/["'«»‘’“”]|(^|[\s"«'‘])(ооо|ип|зао|оао)([\s"»'’]|$)/gi, ' ').trim();
     cleaned = cleaned.replace(/^["«'‘](.*)["»'’]$/, '$1').trim();
 
-    // Capitalize words correctly, keeping acronyms like IT, AI, ML, QA, UI, UX etc uppercase
+    
     return cleaned
       .toLowerCase()
       .replace(/(^|[\s\-\/])([a-zа-яё])/gi, (m, p, l) => p + l.toUpperCase())
@@ -262,7 +257,7 @@ const TableManager = (() => {
   function getTitleHtml(title, query) {
     if (!title) return '';
 
-    // Match text before brackets and the first bracket contents
+    
     const match = title.match(/^(.*?)\s*\((.*?)\)\s*$/);
     if (match) {
       const mainTitle = match[1];
@@ -290,7 +285,7 @@ const TableManager = (() => {
       return;
     }
 
-    // Dynamic Maximum Salary Calculation
+    
     let maxSalaryInDataset = 0;
     jobs.forEach(job => {
       if (job.salary) {
@@ -325,7 +320,7 @@ const TableManager = (() => {
           salaryText = `до ${formatSalary(maxConverted)} ${sym}`;
         }
 
-        // Calculations for range progress bar
+        
         let left = 0;
         let width = 0;
         const refMax = maxSalaryInDataset || 1;
@@ -396,7 +391,7 @@ const TableManager = (() => {
             safeUrl = escapeHtml(job.url);
           }
         } catch (e) {
-          // invalid url
+          
         }
       }
 

@@ -1,5 +1,4 @@
-/*Файл содержит стили элементов форм: обертки (.form-group), 
-метки, поля ввода, селекты и другие компоненты форм.*/
+
 
 .sr-only {
   position: absolute;
@@ -222,7 +221,7 @@
 
 
 
-/* === CUSTOM VALIDATION TOOLTIP === */
+
 .validation-tooltip {
   position: absolute;
   z-index: 1000;
@@ -285,7 +284,7 @@
   to { opacity: 0; transform: translateY(5px); }
 }
 
-/* SHAKE ANIMATION */
+
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
@@ -297,7 +296,7 @@
   border-color: var(--color-danger) !important;
 }
 
-/* === COMPACT SOURCES IN MODAL === */
+
 .compact-source-label {
   cursor: pointer;
   user-select: none;

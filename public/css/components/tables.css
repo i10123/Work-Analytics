@@ -1,5 +1,4 @@
-/*Файл содержит стили для таблиц: обертки (.table-card), заголовки, 
-строки данных, сортировку, бейджи и кнопки экспорта.*/
+
 
 .table-card {
   width: 100%;
@@ -48,7 +47,7 @@
   padding-right: 4px;
 }
 
-/* Custom Scrollbar for Table */
+
 .table-wrapper::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -85,7 +84,7 @@
   z-index: 2;
 }
 
-/* Column Widths */
+
 .col-source {
   width: 135px;
 }
@@ -221,7 +220,7 @@ td.col-salary {
   border-bottom: none;
 }
 
-/* Row states: hover, selected, selected + hover */
+
 .data-table tr:hover td {
   background-color: rgba(255, 255, 255, 0.04) !important;
   color: var(--color-text) !important;
@@ -240,7 +239,7 @@ td.col-salary {
   background-color: var(--color-accent-glow, rgba(100, 116, 139, 0.2)) !important;
 }
 
-/* Grade Badges & Experience Layout */
+
 .experience-cell {
   display: flex;
   flex-direction: column;
@@ -308,7 +307,7 @@ td.col-salary {
   white-space: nowrap;
 }
 
-/* Light theme adaptations */
+
 :root[data-theme="slate-modernity"] .source-capsule {
   background: rgba(15, 23, 42, 0.03);
   border: 1px solid rgba(15, 23, 42, 0.08);
@@ -340,7 +339,7 @@ td.col-salary {
   transition: filter 0.3s ease;
 }
 
-/* HH.ru Specific */
+
 .source-capsule--hh .source-capsule__icon {
   background: linear-gradient(135deg, #e11d48, #991b1b);
 }
@@ -359,7 +358,7 @@ td.col-salary {
   transform: scale(1.15) rotate(360deg);
 }
 
-/* Rabota.by Specific */
+
 .source-capsule--rabotaby .source-capsule__icon {
   background: linear-gradient(135deg, #10b981, #065f46);
 }
@@ -378,7 +377,7 @@ td.col-salary {
   transform: scale(1.15) rotate(360deg);
 }
 
-/* Habr Specific */
+
 .source-capsule--habr .source-capsule__icon {
   background: linear-gradient(135deg, #6366f1, #3730a3);
   border-radius: 4px;
@@ -437,7 +436,7 @@ td.col-salary {
   transform: translateY(0);
 }
 
-/* Salary Visual Gauge */
+
 .salary-cell-container {
   display: flex;
   flex-direction: column;
@@ -453,10 +452,10 @@ td.col-salary {
   transition: all 0.3s ease;
 }
 
-/* Emerald glowing highlight for high-paying salaries */
+
 .salary-value-text--high {
   color: #10b981;
-  /* Emerald base */
+  
   text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
   font-weight: 700;
 }
@@ -482,13 +481,13 @@ td.col-salary {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* If high salary, apply glowing emerald progress bar */
+
 .salary-value-text--high+.salary-visual-track .salary-visual-bar {
   background: linear-gradient(90deg, #10b981, #059669);
   box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
 }
 
-/* Apply Button */
+
 .apply-btn {
   display: inline-flex;
   align-items: center;
@@ -532,7 +531,7 @@ td.col-salary {
   transform: translate(1px, -1px);
 }
 
-/* Search Highlights */
+
 mark.search-highlight {
   background-color: rgba(234, 179, 8, 0.2);
   color: #facc15;
@@ -547,7 +546,7 @@ mark.search-highlight {
   border-bottom: 2px solid rgba(234, 179, 8, 0.6);
 }
 
-/* Table Row Interactive Transitions & Glows */
+
 .data-table tbody tr {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease, background-color 0.2s ease;
 }
@@ -563,7 +562,7 @@ mark.search-highlight {
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
-/* Minimalist Title and Company Typography */
+
 .title-cell {
   display: flex;
   flex-direction: column;

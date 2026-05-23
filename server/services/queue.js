@@ -54,7 +54,7 @@ function enqueueTask(params) {
     createdAt: new Date().toISOString(),
     cancelFlag: {
       isStopped: false,
-      abortController: null, // Создаётся при старте обработки
+      abortController: null, 
     },
   };
 
@@ -113,7 +113,7 @@ async function _processTask(task) {
             }
           }
           reject(new Error('Превышен лимит времени на обработку задачи.'));
-        }, 15 * 60 * 1000); // 15 минут
+        }, 15 * 60 * 1000); 
       })
     ]);
 

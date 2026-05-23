@@ -14,7 +14,7 @@ import { initializePremiumUI } from './ui/ui-premium.js';
 import { setupWelcomeScreen, updateWelcomeStats } from './ui/welcome.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Инициализируем UI мгновенно, не дожидаясь ответа от сервера
+  
   initializeTheme();
   initScrollRestoration();
   initializeSettings();
@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setupWelcomeScreen();
   setupSSE();
 
-  // Запускаем асинхронные задачи в фоне
+  
   (async () => {
-    await initSettings(); // Запрашиваем настройки с сервера
-    initializeSettings(); // Обновляем UI, если настройки с сервера отличаются
+    await initSettings(); 
+    initializeSettings(); 
 
     let isRestoredProgress = false;
 

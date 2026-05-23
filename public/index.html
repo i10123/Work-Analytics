@@ -304,9 +304,9 @@
             </div>
           </div>
 
-          <!-- Виджеты интеграции -->
+          
           <div class="welcome-widgets" style="margin-top: 32px; width: 100%;">
-            <!-- Карточка HH.ru -->
+            
             <div class="chart-card chart-card--wide">
               <h3 class="chart-card__title">Горячие вакансии (HH.ru)</h3>
               <div class="chart-card__body widget-container">
@@ -503,7 +503,7 @@
           </div>
         </div>
 
-        <!-- AI Сводка -->
+        
         <div class="ai-summary-card" id="aiSummaryCard">
           <div class="ai-summary-card__header" id="aiSummaryCardHeader">
             <div class="ai-summary-card__title">
@@ -529,7 +529,7 @@
             </div>
           </div>
           <div class="ai-summary-card__content" id="aiSummaryContent" style="display: none;">
-            <!-- Контент от ИИ будет здесь -->
+            
           </div>
           <div class="ai-summary-card__loader" id="aiSummaryLoader" style="display: none;">
             <div class="ai-loader-spinner"></div>
@@ -537,8 +537,8 @@
           </div>
         </div>
 
-        <!-- Графики -->
-        <!-- Графики: Зарплаты -->
+        
+        
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Распределение зарплат</h3>
@@ -548,7 +548,7 @@
           </div>
         </div>
 
-        <!-- 2. Топ-15 Hard Skills + Категории -->
+        
         <div class="charts-grid">
           <div class="chart-card chart-card--wide chart-card--skills">
             <h3 class="chart-card__title">Топ-15 Hard Skills</h3>
@@ -564,7 +564,7 @@
           </div>
         </div>
 
-        <!-- 3. Зарплата vs Опыт -->
+        
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Зарплата vs Опыт</h3>
@@ -583,7 +583,7 @@
           </div>
         </div>
 
-        <!-- 4. Формат работы (Combo: Doughnut + Bar) -->
+        
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Формат работы и зарплата</h3>
@@ -598,7 +598,7 @@
           </div>
         </div>
 
-        <!-- 5. Влияние английского на зарплату -->
+        
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Влияние английского на зарплату</h3>
@@ -612,7 +612,7 @@
 
 
 
-        <!-- Таблица вакансий -->
+        
         <div class="table-card">
           <div class="table-card__header">
             <h3 class="table-card__title">Все вакансии</h3>
@@ -644,14 +644,14 @@
                 </tr>
               </thead>
               <tbody id="jobsTableBody">
-                <!-- Динамически -->
+                
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- Footer Signature -->
+      
       <footer class="footer-signature">
         <a href="https://github.com/i10123" target="_blank" rel="noopener noreferrer" class="footer-signature__link">
           create by NIFRANCHIN
@@ -660,10 +660,10 @@
     </main>
   </div>
 
-  <!-- ===== МОДАЛЬНОЕ ОКНО НАСТРОЕК (вынесено на уровень body для корректного z-index и позиционирования) ===== -->
+  
   <div class="settings-overlay" id="settingsOverlay" style="display: none;">
     <div class="settings-modal" id="settingsModal">
-      <!-- Заголовок -->
+      
       <div class="settings-modal__header">
         <div class="settings-modal__header-left">
           <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"
@@ -678,7 +678,7 @@
         <button class="modal__close" id="settingsClose" aria-label="Закрыть настройки">✕</button>
       </div>
 
-      <!-- Табы -->
+      
       <div class="settings-tabs" id="settingsTabs">
         <button class="settings-tab active" data-tab="general">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
@@ -724,9 +724,9 @@
         </button>
       </div>
 
-      <!-- Контент табов -->
+      
       <div class="settings-content">
-        <!-- Таб: Общие -->
+        
         <div class="settings-panel active" id="settingsPanel-general">
           <div class="settings-section">
             <h3 class="settings-section__title">Тема оформления</h3>
@@ -805,7 +805,7 @@
           </div>
         </div>
 
-        <!-- Таб: Парсинг -->
+        
         <div class="settings-panel" id="settingsPanel-parsing">
           <div class="settings-section">
             <div class="settings-form-grid">
@@ -878,7 +878,7 @@
 
         </div>
 
-        <!-- Таб: Фильтры -->
+        
         <div class="settings-panel" id="settingsPanel-filters">
           <div class="settings-section">
 
@@ -924,7 +924,7 @@
           </div>
         </div>
 
-        <!-- Таб: API -->
+        
         <div class="settings-panel" id="settingsPanel-api">
           <div class="settings-section">
             <div class="settings-api-status" id="settingsGroqStatus">
@@ -951,7 +951,7 @@
           </div>
         </div>
 
-        <!-- Таб: Данные -->
+        
         <div class="settings-panel" id="settingsPanel-data">
           <div class="settings-section">
             <div class="settings-data-stats" id="settingsDataStats">
@@ -1014,7 +1014,7 @@
         </div>
       </div>
 
-      <!-- Footer -->
+      
       <div class="settings-modal__footer">
         <button class="btn btn--primary" id="settingsSave">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -1030,7 +1030,7 @@
   </div>
 
 
-  <!-- Кастомное окно подтверждения (Confirm Modal) -->
+  
   <div class="modal-overlay--confirm" id="confirmModalOverlay" style="display: none;">
     <div class="confirm-modal" id="confirmModal">
       <div class="confirm-modal__icon" id="confirmIcon">⚠️</div>
@@ -1038,7 +1038,7 @@
       <p class="confirm-modal__text" id="confirmText">Вы изменили настройки. Хотите сохранить их перед выходом?</p>
 
       <div class="confirm-modal__actions" id="confirmActions">
-        <!-- Кнопки вставляются динамически через showConfirm() -->
+        
       </div>
     </div>
   </div>

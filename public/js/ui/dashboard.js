@@ -1,9 +1,4 @@
-/**
- * dashboard.js
- * Суть: Главный модуль отображения аналитического дашборда.
- * Что делает: Наполняет интерфейс данными отчёта, обновляет KPI, инициирует рендер графиков и таблицы, управляет экспортом.
- * Что содержит: Логику вычисления сводных показателей (KPI), интеграцию с модулем AI-саммари, экспорт в CSV и основную функцию renderDashboard.
- */
+
 import { DOM } from '../dom.js';
 import { appStore } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
@@ -96,11 +91,11 @@ function renderAiSummary(report) {
   if (DOM.aiSummaryCardHeader && !DOM.aiSummaryCardHeader.dataset.initialized) {
     DOM.aiSummaryCardHeader.dataset.initialized = 'true';
     DOM.aiSummaryCardHeader.addEventListener('click', (event) => {
-      // Do nothing if the click targets the generate button or its children
+      
       if (event.target.closest('#btnGenerateAiSummary')) {
         return;
       }
-      // Only toggle collapse if header is currently clickable
+      
       if (!DOM.aiSummaryCardHeader.classList.contains('ai-summary-card__header--clickable')) {
         return;
       }

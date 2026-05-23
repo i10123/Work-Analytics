@@ -64,11 +64,7 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
   return results;
 }
 
-/**
- * Выполняет основной пайплайн задачи.
- * @param {Object} task 
- * @param {Function} emitUpdate 
- */
+
 async function runPipeline(task, emitUpdate) {
   let isCancelled = () => task.cancelFlag.isStopped;
 
@@ -124,7 +120,7 @@ async function runPipeline(task, emitUpdate) {
     console.warn(`[Pipeline] ⚠️ Ошибка или прерывание AI: ${err.message}`);
   }
 
-  // Fallback for jobs that missed enrichment (e.g. if AI was cancelled)
+  
   const enrichedIds = new Set(enrichedJobs.map(j => j.sourceId));
   for (const job of allJobs) {
     if (!enrichedIds.has(job.sourceId)) {
@@ -137,12 +133,12 @@ async function runPipeline(task, emitUpdate) {
   const sourceCounts = { hh: 0, rabotaby: 0, habr: 0 };
 
   for (const job of enrichedJobs) {
-    // Подсчёт по источникам
+    
     if (sourceCounts[job.source] !== undefined) {
       sourceCounts[job.source]++;
     }
 
-    // Подсчёт зарплат
+    
     if (job.salary && (job.salary.min || job.salary.max)) {
       const avg = job.salary.min && job.salary.max
         ? (job.salary.min + job.salary.max) / 2

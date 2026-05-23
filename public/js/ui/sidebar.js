@@ -1,9 +1,4 @@
-/**
- * sidebar.js
- * Суть: Управление боковой панелью с историей отчётов и очередью задач.
- * Что делает: Отображает список прошлых аналитик, позволяет искать/удалять их, а также визуализирует статус задач в очереди на исполнение.
- * Что содержит: Функции отрисовки списка отчётов renderReportsList, группировку по датам, логику управления очередью (loadQueueUI) и обновление счетчиков времени выполнения.
- */
+
 import { DOM } from '../dom.js';
 import { escapeHtml, formatDuration } from '../utils/formatters.js';
 
@@ -155,7 +150,7 @@ export function renderReportsList(reports, updateCache = true) {
 
       DOM.reportsList.insertBefore(div, DOM.reportsEmpty);
 
-      // Measure if it overflows after inserting to the DOM to ensure exact sizes
+      
       const wrapper = div.querySelector('.report-item__query-wrapper');
       const span = wrapper ? wrapper.querySelector('span') : null;
       if (wrapper && span && span.scrollWidth > wrapper.clientWidth) {
@@ -400,11 +395,11 @@ async function queueAction(id, action) {
 
 async function queueEdit(task) {
   const newQuery = prompt('Ключевое слово:', task.query);
-  if (newQuery === null) return; // Отмена
+  if (newQuery === null) return; 
 
   const currentLimit = task.filters?.limit || 50;
   const newLimitStr = prompt('Лимит вакансий (5–200):', String(currentLimit));
-  if (newLimitStr === null) return; // Отмена
+  if (newLimitStr === null) return; 
 
   const newLimit = parseInt(newLimitStr, 10);
   if (isNaN(newLimit) || newLimit < 5 || newLimit > 200) {
