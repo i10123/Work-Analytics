@@ -89,6 +89,9 @@ function renderAiSummary(report) {
   DOM.aiSummaryLoader.style.display = 'none';
   DOM.aiSummaryContent.style.display = 'none';
   DOM.aiSummaryContent.innerHTML = '';
+  if (DOM.aiSummaryPlaceholder) {
+    DOM.aiSummaryPlaceholder.style.display = 'none';
+  }
 
   if (DOM.aiSummaryCardHeader && !DOM.aiSummaryCardHeader.dataset.initialized) {
     DOM.aiSummaryCardHeader.dataset.initialized = 'true';
@@ -122,6 +125,9 @@ function renderAiSummary(report) {
     DOM.btnUpdateAiSummary.style.display = 'none';
     DOM.aiSummaryLoader.style.display = 'flex';
     DOM.aiSummaryContent.style.display = 'none';
+    if (DOM.aiSummaryPlaceholder) {
+      DOM.aiSummaryPlaceholder.style.display = 'none';
+    }
 
     try {
       const { userSkills = [] } = appStore.getState();
@@ -285,15 +291,30 @@ function syncAiSummaryUI(report) {
   if (!hasSkills) {
     DOM.btnGenerateAiSummary.style.display = 'none';
     DOM.btnUpdateAiSummary.style.display = 'none';
-    DOM.aiSummaryWarning.style.display = 'block';
+    DOM.aiSummaryWarning.style.display = 'none';
+    if (DOM.aiSummaryPlaceholder) {
+      DOM.aiSummaryPlaceholder.style.display = 'flex';
+      if (DOM.aiSummaryPlaceholderText) {
+        DOM.aiSummaryPlaceholderText.textContent = 'Добавьте свой стек навыков, чтобы ИИ проанализировал ваше соответствие рынку';
+      }
+    }
   } else {
     DOM.aiSummaryWarning.style.display = 'none';
     if (report.aiSummary) {
       DOM.btnGenerateAiSummary.style.display = 'none';
       DOM.btnUpdateAiSummary.style.display = 'inline-flex';
+      if (DOM.aiSummaryPlaceholder) {
+        DOM.aiSummaryPlaceholder.style.display = 'none';
+      }
     } else {
       DOM.btnGenerateAiSummary.style.display = 'inline-flex';
       DOM.btnUpdateAiSummary.style.display = 'none';
+      if (DOM.aiSummaryPlaceholder) {
+        DOM.aiSummaryPlaceholder.style.display = 'flex';
+        if (DOM.aiSummaryPlaceholderText) {
+          DOM.aiSummaryPlaceholderText.textContent = 'Стек выбран! Запустите ИИ-анализ, чтобы составить персональный портрет соответствия';
+        }
+      }
     }
   }
 }
@@ -378,7 +399,9 @@ function initJobMatching(report, rates) {
       DOM.popularSkillsContainer.classList.add('collapsed');
     }
 
-    if (availableSkills.length === 0) {
+    if (currentSortedSkills.length === 0) {
+      DOM.popularSkillsContainer.innerHTML = `<span class="job-matching-panel__empty-text">В вакансиях этого отчёта не найдено ключевых технологий.</span>`;
+    } else if (availableSkills.length === 0) {
       DOM.popularSkillsContainer.innerHTML = `<span class="job-matching-panel__empty-text">Все доступные навыки добавлены в ваш стек.</span>`;
     } else {
       DOM.popularSkillsContainer.innerHTML = availableSkills

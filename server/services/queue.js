@@ -117,11 +117,13 @@ async function _processTask(task) {
       })
     ]);
 
-    if (task.cancelFlag.isStopped) {
+    if (task.cancelFlag.isStopped && !task.reportId) {
       task.status = 'failed';
       task.error = 'Сбор данных остановлен пользователем.';
-      console.log(`[Queue] 🛑 Задача ${task.id} досрочно завершена пользователем.`);
+      console.log(`[Queue] 🛑 Задача ${task.id} досрочно завершена пользователем (без сохранения данных).`);
       emitUpdate(task);
+    } else if (task.cancelFlag.isStopped && task.reportId) {
+      console.log(`[Queue] 🛑 Задача ${task.id} досрочно завершена пользователем (сохранен частичный отчет).`);
     }
   } catch (error) {
     task.status = 'failed';
@@ -244,6 +246,8 @@ function getFullQueueState() {
       status: currentTask.status,
       createdAt: currentTask.createdAt,
       startedAt: currentTask.startedAt,
+      progress: currentTask.progress,
+      step: currentTask.step,
     } : null,
     isProcessing: activeTasksCount > 0,
     queueLength: taskQueue.filter(t => t.status === 'pending').length,
@@ -262,6 +266,10 @@ function removeTaskFromQueue(id) {
 }
 
 function emitUpdate(task) {
+  if (currentTask && currentTask.id === task.id) {
+    currentTask.progress = task.progress;
+    currentTask.step = task.step;
+  }
   taskEmitter.emit('taskUpdate', task);
   taskEmitter.emit('queueStatus', getQueueStatus());
 }

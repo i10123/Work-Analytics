@@ -116,7 +116,9 @@ async function handleTaskUpdate(task) {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
-    showScreen('progress');
+    if (!window.isProgressMinimized) {
+      showScreen('progress');
+    }
     if (DOM.btnStopParsing) DOM.btnStopParsing.disabled = false;
     if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${task.query || ''}"`;
     if (task.step && DOM.progressStep) {
@@ -138,6 +140,8 @@ async function handleTaskUpdate(task) {
       }, 1000);
     }
   } else if (task.status === 'completed' || task.status === 'partial') {
+    window.isProgressMinimized = false;
+    sessionStorage.removeItem('isProgressMinimized');
     if (progressTimerInterval) {
       clearInterval(progressTimerInterval);
       progressTimerInterval = null;
@@ -164,6 +168,8 @@ async function handleTaskUpdate(task) {
     }
     loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'failed') {
+    window.isProgressMinimized = false;
+    sessionStorage.removeItem('isProgressMinimized');
     if (progressTimerInterval) {
       clearInterval(progressTimerInterval);
       progressTimerInterval = null;

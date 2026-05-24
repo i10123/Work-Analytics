@@ -77,7 +77,6 @@ async function runPipeline(task, emitUpdate) {
   emitUpdate({ ...task, step: 'Парсинг вакансий...' });
 
   const parserResults = await runParsersWithRetry(task.query, task.filters, task.cancelFlag);
-  if (isCancelled()) return;
 
   let allJobs = [];
   const errors = [];
@@ -136,7 +135,7 @@ async function runPipeline(task, emitUpdate) {
     }
   }
 
-  let sumSalaryRub = 0;
+  let sumSalaryByn = 0;
   let countSalary = 0;
   const sourceCounts = { hh: 0, rabotaby: 0, habr: 0 };
 
@@ -151,12 +150,12 @@ async function runPipeline(task, emitUpdate) {
       const avg = job.salary.min && job.salary.max
         ? (job.salary.min + job.salary.max) / 2
         : job.salary.min || job.salary.max;
-      const inRub = convertCurrency(avg, job.salary.currency, 'RUB', exchangeRates.rates);
-      sumSalaryRub += inRub;
+      const inByn = convertCurrency(avg, job.salary.currency, 'BYN', exchangeRates.rates);
+      sumSalaryByn += inByn;
       countSalary++;
     }
   }
-  const avgSalaryNormalized = countSalary > 0 ? Math.round(sumSalaryRub / countSalary) : null;
+  const avgSalaryNormalized = countSalary > 0 ? Math.round(sumSalaryByn / countSalary) : null;
 
   let status = (errors.length > 0 && allJobs.length > 0) ? 'partial'
     : (allJobs.length === 0) ? 'failed'
@@ -198,8 +197,9 @@ async function runPipeline(task, emitUpdate) {
   
   task.status = report.status;
   task.error = failMessage;
+  task.reportId = task.id;
   console.log(`[Pipeline] ✅ Конвейер завершен: ${task.id} (статус: ${task.status})`);
-  emitUpdate({ ...task, reportId: task.id, errors, error: failMessage });
+  emitUpdate({ ...task, errors, error: failMessage });
 }
 
 module.exports = {

@@ -4,7 +4,7 @@ export const SETTINGS_KEY = 'workanalytics-settings';
 
 export const DEFAULT_SETTINGS = {
   theme: 'slate-modernity',
-  defaultCurrency: 'RUB',
+  defaultCurrency: 'BYN',
   defaultPeriod: '7days',
   defaultLimit: 50,
   sources: { hh: true, rabotaby: true, habr: true },

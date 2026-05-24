@@ -3,8 +3,8 @@
 export function convertCurrency(amount, from, to, rates) {
   if (!amount || from === to)
     return amount;
-  const inRub = amount * (rates[from] || 1);
-  const result = inRub / (rates[to] || 1);
+  const inBase = amount * (rates[from] || 1);
+  const result = inBase / (rates[to] || 1);
   return Math.round(result * 100) / 100;
 }
 

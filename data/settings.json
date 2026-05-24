@@ -1,6 +1,6 @@
 {
-  "theme": "midnight-purple",
-  "defaultCurrency": "RUB",
+  "theme": "slate-modernity",
+  "defaultCurrency": "BYN",
   "defaultPeriod": "7days",
   "defaultLimit": 50,
   "sources": {

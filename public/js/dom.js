@@ -32,6 +32,7 @@ export const DOM = {
   
   get btnExportCsv() { return document.getElementById('btnExportCsv'); },
   get btnStopParsing() { return document.getElementById('btnStopParsing'); },
+  get btnMinimizeProgress() { return document.getElementById('btnMinimizeProgress'); },
   get progressTitle() { return document.getElementById('progressTitle'); },
   get progressStep() { return document.getElementById('progressStep'); },
   get progressTime() { return document.getElementById('progressTime'); },
@@ -50,6 +51,8 @@ export const DOM = {
   get aiSummaryLoader() { return document.getElementById('aiSummaryLoader'); },
   get btnCollapseAiSummary() { return document.getElementById('btnCollapseAiSummary'); },
   get aiSummaryCollapseIcon() { return document.getElementById('aiSummaryCollapseIcon'); },
+  get aiSummaryPlaceholder() { return document.getElementById('aiSummaryPlaceholder'); },
+  get aiSummaryPlaceholderText() { return document.getElementById('aiSummaryPlaceholderText'); },
 
   
   get kpiTotal() { return document.getElementById('kpiTotal'); },

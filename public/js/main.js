@@ -14,7 +14,7 @@ import { initializePremiumUI } from './ui/ui-premium.js';
 import { setupWelcomeScreen, updateWelcomeStats } from './ui/welcome.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  
+  window.isProgressMinimized = sessionStorage.getItem('isProgressMinimized') === 'true';
   initializeTheme();
   initScrollRestoration();
   initializeSettings();
@@ -36,10 +36,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const queueData = await queueRes.json();
 
       if (queueData.success && queueData.currentTask && queueData.currentTask.status === 'processing') {
-        showScreen('progress');
+        if (!window.isProgressMinimized) {
+          showScreen('progress');
+        }
         if (DOM.progressTitle)
           DOM.progressTitle.textContent = `Сбор данных: "${queueData.currentTask.query || ''}"`;
-        isRestoredProgress = true;
+        isRestoredProgress = !window.isProgressMinimized;
       }
     } catch (e) {
       console.warn('[App] ⚠️ Не удалось проверить состояние очереди:', e.message);
@@ -88,7 +90,19 @@ function setupEventListeners() {
     localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
   });
 
-  DOM.btnNewReport?.addEventListener('click', openModal);
+  DOM.btnNewReport?.addEventListener('click', () => {
+    window.isProgressMinimized = false;
+    sessionStorage.removeItem('isProgressMinimized');
+    openModal();
+  });
+
+  DOM.btnMinimizeProgress?.addEventListener('click', () => {
+    window.isProgressMinimized = true;
+    sessionStorage.setItem('isProgressMinimized', 'true');
+    showScreen('welcome');
+    history.pushState({ type: 'welcome' }, '', window.location.pathname);
+    document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+  });
 
   DOM.btnBackToWelcome?.addEventListener('click', () => {
     showScreen('welcome');

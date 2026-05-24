@@ -3,9 +3,9 @@ const cheerio = require('cheerio');
 const BaseParser = require('./base');
 
 const HABR_BASE = 'https://career.habr.com';
-const MIN_DELAY_MS = 1200;
-const MAX_DELAY_MS = 2500;
-const DEEP_SCRAPE_DELAY_MS = 1500;
+const MIN_DELAY_MS = 2500;
+const MAX_DELAY_MS = 5000;
+const DEEP_SCRAPE_DELAY_MS = 3000;
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -25,6 +25,67 @@ const USER_AGENTS = [
 class HabrParser extends BaseParser {
   constructor() {
     super('Хабр Карьера');
+    this.currentConcurrency = 2;
+    this.activeBackoffDelay = null;
+  }
+
+  _getHeaders() {
+    return {
+      'User-Agent': this.getRandomUserAgent(),
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+      'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Sec-Ch-Ua': '"Chromium";v="125", "Not.A/Brand";v="24"',
+      'Sec-Ch-Ua-Mobile': '?0',
+      'Sec-Ch-Ua-Platform': '"Windows"',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Upgrade-Insecure-Requests': '1',
+    };
+  }
+
+  async _requestWithAdaptiveBackoff(url, config, cancelFlag) {
+    let lastError = null;
+    const maxRetries = 3;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      if (cancelFlag?.isStopped) throw new Error('Canceled');
+
+      if (this.activeBackoffDelay) {
+        console.log(`[Parser:Habr] ⏳ Режим задержки: ожидание ${this.activeBackoffDelay}мс...`);
+        await this.delay(this.activeBackoffDelay, cancelFlag);
+      }
+
+      try {
+        const response = await axios.get(url, config);
+        if (this.activeBackoffDelay) {
+          console.log(`[Parser:Habr] ✅ Запрос успешен. Восстанавливаем стандартный режим.`);
+          this.activeBackoffDelay = null;
+          this.currentConcurrency = 2;
+        }
+        return response;
+      } catch (error) {
+        lastError = error;
+        const status = error.response?.status;
+
+        if (status === 429 || status === 403) {
+          this.activeBackoffDelay = 8000;
+          this.currentConcurrency = 1;
+          console.warn(
+            `[Parser:Habr] ⚠️ Получена ошибка HTTP ${status} (попытка ${attempt + 1}/${maxRetries}). ` +
+            `Включаем Adaptive Backoff: снижаем потоки до 1, задержка увеличена до 8 секунд.`
+          );
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    throw lastError || new Error('Все попытки Adaptive Backoff исчерпаны');
   }
 
   async parse(query, filters = {}, cancelFlag = null) {
@@ -46,22 +107,16 @@ class HabrParser extends BaseParser {
 
       try {
         const url = `${HABR_BASE}/vacancies`;
-        const response = await axios.get(url, {
+        const response = await this._requestWithAdaptiveBackoff(url, {
           params: {
             q: query,
             page: page,
             type: 'all',
           },
-          headers: {
-            'User-Agent': this.getRandomUserAgent(),
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-          },
+          headers: this._getHeaders(),
           timeout: 15000,
           signal: cancelFlag?.abortController?.signal || undefined,
-        });
+        }, cancelFlag);
 
         const html = response.data;
 
@@ -122,6 +177,10 @@ class HabrParser extends BaseParser {
           await this.delay(delay, cancelFlag);
         }
       } catch (error) {
+        if (cancelFlag?.isStopped || error.name === 'AbortError' || error.code === 'ERR_CANCELED' || error.message.includes('canceled') || error.message.includes('abort')) {
+          console.log(`[Parser:Habr] 🛑 Запрос прерван. Прерываем парсинг и сохраняем собранные данные.`);
+          break;
+        }
         if (error.response && (error.response.status === 429 || error.response.status === 403)) {
           throw new Error(`Хабр Карьера заблокировал запросы (HTTP ${error.response.status})`);
         }
@@ -275,14 +334,11 @@ class HabrParser extends BaseParser {
       try {
         await this.delay(DEEP_SCRAPE_DELAY_MS, cancelFlag);
 
-        const response = await axios.get(job.url, {
-          headers: {
-            'User-Agent': this.getRandomUserAgent(),
-            'Accept': 'text/html,application/xhtml+xml',
-          },
+        const response = await this._requestWithAdaptiveBackoff(job.url, {
+          headers: this._getHeaders(),
           timeout: 15000,
           signal: cancelFlag?.abortController?.signal || undefined,
-        });
+        }, cancelFlag);
 
         const $ = cheerio.load(response.data);
         const fullDesc = $('.vacancy-description__text, .style-ugc').text().trim();
@@ -296,7 +352,7 @@ class HabrParser extends BaseParser {
       }
     };
 
-    await this.fetchDeepWithConcurrency(jobs, fetchFn, 2, cancelFlag);
+    await this.fetchDeepWithConcurrency(jobs, fetchFn, this.currentConcurrency, cancelFlag);
   }
 
   parseSalaryText(text) {

@@ -29,7 +29,7 @@ class Store {
 
 export const appStore = new Store({
   currentReport: null,
-  currentCurrency: 'RUB',
+  currentCurrency: 'BYN',
   baselineSettings: null,
   allReports: [],
   userSkills: [],

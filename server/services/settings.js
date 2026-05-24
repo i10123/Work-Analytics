@@ -5,7 +5,7 @@ const SETTINGS_FILE = path.join(__dirname, '..', '..', 'data', 'settings.json');
 
 const DEFAULT_SETTINGS = {
   theme: 'slate-modernity',
-  defaultCurrency: 'RUB',
+  defaultCurrency: 'BYN',
   defaultPeriod: '7days',
   defaultLimit: 50,
   sources: { hh: true, rabotaby: true, habr: true },

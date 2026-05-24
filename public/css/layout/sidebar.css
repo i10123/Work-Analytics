@@ -394,6 +394,7 @@
 .queue-item--processing {
   border-color: var(--color-primary);
   background: var(--color-accent-soft);
+  cursor: pointer;
 }
 
 

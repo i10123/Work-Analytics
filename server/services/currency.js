@@ -1,10 +1,10 @@
 const axios = require('axios');
 
 const FALLBACK_RATES = {
-  RUB: 1,
-  USD: 73.3,
-  EUR: 85.5,
-  BYN: 26.2,
+  BYN: 1,
+  RUB: 0.0383, // 100 RUB = 3.83 BYN => 1 RUB = 0.0383 BYN
+  USD: 2.85,   // 1 USD = 2.85 BYN
+  EUR: 3.355,  // 1 EUR = 3.355 BYN
 };
 
 let currentRateKeyIndex = 0;
@@ -39,21 +39,21 @@ async function fetchExchangeRates() {
     try {
       console.log(`[Currency] 🌐 Запрос курсов (Ключ #${activeKeyIndex + 1}/${keys.length})...`);
 
-      const url = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/RUB`;
+      const url = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/BYN`;
       const response = await axios.get(url, { timeout: 10000 });
 
       if (response.data && response.data.result === 'success') {
         const apiRates = response.data.conversion_rates;
         const rates = {
-          RUB: 1,
-          USD: apiRates.USD ? +(1 / apiRates.USD).toFixed(2) : FALLBACK_RATES.USD,
-          EUR: apiRates.EUR ? +(1 / apiRates.EUR).toFixed(2) : FALLBACK_RATES.EUR,
-          BYN: apiRates.BYN ? +(1 / apiRates.BYN).toFixed(2) : FALLBACK_RATES.BYN,
+          BYN: 1,
+          RUB: apiRates.RUB ? +(1 / apiRates.RUB).toFixed(4) : FALLBACK_RATES.RUB,
+          USD: apiRates.USD ? +(1 / apiRates.USD).toFixed(4) : FALLBACK_RATES.USD,
+          EUR: apiRates.EUR ? +(1 / apiRates.EUR).toFixed(4) : FALLBACK_RATES.EUR,
         };
 
         currentRateKeyIndex = activeKeyIndex;
 
-        console.log(`[Currency] ✅ Курсы получены: 1 USD = ${rates.USD} RUB`);
+        console.log(`[Currency] ✅ Курсы получены: 1 USD = ${rates.USD} BYN, 100 RUB = ${(rates.RUB * 100).toFixed(2)} BYN`);
         const responseObj = buildRatesResponse(rates, false);
         cachedRates = responseObj;
         lastFetchTime = Date.now();
@@ -72,15 +72,15 @@ async function fetchExchangeRates() {
 function convertCurrency(amount, fromCurrency, toCurrency, rates) {
   if (fromCurrency === toCurrency) return amount;
 
-  const amountInRub = amount * (rates[fromCurrency] || 1);
-  const result = amountInRub / (rates[toCurrency] || 1);
+  const amountInByn = amount * (rates[fromCurrency] || 1);
+  const result = amountInByn / (rates[toCurrency] || 1);
 
   return Math.round(result * 100) / 100;
 }
 
 function buildRatesResponse(rates, isFallback) {
   return {
-    base: 'RUB',
+    base: 'BYN',
     rates,
     fetchedAt: new Date().toISOString(),
     isFallback,

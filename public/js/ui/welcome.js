@@ -360,7 +360,7 @@ export function updateWelcomeStats() {
         }
       });
     } else if (report.stats && report.stats.avgSalaryNormalized) {
-      const inCurrent = convertCurrency(report.stats.avgSalaryNormalized, 'RUB', currentCurrency, rates);
+      const inCurrent = convertCurrency(report.stats.avgSalaryNormalized, 'BYN', currentCurrency, rates);
       if (inCurrent > 0) allSalaries.push(inCurrent);
     }
   });
@@ -377,20 +377,47 @@ export function updateWelcomeStats() {
     }
   }
 
-  const queryCounts = {};
+  const querySalaries = {};
   allReports.forEach(report => {
-    if (report.query) {
-      queryCounts[report.query] = (queryCounts[report.query] || 0) + 1;
+    if (!report.query) return;
+    if (!querySalaries[report.query]) {
+      querySalaries[report.query] = [];
+    }
+
+    if (report.stats && typeof report.stats.avgSalaryNormalized === 'number' && report.stats.avgSalaryNormalized > 0) {
+      querySalaries[report.query].push(report.stats.avgSalaryNormalized);
+    } else if (report.jobs && Array.isArray(report.jobs)) {
+      const rates = report.exchangeRates?.rates || latestRates;
+      let sum = 0;
+      let count = 0;
+      report.jobs.forEach(j => {
+        if (j.salary && (j.salary.min || j.salary.max)) {
+          const avg = j.salary.min && j.salary.max
+            ? (j.salary.min + j.salary.max) / 2
+            : j.salary.min || j.salary.max;
+          const inByn = convertCurrency(avg, j.salary.currency, 'BYN', rates);
+          if (inByn > 0) {
+            sum += inByn;
+            count++;
+          }
+        }
+      });
+      if (count > 0) {
+        querySalaries[report.query].push(Math.round(sum / count));
+      }
     }
   });
 
-  let maxCount = 0;
+  let maxAvgSalary = -1;
   let topQuery = 'Пока нет данных';
 
-  for (const [query, count] of Object.entries(queryCounts)) {
-    if (count > maxCount) {
-      maxCount = count;
-      topQuery = query;
+  for (const [query, salaries] of Object.entries(querySalaries)) {
+    if (salaries.length > 0) {
+      const avg = salaries.reduce((a, b) => a + b, 0) / salaries.length;
+      if (avg > maxAvgSalary) {
+        maxAvgSalary = avg;
+        topQuery = query;
+      }
     }
   }
 

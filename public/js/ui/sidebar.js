@@ -53,6 +53,15 @@ export function setupSidebarListeners() {
       } else if (deleteBtn) {
         e.stopPropagation();
         queueAction(id, 'delete');
+      } else {
+        const task = cachedQueue.find(t => String(t.id) === String(id));
+        if (task && task.status === 'processing') {
+          window.isProgressMinimized = false;
+          sessionStorage.removeItem('isProgressMinimized');
+          import('./common.js').then(({ showScreen }) => {
+            showScreen('progress');
+          });
+        }
       }
     });
   }
@@ -253,8 +262,11 @@ export function renderQueueList(queue) {
   const container = document.getElementById('queueList');
   if (!container) return;
 
+  const header = document.getElementById('queueSectionHeader');
+
   if (!queue || queue.length === 0) {
     container.style.display = 'none';
+    if (header) header.style.display = 'none';
     queueTimers.forEach(timerId => clearInterval(timerId));
     queueTimers.clear();
     container.innerHTML = '';
@@ -262,6 +274,7 @@ export function renderQueueList(queue) {
   }
 
   container.style.display = 'block';
+  if (header) header.style.display = 'flex';
   cachedQueue = queue;
 
   const currentIds = new Set(queue.map(t => String(t.id)));
@@ -285,11 +298,17 @@ export function renderQueueList(queue) {
       failed: '❌ Ошибка',
     };
 
-    let statusLabel = statusLabels[task.status] || task.status;
-    if (task.status === 'processing' && task.startedAt) {
-      const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
-      statusLabel = `⚙️ Выполняется (${formatDuration(elapsed)})`;
-    }
+    const getStatusLabel = (t) => {
+      let label = statusLabels[t.status] || t.status;
+      if (t.status === 'processing' && t.startedAt) {
+        const elapsed = Math.max(0, Math.floor((Date.now() - new Date(t.startedAt).getTime()) / 1000));
+        const pct = t.progress !== undefined ? ` ${t.progress}%` : '';
+        label = `⚙️ Выполняется${pct} (${formatDuration(elapsed)})`;
+      }
+      return label;
+    };
+
+    let statusLabel = getStatusLabel(task);
 
     if (div) {
       div.className = `queue-item queue-item--${task.status}`;
@@ -304,6 +323,28 @@ export function renderQueueList(queue) {
       const limitDiv = div.querySelector('.queue-item__info > div');
       if (limitDiv) {
         limitDiv.textContent = `Лимит: ${task.filters?.limit || 50}`;
+      }
+
+      if (task.status === 'processing') {
+        let pBar = div.querySelector('.sidebar-progress');
+        if (!pBar) {
+          const infoEl = div.querySelector('.queue-item__info');
+          if (infoEl) {
+            infoEl.insertAdjacentHTML('beforeend', `
+              <div class="sidebar-progress" style="width: 100%; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; margin-top: 6px; overflow: hidden; position: relative;">
+                <div class="sidebar-progress__fill" style="width: ${task.progress !== undefined ? task.progress : 0}%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); border-radius: 2px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 6px var(--color-primary-glow);"></div>
+              </div>
+            `);
+          }
+        } else {
+          const pFill = pBar.querySelector('.sidebar-progress__fill');
+          if (pFill && task.progress !== undefined) {
+            pFill.style.width = `${task.progress}%`;
+          }
+        }
+      } else {
+        const pBar = div.querySelector('.sidebar-progress');
+        if (pBar) pBar.remove();
       }
 
       const actionsEl = div.querySelector('.queue-item__actions');
@@ -324,8 +365,9 @@ export function renderQueueList(queue) {
               return;
             }
             const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
+            const pct = task.progress !== undefined ? ` ${task.progress}%` : '';
             const statEl = div.querySelector('.queue-item__status');
-            if (statEl) statEl.textContent = `⚙️ Выполняется (${formatDuration(elapsed)})`;
+            if (statEl) statEl.textContent = `⚙️ Выполняется${pct} (${formatDuration(elapsed)})`;
           }, 1000);
           queueTimers.set(String(task.id), timerId);
         }
@@ -347,6 +389,11 @@ export function renderQueueList(queue) {
             Лимит: ${escapeHtml(String(task.filters?.limit || 50))}
           </div>
           <span class="queue-item__status">${escapeHtml(statusLabel)}</span>
+          ${task.status === 'processing' ? `
+            <div class="sidebar-progress" style="width: 100%; height: 4px; background: rgba(255, 255, 255, 0.1); border-radius: 2px; margin-top: 6px; overflow: hidden; position: relative;">
+              <div class="sidebar-progress__fill" style="width: ${task.progress !== undefined ? task.progress : 0}%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); border-radius: 2px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 6px var(--color-primary-glow);"></div>
+            </div>
+          ` : ''}
         </div>
         <div class="queue-item__actions">
           ${task.status === 'pending' ? '<button class="queue-btn queue-btn--priority" title="В начало очереди">⬆️</button>' : ''}
@@ -365,8 +412,9 @@ export function renderQueueList(queue) {
             return;
           }
           const elapsed = Math.max(0, Math.floor((Date.now() - new Date(task.startedAt).getTime()) / 1000));
+          const pct = task.progress !== undefined ? ` ${task.progress}%` : '';
           const statEl = div.querySelector('.queue-item__status');
-          if (statEl) statEl.textContent = `⚙️ Выполняется (${formatDuration(elapsed)})`;
+          if (statEl) statEl.textContent = `⚙️ Выполняется${pct} (${formatDuration(elapsed)})`;
         }, 1000);
         queueTimers.set(String(task.id), timerId);
       }

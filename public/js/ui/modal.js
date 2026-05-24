@@ -82,6 +82,8 @@ export async function handleFormSubmit(e) {
     if (data.success) {
       console.log(`[App] ✅ Задача создана: ${data.task.id}`);
       closeModal();
+      window.isProgressMinimized = false;
+      sessionStorage.removeItem('isProgressMinimized');
       showScreen('progress');
 
       if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${query}"`;

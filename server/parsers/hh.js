@@ -227,6 +227,10 @@ class HhParser extends BaseParser {
           await this.delay(pageDelay, cancelFlag);
         }
       } catch (error) {
+        if (cancelFlag?.isStopped || error.name === 'AbortError' || error.code === 'ERR_CANCELED' || error.message.includes('canceled') || error.message.includes('abort')) {
+          console.log(`[Parser:HH] 🛑 Запрос прерван. Прерываем парсинг и сохраняем собранные данные.`);
+          break;
+        }
         const status = error.response?.status;
         if (status === 403 || status === 429) {
           console.warn(
