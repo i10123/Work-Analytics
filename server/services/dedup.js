@@ -238,8 +238,20 @@ function deduplicateJobs(jobs) {
           mergeJobs(existingJob, job);
           isDuplicate.add(i);
           mergedPairs.push({
-            primary: `${existingJob.source}:${existingJob.sourceId}`,
-            duplicate: `${job.source}:${job.sourceId}`,
+            primary: {
+              source: existingJob.source,
+              sourceId: existingJob.sourceId,
+              title: existingJob.title,
+              company: existingJob.company,
+              url: existingJob.url
+            },
+            duplicate: {
+              source: job.source,
+              sourceId: job.sourceId,
+              title: job.title,
+              company: job.company,
+              url: job.url
+            },
             reason: isSameSource ? 'sourceId_exact' : 'sourceId_cross',
           });
           merged = true;
@@ -265,8 +277,20 @@ function deduplicateJobs(jobs) {
         mergeJobs(jobs[i], jobs[j]);
         isDuplicate.add(j);
         mergedPairs.push({
-          primary: `${jobs[i].source}:${jobs[i].title}`,
-          duplicate: `${jobs[j].source}:${jobs[j].title}`,
+          primary: {
+            source: jobs[i].source,
+            sourceId: jobs[i].sourceId,
+            title: jobs[i].title,
+            company: jobs[i].company,
+            url: jobs[i].url
+          },
+          duplicate: {
+            source: jobs[j].source,
+            sourceId: jobs[j].sourceId,
+            title: jobs[j].title,
+            company: jobs[j].company,
+            url: jobs[j].url
+          },
           reason: 'fuzzy',
         });
       }
