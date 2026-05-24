@@ -157,29 +157,42 @@ function setupTypewriter() {
   let phraseIndex = 0;
   let charIndex = 0;
   let isDeleting = false;
-  let isPaused = false;
   let typewriterTimeout = null;
 
   input.addEventListener('focus', () => {
-    isPaused = true;
-    input.setAttribute('placeholder', 'Введите запрос...');
+    typewriterLoop();
   });
 
   input.addEventListener('blur', () => {
-    isPaused = false;
-    if (!input.value) {
-      charIndex = 0;
-      typewriterLoop();
-    }
+    setTimeout(typewriterLoop, 50);
+  });
+
+  input.addEventListener('input', () => {
+    typewriterLoop();
   });
 
   function typewriterLoop() {
-    if (isPaused) return;
+    clearTimeout(typewriterTimeout);
 
     const welcomeScreen = document.getElementById('welcomeScreen');
-    if (welcomeScreen && welcomeScreen.style.display === 'none') {
-      clearTimeout(typewriterTimeout);
+    const isWelcomeVisible = welcomeScreen && welcomeScreen.style.display !== 'none';
+    const isFocused = document.activeElement === input;
+    const hasValue = input.value.length > 0;
+
+    if (!isWelcomeVisible) {
       typewriterTimeout = setTimeout(typewriterLoop, 1000);
+      return;
+    }
+
+    if (isFocused) {
+      input.setAttribute('placeholder', 'Введите запрос...');
+      return;
+    }
+
+    if (hasValue) {
+      input.setAttribute('placeholder', '');
+      charIndex = 0;
+      isDeleting = false;
       return;
     }
 
@@ -204,8 +217,17 @@ function setupTypewriter() {
       typeSpeed = 500;
     }
 
-    clearTimeout(typewriterTimeout);
     typewriterTimeout = setTimeout(typewriterLoop, typeSpeed);
+  }
+
+  const welcomeScreen = document.getElementById('welcomeScreen');
+  if (welcomeScreen) {
+    const observer = new MutationObserver(() => {
+      if (welcomeScreen.style.display !== 'none') {
+        typewriterLoop();
+      }
+    });
+    observer.observe(welcomeScreen, { attributes: true, attributeFilter: ['style'] });
   }
 
   typewriterLoop();
@@ -288,6 +310,7 @@ function setupQuickSearchPanelListeners() {
 
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      input.value = '';
       input.blur();
       panel.classList.remove('active');
     }

@@ -21,6 +21,7 @@
       } catch (e) { }
     })();
   </script>
+  <link rel="icon" type="image/svg+xml" href="logo.svg" />
   <link rel="stylesheet" href="css/main.css" />
 </head>
 
@@ -32,11 +33,118 @@
 
     <header class="mobile-topbar" id="mobileTopbar">
       <div class="mobile-topbar__logo">
-        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.5" fill="none"
-          stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary);">
-          <line x1="18" y1="20" x2="18" y2="10"></line>
-          <line x1="12" y1="20" x2="12" y2="4"></line>
-          <line x1="6" y1="20" x2="6" y2="14"></line>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="24" height="24">
+          <defs>
+            <filter id="mobileThemeGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            <linearGradient id="mobileSweepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="var(--color-accent)" stop-opacity="0.25" />
+              <stop offset="100%" stop-color="var(--color-accent)" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <style>
+            .mobile-radar-sweep-line {
+              transform-origin: 75px 75px;
+              animation: mobileRadarScan 6s linear infinite;
+            }
+
+            .mobile-glowing-stack {
+              animation: mobileFloatStack 4s ease-in-out infinite;
+            }
+
+            .mobile-vacancy-blip-1 {
+              transform-origin: 118px 46px;
+              animation: mobileBlipGlow 2s infinite ease-in-out;
+            }
+
+            .mobile-vacancy-blip-2 {
+              transform-origin: 32px 88px;
+              animation: mobileBlipGlow 2.5s infinite ease-in-out;
+            }
+
+            @keyframes mobileRadarScan {
+              from {
+                transform: rotate(0deg);
+              }
+
+              to {
+                transform: rotate(360deg);
+              }
+            }
+
+            @keyframes mobileFloatStack {
+
+              0%,
+              100% {
+                transform: translateY(0px);
+              }
+
+              50% {
+                transform: translateY(-4px);
+              }
+            }
+
+            @keyframes mobileBlipGlow {
+
+              0%,
+              100% {
+                transform: scale(1);
+                opacity: 0.4;
+              }
+
+              50% {
+                transform: scale(1.35);
+                opacity: 1;
+              }
+            }
+          </style>
+          <g>
+            <circle cx="75" cy="75" r="66" stroke="var(--color-primary)" stroke-width="1.2" stroke-opacity="0.2"
+              fill="none" />
+            <circle cx="75" cy="75" r="44" stroke="var(--color-accent)" stroke-width="1" stroke-opacity="0.25"
+              stroke-dasharray="4 3" fill="none" />
+            <circle cx="75" cy="75" r="22" stroke="var(--color-primary)" stroke-width="1" stroke-opacity="0.15"
+              fill="none" />
+            <line x1="75" y1="12" x2="75" y2="138" stroke="var(--color-accent)" stroke-opacity="0.1" stroke-width="1" />
+            <line x1="12" y1="75" x2="138" y2="75" stroke="var(--color-accent)" stroke-opacity="0.1" stroke-width="1" />
+            <path d="M 12 98 Q 43.5 110, 75 98 T 138 98" stroke="var(--color-primary)" stroke-opacity="0.18"
+              stroke-width="1.5" fill="none" />
+          </g>
+          <g class="mobile-radar-sweep-line">
+            <path d="M 75 75 L 138 52 A 66 66 0 0 0 102 12.8 Z" fill="url(#mobileSweepGrad)" />
+            <line x1="75" y1="75" x2="141" y2="75" stroke="var(--color-accent)" stroke-width="1.8"
+              filter="url(#mobileThemeGlow)" />
+          </g>
+          <line class="mobile-glowing-stack" x1="75" y1="46" x2="75" y2="102" stroke="var(--color-primary)"
+            stroke-width="3" filter="url(#mobileThemeGlow)" stroke-linecap="round" />
+          <g class="mobile-glowing-stack">
+            <g>
+              <polygon points="50 94, 50 97, 75 107, 100 97, 100 94, 75 104" fill="var(--color-border-light)"
+                opacity="0.4" />
+              <polygon points="75 83, 100 94, 75 104, 50 94" fill="var(--glass-bg)" stroke="var(--color-border)"
+                stroke-width="1" />
+            </g>
+            <g>
+              <polygon points="50 74, 50 77, 75 87, 100 77, 100 74, 75 84" fill="var(--color-border-light)"
+                opacity="0.6" />
+              <polygon points="75 63, 100 74, 75 84, 50 74" fill="var(--glass-bg)" stroke="var(--color-accent)"
+                stroke-width="1.2" />
+            </g>
+            <g filter="url(#mobileThemeGlow)">
+              <polygon points="50 54, 50 57, 75 67, 100 57, 100 54, 75 64" fill="var(--color-accent)" opacity="0.5" />
+              <polygon points="75 43, 100 54, 75 64, 50 54" fill="var(--glass-bg)" stroke="var(--color-primary)"
+                stroke-width="1.8" />
+            </g>
+          </g>
+          <circle class="mobile-vacancy-blip-1" cx="118" cy="46" r="4" fill="var(--color-primary)"
+            filter="url(#mobileThemeGlow)" />
+          <circle class="mobile-vacancy-blip-2" cx="32" cy="88" r="3" fill="var(--color-accent)"
+            filter="url(#mobileThemeGlow)" />
         </svg>
         <h2>Work Analytics</h2>
       </div>
@@ -46,20 +154,6 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar__header">
         <div class="sidebar__logo">
-          <span class="sidebar__logo-icon">
-            <svg viewBox="0 0 24 24" width="32" height="32" stroke="url(#logoGradient)" stroke-width="2.5" fill="none"
-              stroke-linecap="round" stroke-linejoin="round">
-              <defs>
-                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="var(--color-primary)" />
-                  <stop offset="100%" stop-color="var(--color-accent)" />
-                </linearGradient>
-              </defs>
-              <line x1="18" y1="20" x2="18" y2="10"></line>
-              <line x1="12" y1="20" x2="12" y2="4"></line>
-              <line x1="6" y1="20" x2="6" y2="14"></line>
-            </svg>
-          </span>
           <h1 class="sidebar__title">Work Analytics</h1>
         </div>
       </div>
@@ -76,15 +170,22 @@
 
       <div class="sidebar__section-header">
         <div class="sidebar__section-title">История отчётов</div>
-        <div class="sidebar__search-wrapper">
-          <input type="text" id="reportsSearch" class="sidebar__search-input" placeholder="Поиск..." autocomplete="off"
-            spellcheck="true">
-          <svg class="sidebar__search-icon" viewBox="0 0 24 24" width="12" height="12" stroke="currentColor"
-            stroke-width="2.5" fill="none">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </div>
+      <div class="sidebar__search-wrapper" id="reportsSearchWrapper">
+        <input type="text" id="reportsSearch" class="sidebar__search-input" placeholder="Поиск по отчётам..."
+          autocomplete="off" spellcheck="true">
+        <svg class="sidebar__search-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor"
+          stroke-width="2.5" fill="none">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <button type="button" id="reportsSearchClear" class="sidebar__search-clear" aria-label="Очистить поиск"
+          style="display: none;">
+          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
-        </div>
+        </button>
       </div>
       <div class="sidebar__reports-list" id="reportsList">
         <div class="sidebar__empty" id="reportsEmpty">
@@ -153,18 +254,121 @@
         <div class="welcome-screen__inner">
           <div class="welcome-screen__header">
             <div class="welcome-screen__icon">
-              <svg viewBox="0 0 24 24" width="64" height="64" stroke="url(#radarGradient)" stroke-width="1.5"
-                fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="100" height="100">
                 <defs>
-                  <linearGradient id="radarGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="var(--color-primary)" />
-                    <stop offset="100%" stop-color="var(--color-accent)" />
+                  <filter id="welcomeThemeGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="2.5" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <linearGradient id="welcomeSweepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="var(--color-accent)" stop-opacity="0.25" />
+                    <stop offset="100%" stop-color="var(--color-accent)" stop-opacity="0" />
                   </linearGradient>
                 </defs>
-                <circle cx="12" cy="12" r="10"></circle>
-                <circle cx="12" cy="12" r="6"></circle>
-                <circle cx="12" cy="12" r="2"></circle>
-                <path d="M12 2v10l5 5"></path>
+                <style>
+                  .welcome-radar-sweep-line {
+                    transform-origin: 75px 75px;
+                    animation: welcomeRadarScan 6s linear infinite;
+                  }
+
+                  .welcome-glowing-stack {
+                    animation: welcomeFloatStack 4s ease-in-out infinite;
+                  }
+
+                  .welcome-vacancy-blip-1 {
+                    transform-origin: 118px 46px;
+                    animation: welcomeBlipGlow 2s infinite ease-in-out;
+                  }
+
+                  .welcome-vacancy-blip-2 {
+                    transform-origin: 32px 88px;
+                    animation: welcomeBlipGlow 2.5s infinite ease-in-out;
+                  }
+
+                  @keyframes welcomeRadarScan {
+                    from {
+                      transform: rotate(0deg);
+                    }
+
+                    to {
+                      transform: rotate(360deg);
+                    }
+                  }
+
+                  @keyframes welcomeFloatStack {
+
+                    0%,
+                    100% {
+                      transform: translateY(0px);
+                    }
+
+                    50% {
+                      transform: translateY(-4px);
+                    }
+                  }
+
+                  @keyframes welcomeBlipGlow {
+
+                    0%,
+                    100% {
+                      transform: scale(1);
+                      opacity: 0.4;
+                    }
+
+                    50% {
+                      transform: scale(1.35);
+                      opacity: 1;
+                    }
+                  }
+                </style>
+                <g>
+                  <circle cx="75" cy="75" r="66" stroke="var(--color-primary)" stroke-width="1.2" stroke-opacity="0.2"
+                    fill="none" />
+                  <circle cx="75" cy="75" r="44" stroke="var(--color-accent)" stroke-width="1" stroke-opacity="0.25"
+                    stroke-dasharray="4 3" fill="none" />
+                  <circle cx="75" cy="75" r="22" stroke="var(--color-primary)" stroke-width="1" stroke-opacity="0.15"
+                    fill="none" />
+                  <line x1="75" y1="12" x2="75" y2="138" stroke="var(--color-accent)" stroke-opacity="0.1"
+                    stroke-width="1" />
+                  <line x1="12" y1="75" x2="138" y2="75" stroke="var(--color-accent)" stroke-opacity="0.1"
+                    stroke-width="1" />
+                  <path d="M 12 98 Q 43.5 110, 75 98 T 138 98" stroke="var(--color-primary)" stroke-opacity="0.18"
+                    stroke-width="1.5" fill="none" />
+                </g>
+                <g class="welcome-radar-sweep-line">
+                  <path d="M 75 75 L 138 52 A 66 66 0 0 0 102 12.8 Z" fill="url(#welcomeSweepGrad)" />
+                  <line x1="75" y1="75" x2="141" y2="75" stroke="var(--color-accent)" stroke-width="1.8"
+                    filter="url(#welcomeThemeGlow)" />
+                </g>
+                <line class="welcome-glowing-stack" x1="75" y1="46" x2="75" y2="102" stroke="var(--color-primary)"
+                  stroke-width="3" filter="url(#welcomeThemeGlow)" stroke-linecap="round" />
+                <g class="welcome-glowing-stack">
+                  <g>
+                    <polygon points="50 94, 50 97, 75 107, 100 97, 100 94, 75 104" fill="var(--color-border-light)"
+                      opacity="0.4" />
+                    <polygon points="75 83, 100 94, 75 104, 50 94" fill="var(--glass-bg)" stroke="var(--color-border)"
+                      stroke-width="1" />
+                  </g>
+                  <g>
+                    <polygon points="50 74, 50 77, 75 87, 100 77, 100 74, 75 84" fill="var(--color-border-light)"
+                      opacity="0.6" />
+                    <polygon points="75 63, 100 74, 75 84, 50 74" fill="var(--glass-bg)" stroke="var(--color-accent)"
+                      stroke-width="1.2" />
+                  </g>
+                  <g filter="url(#welcomeThemeGlow)">
+                    <polygon points="50 54, 50 57, 75 67, 100 57, 100 54, 75 64" fill="var(--color-accent)"
+                      opacity="0.5" />
+                    <polygon points="75 43, 100 54, 75 64, 50 54" fill="var(--glass-bg)" stroke="var(--color-primary)"
+                      stroke-width="1.8" />
+                  </g>
+                </g>
+                <circle class="welcome-vacancy-blip-1" cx="118" cy="46" r="4" fill="var(--color-primary)"
+                  filter="url(#welcomeThemeGlow)" />
+                <circle class="welcome-vacancy-blip-2" cx="32" cy="88" r="3" fill="var(--color-accent)"
+                  filter="url(#welcomeThemeGlow)" />
               </svg>
             </div>
             <h2 class="welcome-screen__title">Work Analytics</h2>
@@ -196,15 +400,18 @@
                   <label class="welcome-search__label">Источники данных</label>
                   <div class="welcome-search__sources-grid">
                     <label class="compact-source-label">
-                      <input type="checkbox" id="welcomeSourceHH" value="hh" class="sr-only compact-source-checkbox" checked />
+                      <input type="checkbox" id="welcomeSourceHH" value="hh" class="sr-only compact-source-checkbox"
+                        checked />
                       <span class="compact-source-badge source-badge--hh">HH.ru</span>
                     </label>
                     <label class="compact-source-label">
-                      <input type="checkbox" id="welcomeSourceRabotaby" value="rabotaby" class="sr-only compact-source-checkbox" checked />
+                      <input type="checkbox" id="welcomeSourceRabotaby" value="rabotaby"
+                        class="sr-only compact-source-checkbox" checked />
                       <span class="compact-source-badge source-badge--rabotaby">Rabota.by</span>
                     </label>
                     <label class="compact-source-label">
-                      <input type="checkbox" id="welcomeSourceHabr" value="habr" class="sr-only compact-source-checkbox" checked />
+                      <input type="checkbox" id="welcomeSourceHabr" value="habr" class="sr-only compact-source-checkbox"
+                        checked />
                       <span class="compact-source-badge source-badge--habr">Хабр Карьера</span>
                     </label>
                   </div>
@@ -221,7 +428,8 @@
                       <input type="radio" name="welcomePeriod" id="welcomePeriod_3d" value="3days" class="sr-only">
                       <label for="welcomePeriod_3d" class="segmented-control__btn">3д</label>
 
-                      <input type="radio" name="welcomePeriod" id="welcomePeriod_7d" value="7days" class="sr-only" checked>
+                      <input type="radio" name="welcomePeriod" id="welcomePeriod_7d" value="7days" class="sr-only"
+                        checked>
                       <label for="welcomePeriod_7d" class="segmented-control__btn">7д</label>
 
                       <input type="radio" name="welcomePeriod" id="welcomePeriod_30d" value="30days" class="sr-only">
@@ -234,14 +442,19 @@
                   <div class="welcome-search__group">
                     <label class="welcome-search__label">Лимит вакансий</label>
                     <div class="number-stepper" id="welcomeStepperLimit">
-                      <button type="button" class="stepper-btn stepper-btn--minus" data-stepper="minus" aria-label="Уменьшить">
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
+                      <button type="button" class="stepper-btn stepper-btn--minus" data-stepper="minus"
+                        aria-label="Уменьшить">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3"
+                          fill="none">
                           <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
                       </button>
-                      <input class="form-input" type="number" id="welcomeInputLimit" value="50" min="5" max="200" step="5" />
-                      <button type="button" class="stepper-btn stepper-btn--plus" data-stepper="plus" aria-label="Увеличить">
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
+                      <input class="form-input" type="number" id="welcomeInputLimit" value="50" min="5" max="200"
+                        step="5" />
+                      <button type="button" class="stepper-btn stepper-btn--plus" data-stepper="plus"
+                        aria-label="Увеличить">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3"
+                          fill="none">
                           <line x1="12" y1="5" x2="12" y2="19"></line>
                           <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
@@ -376,9 +589,9 @@
             </div>
           </div>
 
-          
+
           <div class="welcome-widgets" style="margin-top: 32px; width: 100%;">
-            
+
             <div class="chart-card chart-card--wide">
               <h3 class="chart-card__title">Горячие вакансии (HH.ru)</h3>
               <div class="chart-card__body widget-container">
@@ -403,8 +616,10 @@
       <section class="progress-section" id="progressSection" style="display: none;">
         <div class="progress-container">
           <div class="progress-card">
-            <button id="btnMinimizeProgress" class="progress-card__minimize" title="Вернуться на главную" aria-label="Вернуться на главную">
-              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <button id="btnMinimizeProgress" class="progress-card__minimize" title="Вернуться на главную"
+              aria-label="Вернуться на главную">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
               </svg>
@@ -417,7 +632,8 @@
             <div class="progress-bar">
               <div class="progress-bar__fill" id="progressFill"></div>
             </div>
-            <button id="btnStopParsing" class="btn btn--danger" style="margin-top: 1.5rem; width: 100%;">Досрочное завершение</button>
+            <button id="btnStopParsing" class="btn btn--danger" style="margin-top: 1.5rem; width: 100%;">Досрочное
+              завершение</button>
           </div>
         </div>
       </section>
@@ -496,18 +712,21 @@
           </div>
         </div>
 
-        
+
         <!-- Панель персонального скоринга (Job Matching) -->
         <div class="job-matching-panel" id="jobMatchingPanel">
           <div class="job-matching-panel__header">
             <div class="job-matching-panel__title">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                 <polyline points="22 4 12 14.01 9 11.01"></polyline>
               </svg>
               <span>Персональный скоринг вакансий</span>
             </div>
-            <p class="job-matching-panel__subtitle">Нажимайте на нужные технологии в списке ниже, чтобы сформировать свой стек. ИИ мгновенно составит персональный портрет соответствия, а в таблице вакансий рассчитается процент вашей совместимости.</p>
+            <p class="job-matching-panel__subtitle">Нажимайте на нужные технологии в списке ниже, чтобы сформировать
+              свой стек. ИИ мгновенно составит персональный портрет соответствия, а в таблице вакансий рассчитается
+              процент вашей совместимости.</p>
           </div>
 
           <div class="job-matching-panel__main">
@@ -515,7 +734,8 @@
             <div class="job-matching-panel__stack-section">
               <div class="job-matching-panel__label">Мой стек навыков (<span id="userSkillsCount">0</span>):</div>
               <div class="job-matching-panel__tags-container" id="userSkillsContainer">
-                <span class="job-matching-panel__empty-text">Вы еще не выбрали навыки. Выберите их из списка доступных ниже...</span>
+                <span class="job-matching-panel__empty-text">Вы еще не выбрали навыки. Выберите их из списка доступных
+                  ниже...</span>
               </div>
             </div>
           </div>
@@ -524,7 +744,8 @@
           <div class="job-matching-panel__available-section">
             <div class="job-matching-panel__available-header">
               <span class="job-matching-panel__label">Доступные навыки из отчета:</span>
-              <button class="job-matching-panel__toggle-all-btn" id="btnToggleAllSkills" style="display: none;">Показать все</button>
+              <button class="job-matching-panel__toggle-all-btn" id="btnToggleAllSkills" style="display: none;">Показать
+                все</button>
             </div>
             <div class="job-matching-panel__available-tags collapsed" id="popularSkillsContainer">
               <!-- Заполняется динамически -->
@@ -551,18 +772,22 @@
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
               <button class="btn btn--ai-generate" id="btnGenerateAiSummary">
-                <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                  <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/>
-                  <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"/>
+                <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+                  stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                  <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z" />
+                  <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z" />
                 </svg>
                 <span>Запустить ИИ-анализ</span>
               </button>
               <button class="btn btn--ai-generate" id="btnUpdateAiSummary" style="display: none;">
-                <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
-                  <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/>
-                  <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"/>
+                <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor"
+                  stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path
+                    d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+                  <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z" />
+                  <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z" />
                 </svg>
                 <span>Обновить анализ под стек</span>
               </button>
@@ -577,28 +802,31 @@
             </div>
           </div>
           <div class="ai-summary-card__content" id="aiSummaryContent" style="display: none;">
-            
+
           </div>
           <!-- Заглушка (Empty State) -->
           <div class="ai-summary-placeholder" id="aiSummaryPlaceholder" style="display: none;">
             <div class="ai-summary-placeholder__icon">
-              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
               </svg>
             </div>
-            <p class="ai-summary-placeholder__text" id="aiSummaryPlaceholderText">Добавьте свой стек навыков, чтобы ИИ проанализировал ваше соответствие рынку</p>
+            <p class="ai-summary-placeholder__text" id="aiSummaryPlaceholderText">Добавьте свой стек навыков, чтобы ИИ
+              проанализировал ваше соответствие рынку</p>
           </div>
           <!-- Для совместимости -->
           <div class="ai-summary-warning" id="aiSummaryWarning" style="display: none;"></div>
-          
+
           <div class="ai-summary-card__loader" id="aiSummaryLoader" style="display: none;">
             <div class="ai-loader-spinner"></div>
             <p>ИИ анализирует вакансии и формирует портрет...</p>
           </div>
         </div>
 
-        
-        
+
+
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Распределение зарплат</h3>
@@ -608,7 +836,7 @@
           </div>
         </div>
 
-        
+
         <div class="charts-grid">
           <div class="chart-card chart-card--wide chart-card--skills">
             <h3 class="chart-card__title">Топ-15 Hard Skills</h3>
@@ -624,7 +852,7 @@
           </div>
         </div>
 
-        
+
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Зарплата vs Опыт</h3>
@@ -643,7 +871,7 @@
           </div>
         </div>
 
-        
+
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Формат работы и зарплата</h3>
@@ -658,7 +886,7 @@
           </div>
         </div>
 
-        
+
         <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Влияние английского на зарплату</h3>
@@ -668,7 +896,7 @@
           </div>
         </div>
 
-        
+
         <div class="table-card">
           <div class="table-card__header">
             <h3 class="table-card__title">Все вакансии</h3>
@@ -693,25 +921,31 @@
             <table class="data-table" id="jobsTable">
               <thead>
                 <tr>
-                  <th class="col-source" data-sort="source" style="cursor: pointer;">Источник <span class="sort-icon"></span></th>
-                  <th class="col-title" data-sort="title" style="cursor: pointer;">Вакансия <span class="sort-icon"></span></th>
-                  <th class="col-company" data-sort="company" style="cursor: pointer;">Компания <span class="sort-icon"></span></th>
-                  <th class="col-experience" data-sort="experience" style="cursor: pointer;">Опыт / Грейд <span class="sort-icon"></span></th>
-                  <th class="col-salary" data-sort="salary" style="cursor: pointer;">Зарплата <span class="sort-icon"></span></th>
-                  <th class="col-match" data-sort="match" style="cursor: pointer;">Совпадение <span class="sort-icon"></span></th>
+                  <th class="col-source" data-sort="source" style="cursor: pointer;">Источник <span
+                      class="sort-icon"></span></th>
+                  <th class="col-title" data-sort="title" style="cursor: pointer;">Вакансия <span
+                      class="sort-icon"></span></th>
+                  <th class="col-company" data-sort="company" style="cursor: pointer;">Компания <span
+                      class="sort-icon"></span></th>
+                  <th class="col-experience" data-sort="experience" style="cursor: pointer;">Опыт / Грейд <span
+                      class="sort-icon"></span></th>
+                  <th class="col-salary" data-sort="salary" style="cursor: pointer;">Зарплата <span
+                      class="sort-icon"></span></th>
+                  <th class="col-match" data-sort="match" style="cursor: pointer;">Совпадение <span
+                      class="sort-icon"></span></th>
                   <th class="col-skills">Навыки</th>
                   <th class="col-action">Действие</th>
                 </tr>
               </thead>
               <tbody id="jobsTableBody">
-                
+
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      
+
       <footer class="footer-signature">
         <a href="https://github.com/i10123" target="_blank" rel="noopener noreferrer" class="footer-signature__link">
           create by NIFRANCHIN
@@ -720,10 +954,10 @@
     </main>
   </div>
 
-  
+
   <div class="settings-overlay" id="settingsOverlay" style="display: none;">
     <div class="settings-modal" id="settingsModal">
-      
+
       <div class="settings-modal__header">
         <div class="settings-modal__header-left">
           <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"
@@ -738,7 +972,7 @@
         <button class="modal__close" id="settingsClose" aria-label="Закрыть настройки">✕</button>
       </div>
 
-      
+
       <div class="settings-tabs" id="settingsTabs">
         <button class="settings-tab active" data-tab="general">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"
@@ -784,9 +1018,9 @@
         </button>
       </div>
 
-      
+
       <div class="settings-content">
-        
+
         <div class="settings-panel active" id="settingsPanel-general">
           <div class="settings-section">
             <h3 class="settings-section__title">Тема оформления</h3>
@@ -885,7 +1119,7 @@
           </div>
         </div>
 
-        
+
         <div class="settings-panel" id="settingsPanel-parsing">
           <div class="settings-section">
             <div class="settings-form-grid">
@@ -958,7 +1192,7 @@
 
         </div>
 
-        
+
         <div class="settings-panel" id="settingsPanel-filters">
           <div class="settings-section">
 
@@ -1004,7 +1238,7 @@
           </div>
         </div>
 
-        
+
         <div class="settings-panel" id="settingsPanel-api">
           <div class="settings-section">
             <div class="settings-api-status" id="settingsGroqStatus">
@@ -1031,7 +1265,7 @@
           </div>
         </div>
 
-        
+
         <div class="settings-panel" id="settingsPanel-data">
           <div class="settings-section">
             <div class="settings-data-stats" id="settingsDataStats">
@@ -1094,7 +1328,7 @@
         </div>
       </div>
 
-      
+
       <div class="settings-modal__footer">
         <button class="btn btn--primary" id="settingsSave">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -1110,7 +1344,7 @@
   </div>
 
 
-  
+
   <div class="modal-overlay--confirm" id="confirmModalOverlay" style="display: none;">
     <div class="confirm-modal" id="confirmModal">
       <div class="confirm-modal__icon" id="confirmIcon">⚠️</div>
@@ -1118,7 +1352,7 @@
       <p class="confirm-modal__text" id="confirmText">Вы изменили настройки. Хотите сохранить их перед выходом?</p>
 
       <div class="confirm-modal__actions" id="confirmActions">
-        
+
       </div>
     </div>
   </div>

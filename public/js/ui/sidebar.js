@@ -6,9 +6,43 @@ let cachedReports = [];
 let cachedQueue = [];
 
 export function setupSidebarListeners() {
+  const searchClearBtn = document.getElementById('reportsSearchClear');
+
   DOM.reportsSearch?.addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase().trim();
     filterAndRenderReports(query);
+
+    const val = e.target.value;
+    if (searchClearBtn) {
+      if (val.length > 0) {
+        searchClearBtn.style.display = 'flex';
+      } else {
+        searchClearBtn.style.display = 'none';
+      }
+    }
+  });
+
+  if (searchClearBtn) {
+    searchClearBtn.addEventListener('click', () => {
+      if (DOM.reportsSearch) {
+        DOM.reportsSearch.value = '';
+        DOM.reportsSearch.dispatchEvent(new Event('input'));
+        DOM.reportsSearch.focus();
+      }
+      searchClearBtn.style.display = 'none';
+    });
+  }
+
+  // Сброс поиска по Escape при активном фокусе
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.activeElement === DOM.reportsSearch) {
+      if (DOM.reportsSearch.value.length > 0) {
+        DOM.reportsSearch.value = '';
+        DOM.reportsSearch.dispatchEvent(new Event('input'));
+      } else {
+        DOM.reportsSearch.blur();
+      }
+    }
   });
 
   DOM.reportsList?.addEventListener('click', async (e) => {
