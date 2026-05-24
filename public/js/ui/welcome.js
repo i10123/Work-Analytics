@@ -1,7 +1,5 @@
-
 import { DOM } from '../dom.js';
 import { appStore } from '../state.js';
-import { openModal } from './modal.js';
 import { getCurrencySymbol, convertCurrency } from '../utils/currency.js';
 import { formatSalary } from '../utils/formatters.js';
 
@@ -13,6 +11,7 @@ export function setupWelcomeScreen() {
   setupTiltEffect();
   setupMarqueeObserver();
   updateWelcomeStats();
+  setupQuickSearchPanelListeners();
 }
 
 function setupCanvasBackground() {
@@ -214,10 +213,19 @@ function setupTypewriter() {
 
 function setupQuickTags() {
   const tags = document.querySelectorAll('.welcome-tag');
+  const input = document.getElementById('welcomeSearchInput');
+  const panel = document.getElementById('welcomeSearchPanel');
   tags.forEach(tag => {
-    tag.addEventListener('click', () => {
+    tag.addEventListener('click', (e) => {
+      e.stopPropagation();
       const query = tag.dataset.query;
-      triggerSearch(query);
+      if (input) {
+        input.value = query;
+        input.focus();
+      }
+      if (panel) {
+        panel.classList.add('active');
+      }
     });
   });
 }
@@ -225,28 +233,30 @@ function setupQuickTags() {
 function setupSearchInput() {
   const input = document.getElementById('welcomeSearchInput');
   const submitBtn = document.getElementById('welcomeSearchSubmit');
+  const form = document.getElementById('welcomeSearchForm');
 
-  if (!input || !submitBtn) return;
+  if (!input || !submitBtn || !form) return;
 
-  const handleSearch = () => {
+  const fillEmptyWithPlaceholder = () => {
     let val = input.value.trim();
     if (!val) {
       const ph = input.getAttribute('placeholder');
       if (ph && ph.startsWith('Поиск по: ')) {
         val = ph.replace('Поиск по: ', '');
+        input.value = val;
       }
     }
-    if (val && val !== 'Введите запрос...') triggerSearch(val);
   };
 
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSearch();
-    }
+  form.addEventListener('submit', () => {
+    fillEmptyWithPlaceholder();
   });
 
-  submitBtn.addEventListener('click', handleSearch);
+  submitBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    fillEmptyWithPlaceholder();
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+  });
 
   document.addEventListener('keydown', (e) => {
     const welcomeScreen = document.getElementById('welcomeScreen');
@@ -259,8 +269,29 @@ function setupSearchInput() {
   });
 }
 
-function triggerSearch(query) {
-  openModal(query);
+function setupQuickSearchPanelListeners() {
+  const input = document.getElementById('welcomeSearchInput');
+  const panel = document.getElementById('welcomeSearchPanel');
+  const form = document.getElementById('welcomeSearchForm');
+
+  if (!input || !panel || !form) return;
+
+  input.addEventListener('focus', () => {
+    panel.classList.add('active');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (form && !form.contains(e.target)) {
+      panel.classList.remove('active');
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      input.blur();
+      panel.classList.remove('active');
+    }
+  });
 }
 
 function setupTiltEffect() {

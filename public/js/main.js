@@ -74,13 +74,28 @@ function initializeSettings() {
     b.classList.toggle('active', b.dataset.currency === settings.defaultCurrency);
   });
 
-  const periodRadio = document.querySelector(`input[name="period"][value="${settings.defaultPeriod}"]`);
-  if (periodRadio) {
-    periodRadio.checked = true;
-    periodRadio.dispatchEvent(new Event('change'));
+  const welcomePeriodRadio = document.querySelector(`input[name="welcomePeriod"][value="${settings.defaultPeriod}"]`);
+  if (welcomePeriodRadio) {
+    welcomePeriodRadio.checked = true;
+    welcomePeriodRadio.dispatchEvent(new Event('change'));
+    const control = welcomePeriodRadio.closest('.segmented-control');
+    if (control) control.dispatchEvent(new CustomEvent('updateIndicator'));
   }
-  if (DOM.inputLimit)
-    DOM.inputLimit.value = settings.defaultLimit;
+  
+  const welcomeInputLimit = document.getElementById('welcomeInputLimit');
+  if (welcomeInputLimit) {
+    welcomeInputLimit.value = settings.defaultLimit;
+  }
+
+  const welcomeSourceHH = document.getElementById('welcomeSourceHH');
+  const welcomeSourceRabotaby = document.getElementById('welcomeSourceRabotaby');
+  const welcomeSourceHabr = document.getElementById('welcomeSourceHabr');
+  const welcomeDeepScrape = document.getElementById('welcomeDeepScrape');
+
+  if (welcomeSourceHH) welcomeSourceHH.checked = settings.sources?.hh !== false;
+  if (welcomeSourceRabotaby) welcomeSourceRabotaby.checked = settings.sources?.rabotaby !== false;
+  if (welcomeSourceHabr) welcomeSourceHabr.checked = settings.sources?.habr !== false;
+  if (welcomeDeepScrape) welcomeDeepScrape.checked = settings.deepScrape || false;
 }
 
 function setupEventListeners() {
@@ -90,10 +105,22 @@ function setupEventListeners() {
     localStorage.setItem('sidebarCollapsed', isCollapsed ? 'true' : 'false');
   });
 
-  DOM.btnNewReport?.addEventListener('click', () => {
+  DOM.btnNewReport?.addEventListener('click', (e) => {
+    e.stopPropagation();
     window.isProgressMinimized = false;
     sessionStorage.removeItem('isProgressMinimized');
-    openModal();
+    showScreen('welcome');
+    history.pushState({ type: 'welcome' }, '', window.location.pathname);
+    
+    const input = document.getElementById('welcomeSearchInput');
+    const panel = document.getElementById('welcomeSearchPanel');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+    if (panel) {
+      panel.classList.add('active');
+    }
   });
 
   DOM.btnMinimizeProgress?.addEventListener('click', () => {
@@ -119,12 +146,8 @@ function setupEventListeners() {
     }
   });
 
-  DOM.modalClose?.addEventListener('click', closeModal);
-  DOM.modalOverlay?.addEventListener('click', (e) => {
-    if (e.target === DOM.modalOverlay) closeModal();
-  });
-
-  DOM.parseForm?.addEventListener('submit', handleFormSubmit);
+  const welcomeSearchForm = document.getElementById('welcomeSearchForm');
+  welcomeSearchForm?.addEventListener('submit', handleFormSubmit);
 
   DOM.currencyBtns?.forEach((btn) => {
     btn.addEventListener('click', () => {

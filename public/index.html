@@ -170,17 +170,17 @@
             <h2 class="welcome-screen__title">Work Analytics</h2>
           </div>
 
-          <div class="welcome-search">
+          <form class="welcome-search" id="welcomeSearchForm" novalidate>
             <div class="welcome-search__input-wrapper">
               <svg class="welcome-search__icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor"
                 stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-              <input type="text" class="welcome-search__input" id="welcomeSearchInput"
+              <input type="text" class="welcome-search__input" id="welcomeSearchInput" required
                 placeholder="Поиск по: Frontend React" autocomplete="off" spellcheck="true" />
 
-              <button class="welcome-search__submit" id="welcomeSearchSubmit" aria-label="Искать">
+              <button class="welcome-search__submit" id="welcomeSearchSubmit" aria-label="Искать" type="submit">
                 <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"
                   stroke-linecap="round" stroke-linejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -189,47 +189,119 @@
               </button>
             </div>
 
+            <div class="welcome-search__panel" id="welcomeSearchPanel">
+              <div class="welcome-search__panel-inner">
+                <!-- Sources -->
+                <div class="welcome-search__group">
+                  <label class="welcome-search__label">Источники данных</label>
+                  <div class="welcome-search__sources-grid">
+                    <label class="compact-source-label">
+                      <input type="checkbox" id="welcomeSourceHH" value="hh" class="sr-only compact-source-checkbox" checked />
+                      <span class="compact-source-badge source-badge--hh">HH.ru</span>
+                    </label>
+                    <label class="compact-source-label">
+                      <input type="checkbox" id="welcomeSourceRabotaby" value="rabotaby" class="sr-only compact-source-checkbox" checked />
+                      <span class="compact-source-badge source-badge--rabotaby">Rabota.by</span>
+                    </label>
+                    <label class="compact-source-label">
+                      <input type="checkbox" id="welcomeSourceHabr" value="habr" class="sr-only compact-source-checkbox" checked />
+                      <span class="compact-source-badge source-badge--habr">Хабр Карьера</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Row: Period and Limit -->
+                <div class="welcome-search__row">
+                  <div class="welcome-search__group">
+                    <label class="welcome-search__label">Период</label>
+                    <div class="segmented-control" id="welcomeControlPeriod" style="--segments: 4;">
+                      <input type="radio" name="welcomePeriod" id="welcomePeriod_1d" value="1day" class="sr-only">
+                      <label for="welcomePeriod_1d" class="segmented-control__btn">1д</label>
+
+                      <input type="radio" name="welcomePeriod" id="welcomePeriod_3d" value="3days" class="sr-only">
+                      <label for="welcomePeriod_3d" class="segmented-control__btn">3д</label>
+
+                      <input type="radio" name="welcomePeriod" id="welcomePeriod_7d" value="7days" class="sr-only" checked>
+                      <label for="welcomePeriod_7d" class="segmented-control__btn">7д</label>
+
+                      <input type="radio" name="welcomePeriod" id="welcomePeriod_30d" value="30days" class="sr-only">
+                      <label for="welcomePeriod_30d" class="segmented-control__btn">30д</label>
+
+                      <div class="segmented-control__indicator"></div>
+                    </div>
+                  </div>
+
+                  <div class="welcome-search__group">
+                    <label class="welcome-search__label">Лимит вакансий</label>
+                    <div class="number-stepper" id="welcomeStepperLimit">
+                      <button type="button" class="stepper-btn stepper-btn--minus" data-stepper="minus" aria-label="Уменьшить">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                      </button>
+                      <input class="form-input" type="number" id="welcomeInputLimit" value="50" min="5" max="200" step="5" />
+                      <button type="button" class="stepper-btn stepper-btn--plus" data-stepper="plus" aria-label="Увеличить">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
+                          <line x1="12" y1="5" x2="12" y2="19"></line>
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Deep Scrape -->
+                <div class="welcome-search__footer">
+                  <label class="compact-deep-scrape" style="margin-bottom: 0; width: 100%;">
+                    <span class="compact-deep-scrape__title">Глубокий парсинг</span>
+                    <input type="checkbox" class="settings-toggle" id="welcomeDeepScrape" />
+                    <span class="settings-toggle-visual"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
             <div class="welcome-tags">
               <div class="welcome-tags__list" id="welcomeTagsList">
-                <button class="welcome-tag" data-query="Frontend React">
+                <button class="welcome-tag" data-query="Frontend React" type="button">
                   <span class="welcome-tag__icon">⚛️</span> Frontend React
                 </button>
-                <button class="welcome-tag" data-query="Python Backend">
+                <button class="welcome-tag" data-query="Python Backend" type="button">
                   <span class="welcome-tag__icon">🐍</span> Python
                 </button>
-                <button class="welcome-tag" data-query="DevOps">
+                <button class="welcome-tag" data-query="DevOps" type="button">
                   <span class="welcome-tag__icon">🚀</span> DevOps
                 </button>
-                <button class="welcome-tag" data-query="Machine Learning">
+                <button class="welcome-tag" data-query="Machine Learning" type="button">
                   <span class="welcome-tag__icon">🧠</span> ML & AI
                 </button>
-                <button class="welcome-tag" data-query="Java">
+                <button class="welcome-tag" data-query="Java" type="button">
                   <span class="welcome-tag__icon">☕</span> Java
                 </button>
-                <button class="welcome-tag" data-query="Node.js">
+                <button class="welcome-tag" data-query="Node.js" type="button">
                   <span class="welcome-tag__icon">🟢</span> Node.js
                 </button>
-                <button class="welcome-tag" data-query="C# .NET">
+                <button class="welcome-tag" data-query="C# .NET" type="button">
                   <span class="welcome-tag__icon">🔷</span> C# .NET
                 </button>
-                <button class="welcome-tag" data-query="QA Automation">
+                <button class="welcome-tag" data-query="QA Automation" type="button">
                   <span class="welcome-tag__icon">🧪</span> QA Auto
                 </button>
-                <button class="welcome-tag" data-query="Data Analyst">
+                <button class="welcome-tag" data-query="Data Analyst" type="button">
                   <span class="welcome-tag__icon">📊</span> Data Analyst
                 </button>
-                <button class="welcome-tag" data-query="Go">
+                <button class="welcome-tag" data-query="Go" type="button">
                   <span class="welcome-tag__icon">🐹</span> Go
                 </button>
-                <button class="welcome-tag" data-query="iOS Swift">
+                <button class="welcome-tag" data-query="iOS Swift" type="button">
                   <span class="welcome-tag__icon">🍏</span> iOS Swift
                 </button>
-                <button class="welcome-tag" data-query="Rust">
+                <button class="welcome-tag" data-query="Rust" type="button">
                   <span class="welcome-tag__icon">🦀</span> Rust
                 </button>
               </div>
             </div>
-          </div>
+          </form>
 
           <div class="welcome-stats" id="welcomeStats">
             <div class="welcome-stat-card">
@@ -326,91 +398,7 @@
         </div>
       </section>
 
-      <div class="modal-overlay" id="modalOverlay" style="display: none;">
-        <div class="modal" id="parseModal">
-          <div class="modal__header">
-            <h2 class="modal__title">Новый сбор данных</h2>
-            <button class="modal__close" id="modalClose" aria-label="Закрыть">✕</button>
-          </div>
-          <form class="modal__form" id="parseForm">
-            <div class="form-group">
-              <label class="form-label" for="inputQuery">Ключевое слово</label>
-              <input class="form-input" type="text" id="inputQuery" placeholder="Frontend, Python, DevOps..." required
-                autocomplete="off" spellcheck="true" />
-            </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label">Период</label>
-                <div class="segmented-control" id="controlPeriod">
-                  <input type="radio" name="period" id="period_1d" value="1day" class="sr-only">
-                  <label for="period_1d" class="segmented-control__btn">1д</label>
-
-                  <input type="radio" name="period" id="period_3d" value="3days" class="sr-only">
-                  <label for="period_3d" class="segmented-control__btn">3д</label>
-
-                  <input type="radio" name="period" id="period_7d" value="7days" class="sr-only" checked>
-                  <label for="period_7d" class="segmented-control__btn">7д</label>
-
-                  <input type="radio" name="period" id="period_30d" value="30days" class="sr-only">
-                  <label for="period_30d" class="segmented-control__btn">30д</label>
-
-                  <div class="segmented-control__indicator"></div>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="inputLimit">Лимит вакансий</label>
-                <div class="number-stepper">
-                  <button type="button" class="stepper-btn stepper-btn--minus" data-stepper="minus"
-                    aria-label="Уменьшить">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </button>
-                  <input class="form-input" type="number" id="inputLimit" value="50" min="5" max="200" step="5" />
-                  <button type="button" class="stepper-btn stepper-btn--plus" data-stepper="plus"
-                    aria-label="Увеличить">
-                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 16px;">
-              <label class="form-label">Источники данных</label>
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
-                <label class="compact-source-label">
-                  <input type="checkbox" id="parseSourceHH" value="hh" class="sr-only compact-source-checkbox" checked />
-                  <span class="compact-source-badge source-badge--hh">HH.ru</span>
-                </label>
-                <label class="compact-source-label">
-                  <input type="checkbox" id="parseSourceRabotaby" value="rabotaby" class="sr-only compact-source-checkbox" checked />
-                  <span class="compact-source-badge source-badge--rabotaby">Rabota.by</span>
-                </label>
-                <label class="compact-source-label">
-                  <input type="checkbox" id="parseSourceHabr" value="habr" class="sr-only compact-source-checkbox" checked />
-                  <span class="compact-source-badge source-badge--habr">Хабр Карьера</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-group" style="margin-bottom: 24px;">
-              <label class="compact-deep-scrape">
-                <span class="compact-deep-scrape__title">Глубокий парсинг</span>
-                <input type="checkbox" class="settings-toggle" id="parseDeepScrape" />
-                <span class="settings-toggle-visual"></span>
-              </label>
-            </div>
-
-            <button class="btn btn--primary btn--full btn--lg" type="submit" id="btnSubmitParse">
-              🚀 Запустить сбор
-            </button>
-          </form>
-        </div>
-      </div>
 
       <section class="progress-section" id="progressSection" style="display: none;">
         <div class="progress-container">
