@@ -4,19 +4,83 @@ import { appStore } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
 import { formatSalary, escapeHtml, parseMarkdown } from '../utils/formatters.js';
 import {
+  renderChartSalaryGradeRange,
   renderChartSalary,
+  renderChartEnglishSalary,
   renderChartSkills,
-  renderChartSalaryVsExperience,
-  renderChartExperienceScatter,
+  renderChartLanguagesVsFrameworks,
+  renderChartSoftSkillsRadar,
+  renderChartSkillSynergy,
+  renderChartGradeDemandDoughnut,
   renderChartWorkFormatDoughnut,
   renderChartWorkFormatBar,
-  renderChartEnglishSalary,
-  renderChartTechCategory,
   destroyAllCharts,
   updateChartColors,
 } from './charts.js';
 import { renderJobsTable } from './table.js';
 import { restoreScrollPosition } from './common.js';
+
+let activeChartTab = localStorage.getItem('active-chart-tab') || 'money';
+let lastRenderedReportId = null;
+
+function renderTabCharts(tabName, jobs, rates, currency) {
+  destroyAllCharts();
+  updateChartColors();
+
+  if (tabName === 'money') {
+    renderChartSalaryGradeRange(jobs, rates, currency);
+    renderChartSalary(jobs, rates, currency);
+    renderChartEnglishSalary(jobs, rates, currency);
+  } else if (tabName === 'skills') {
+    renderChartSkills(jobs);
+    renderChartLanguagesVsFrameworks(jobs);
+    renderChartSoftSkillsRadar(jobs);
+    renderChartSkillSynergy(jobs);
+  } else if (tabName === 'market') {
+    renderChartGradeDemandDoughnut(jobs);
+    renderChartWorkFormatDoughnut(jobs);
+    renderChartWorkFormatBar(jobs, rates, currency);
+  }
+}
+
+function initChartTabsListener(jobs, rates, currency) {
+  const tabs = document.querySelectorAll('.dashboard__charts-tab');
+  const sections = document.querySelectorAll('.charts-section');
+
+  tabs.forEach(tab => {
+    const tabName = tab.dataset.chartTab;
+    tab.classList.toggle('active', tabName === activeChartTab);
+
+    sections.forEach(s => {
+      if (s.id === `chartsSection-${activeChartTab}`) {
+        s.classList.add('active');
+        s.style.display = 'grid';
+      } else {
+        s.classList.remove('active');
+        s.style.display = 'none';
+      }
+    });
+
+    tab.onclick = () => {
+      const selectedTab = tab.dataset.chartTab;
+      activeChartTab = selectedTab;
+      localStorage.setItem('active-chart-tab', selectedTab);
+
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.chartTab === selectedTab));
+      sections.forEach(s => {
+        if (s.id === `chartsSection-${selectedTab}`) {
+          s.classList.add('active');
+          s.style.display = 'grid';
+        } else {
+          s.classList.remove('active');
+          s.style.display = 'none';
+        }
+      });
+
+      renderTabCharts(selectedTab, jobs, rates, currency);
+    };
+  });
+}
 
 export function renderDashboard(report) {
   const jobs = report.jobs || [];
@@ -57,18 +121,13 @@ export function renderDashboard(report) {
   renderKPI(jobs, rates);
   renderAiSummary(report);
 
-  destroyAllCharts();
-  updateChartColors();
+  if (lastRenderedReportId !== report.id) {
+    lastRenderedReportId = report.id;
+  }
 
   const { currentCurrency } = appStore.getState();
-  renderChartSalary(jobs, rates, currentCurrency);
-  renderChartSkills(jobs);
-  renderChartSalaryVsExperience(jobs, rates, currentCurrency);
-  renderChartExperienceScatter(jobs, rates, currentCurrency);
-  renderChartWorkFormatDoughnut(jobs);
-  renderChartWorkFormatBar(jobs, rates, currentCurrency);
-  renderChartEnglishSalary(jobs, rates, currentCurrency);
-  renderChartTechCategory(jobs);
+  renderTabCharts(activeChartTab, jobs, rates, currentCurrency);
+  initChartTabsListener(jobs, rates, currentCurrency);
 
 
 

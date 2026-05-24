@@ -3,6 +3,8 @@ const axios = require('axios');
 
 const DEFAULT_METADATA = {
   skills: [],
+  programmingLanguages: [],
+  frameworksAndTools: [],
   softSkills: [],
   workFormat: 'Не указано',
   grade: 'Не указано', 
@@ -87,9 +89,12 @@ async function extractMetadataFromJobs(jobs, onProgress = null, isDeepScrape = f
     return jobs.map((job) => ({
       ...job,
       skills: job.skills || [],
+      programmingLanguages: [],
+      frameworksAndTools: job.skills || [],
       softSkills: [],
       workFormat: job.workFormat || 'Не указано',
       experience: job.experience || 'Не указано',
+      grade: job.experience || 'Не указано',
       englishLevel: 'Не указано',
       techCategory: 'Другое',
       education: 'Не указано',
@@ -230,23 +235,32 @@ function sanitizeStringArray(arr) {
 
 function mergeAiMetadata(job, aiData) {
   const jobSkills = sanitizeStringArray(job.skills);
-  const aiSkills = sanitizeStringArray(aiData.skills);
+  const aiLanguages = sanitizeStringArray(aiData.programmingLanguages);
+  const aiFrameworks = sanitizeStringArray(aiData.frameworksAndTools);
   
   const mergedSkillsMap = new Map();
   for (const s of jobSkills) mergedSkillsMap.set(s.toLowerCase(), s);
-  for (const s of aiSkills) mergedSkillsMap.set(s.toLowerCase(), s);
+  for (const s of aiLanguages) mergedSkillsMap.set(s.toLowerCase(), s);
+  for (const s of aiFrameworks) mergedSkillsMap.set(s.toLowerCase(), s);
   
   const mergedSkills = Array.from(mergedSkillsMap.values());
   const cleanSoftSkills = sanitizeStringArray(aiData.softSkills);
+  const cleanLanguages = Array.from(new Set(aiLanguages));
+  const cleanFrameworks = Array.from(new Set(aiFrameworks));
+  
+  const assignedGrade = getValidEnum(aiData.grade, VALID_EXPERIENCES, DEFAULT_METADATA.grade);
+
   return {
     ...job,
     skills: mergedSkills.length > 0 ? mergedSkills : DEFAULT_METADATA.skills,
+    programmingLanguages: cleanLanguages.length > 0 ? cleanLanguages : DEFAULT_METADATA.programmingLanguages,
+    frameworksAndTools: cleanFrameworks.length > 0 ? cleanFrameworks : DEFAULT_METADATA.frameworksAndTools,
     softSkills: cleanSoftSkills.length > 0 ? cleanSoftSkills : DEFAULT_METADATA.softSkills,
     workFormat: getValidEnumPreferJob(aiData.workFormat, job.workFormat, VALID_WORK_FORMATS, DEFAULT_METADATA.workFormat),
-    grade: getValidEnum(aiData.grade, VALID_EXPERIENCES, DEFAULT_METADATA.grade),
+    grade: assignedGrade,
     experience_years_min: typeof aiData.experience_years_min === 'number' ? aiData.experience_years_min : DEFAULT_METADATA.experience_years_min,
     experience_years_max: typeof aiData.experience_years_max === 'number' ? aiData.experience_years_max : DEFAULT_METADATA.experience_years_max,
-    experience: getValidEnumPreferJob(aiData.experience, job.experience, VALID_EXPERIENCES, DEFAULT_METADATA.experience),
+    experience: assignedGrade !== 'Не указано' ? assignedGrade : getValidEnumPreferJob(aiData.experience, job.experience, VALID_EXPERIENCES, DEFAULT_METADATA.experience),
     englishLevel: getValidEnum(aiData.englishLevel, VALID_ENGLISH_LEVELS, DEFAULT_METADATA.englishLevel),
     techCategory: getValidEnum(aiData.techCategory, VALID_TECH_CATEGORIES, DEFAULT_METADATA.techCategory),
     education: getValidEnum(aiData.education, VALID_EDUCATIONS, DEFAULT_METADATA.education),
@@ -341,22 +355,24 @@ function generatePrompt(batch) {
   return `Проанализируй описания ${batch.length} вакансий. Для КАЖДОЙ извлеки структурированные метаданные.
 ПРАВИЛА:
 - Возвращай ТОЛЬКО JSON-объект, где ключи — это ID вакансии (строки "0", "1", ...).
-- Каждое значение — объект с РОВНО 10 полями:
-  1. "skills": массив Hard Skills (["React", "Node.js"]). Навыки кратко (1-2 слова). Если нет — [].
-  2. "softSkills": массив Soft Skills. Если нет — [].
-  3. "workFormat": СТРОГО одно из: "Remote", "Office", "Hybrid", "Не указано".
-  4. "grade": СТРОГО одно из: "Intern", "Junior", "Middle", "Senior", "Lead", "Не указано".
-  5. "experience_years_min": МИНИМАЛЬНЫЙ требуемый опыт в годах (число, например 1). Если не указано — null.
-  6. "experience_years_max": МАКСИМАЛЬНЫЙ требуемый опыт в годах (число, например 3). Если не указано — null.
-  7. "experience": СТРОГО одно из: "Intern", "Junior", "Middle", "Senior", "Lead", "Не указано".
-  8. "englishLevel": СТРОГО одно из: "Нет", "A1", "A2", "B1", "B2", "C1", "C2", "Не указано".
-  9. "techCategory": СТРОГО одно из: "Frontend", "Backend", "Fullstack", "QA", "DevOps", "Mobile", "Data Science", "Другое".
-  10. "education": СТРОГО одно из: "Высшее", "Среднее", "Не требуется", "Не указано".
+- Каждое значение — объект со СЛЕДУЮЩИМИ 11 полями:
+  1. "programmingLanguages": массив используемых языков программирования (например, ["JavaScript", "TypeScript"], ["Python"], ["Go"]). Только базовые языки, не фреймворки. Если нет — [].
+  2. "frameworksAndTools": массив библиотек, фреймворков, СУБД, инструментов и DevOps-технологий (например, ["React", "Redux", "Docker", "PostgreSQL", "Git"]). Если нет — [].
+  3. "softSkills": массив Soft Skills (личные качества, например, ["Коммуникабельность", "Работа в команде"]). Если нет — [].
+  4. "workFormat": СТРОГО одно из: "Remote", "Office", "Hybrid", "Не указано".
+  5. "grade": СТРОГО одно из: "Intern", "Junior", "Middle", "Senior", "Lead", "Не указано".
+  6. "experience_years_min": МИНИМАЛЬНЫЙ требуемый опыт в годах (число, например 1). Если не указано — null.
+  7. "experience_years_max": МАКСИМАЛЬНЫЙ требуемый опыт в годах (число, например 3). Если не указано — null.
+  8. "experience": СТРОГО одно из: "Intern", "Junior", "Middle", "Senior", "Lead", "Не указано". (укажи такое же значение, как и в поле "grade").
+  9. "englishLevel": СТРОГО одно из: "Нет", "A1", "A2", "B1", "B2", "C1", "C2", "Не указано".
+  10. "techCategory": СТРОГО одно из: "Frontend", "Backend", "Fullstack", "QA", "DevOps", "Mobile", "Data Science", "Другое".
+  11. "education": СТРОГО одно из: "Высшее", "Среднее", "Не требуется", "Не указано".
 Пример ответа:
 {
   "0": {
-    "skills": ["React", "TypeScript", "Node.js"],
-    "softSkills": ["Работа в команде"],
+    "programmingLanguages": ["JavaScript", "TypeScript"],
+    "frameworksAndTools": ["React", "Redux", "Next.js", "Jest", "Git"],
+    "softSkills": ["Работа в команде", "Решение проблем"],
     "workFormat": "Remote",
     "grade": "Middle",
     "experience_years_min": 1,

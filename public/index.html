@@ -827,17 +827,43 @@
 
 
 
-        <div class="charts-grid">
+        <!-- Навигация по вкладкам графиков -->
+        <div class="dashboard__charts-nav">
+          <button class="dashboard__charts-tab active" data-chart-tab="money">
+            <span>💵 Финансы</span>
+          </button>
+          <button class="dashboard__charts-tab" data-chart-tab="skills">
+            <span>🛠️ Стек и Навыки</span>
+          </button>
+          <button class="dashboard__charts-tab" data-chart-tab="market">
+            <span>📊 Структура рынка</span>
+          </button>
+        </div>
+
+        <!-- Раздел 1: Финансы -->
+        <div class="charts-section active" id="chartsSection-money">
           <div class="chart-card chart-card--wide">
+            <h3 class="chart-card__title">Диапазоны зарплат по грейдам</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSalaryGradeRange"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
             <h3 class="chart-card__title">Распределение зарплат</h3>
             <div class="chart-card__body">
               <canvas id="chartSalary"></canvas>
             </div>
           </div>
+          <div class="chart-card">
+            <h3 class="chart-card__title">Влияние английского на зарплату</h3>
+            <div class="chart-card__body">
+              <canvas id="chartEnglishSalary"></canvas>
+            </div>
+          </div>
         </div>
 
-
-        <div class="charts-grid">
+        <!-- Раздел 2: Стек и навыки -->
+        <div class="charts-section" id="chartsSection-skills" style="display: none;">
           <div class="chart-card chart-card--wide chart-card--skills">
             <h3 class="chart-card__title">Топ-15 Hard Skills</h3>
             <div class="chart-card__body">
@@ -845,34 +871,33 @@
             </div>
           </div>
           <div class="chart-card">
-            <h3 class="chart-card__title">Категории специалистов</h3>
+            <h3 class="chart-card__title">Языки vs Фреймворки</h3>
             <div class="chart-card__body">
-              <canvas id="chartTechCategory"></canvas>
+              <canvas id="chartLanguagesVsFrameworks"></canvas>
             </div>
           </div>
-        </div>
-
-
-        <div class="charts-grid">
+          <div class="chart-card">
+            <h3 class="chart-card__title">Радар Soft Skills</h3>
+            <div class="chart-card__body">
+              <canvas id="chartSoftSkillsRadar"></canvas>
+            </div>
+          </div>
           <div class="chart-card chart-card--wide">
-            <h3 class="chart-card__title">Зарплата vs Опыт</h3>
+            <h3 class="chart-card__title">Синергия технологий (сопутствующие навыки)</h3>
             <div class="chart-card__body">
-              <canvas id="chartSalaryVsExp"></canvas>
+              <canvas id="chartSkillSynergy"></canvas>
             </div>
           </div>
         </div>
 
-        <div class="charts-grid">
-          <div class="chart-card chart-card--wide">
-            <h3 class="chart-card__title">Точечная диаграмма: Опыт и Зарплата</h3>
+        <!-- Раздел 3: Структура рынка -->
+        <div class="charts-section" id="chartsSection-market" style="display: none;">
+          <div class="chart-card">
+            <h3 class="chart-card__title">Индекс востребованности грейдов</h3>
             <div class="chart-card__body">
-              <canvas id="chartExperienceScatter"></canvas>
+              <canvas id="chartGradeDemandDoughnut"></canvas>
             </div>
           </div>
-        </div>
-
-
-        <div class="charts-grid">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Формат работы и зарплата</h3>
             <div class="chart-card__body chart-card__body--combo">
@@ -887,14 +912,6 @@
         </div>
 
 
-        <div class="charts-grid">
-          <div class="chart-card chart-card--wide">
-            <h3 class="chart-card__title">Влияние английского на зарплату</h3>
-            <div class="chart-card__body">
-              <canvas id="chartEnglishSalary"></canvas>
-            </div>
-          </div>
-        </div>
 
 
         <div class="table-card">
