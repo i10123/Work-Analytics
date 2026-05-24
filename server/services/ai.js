@@ -421,7 +421,12 @@ function cancellableDelay(ms, cancelFlag) {
   });
 }
 
-async function generateCandidateProfile(report, cancelFlag = null) {
+async function generateCandidateProfile(report, selectedSkills = [], cancelFlag = null) {
+  if (selectedSkills && !Array.isArray(selectedSkills)) {
+    cancelFlag = selectedSkills;
+    selectedSkills = [];
+  }
+
   const jobs = report.jobs || [];
   if (!jobs.length) return "Нет данных для анализа.";
   if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
@@ -430,7 +435,7 @@ async function generateCandidateProfile(report, cancelFlag = null) {
     ? report.query.replace(/[\r\n"\\]/g, ' ').trim()
     : '';
 
-  console.log(`[AI] ✨ Составление портрета идеального кандидата по запросу "${safeQuery}" на основе ${jobs.length} вакансий...`);
+  console.log(`[AI] ✨ Составление портрета идеального кандидата по запросу "${safeQuery}" на основе ${jobs.length} вакансий (выбранные навыки: ${selectedSkills.join(', ')})...`);
 
   const skillsCount = {};
   const formats = {};
@@ -452,19 +457,34 @@ async function generateCandidateProfile(report, cancelFlag = null) {
   const topFormat = Object.entries(formats).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Неизвестно';
   const topExp = Object.entries(experiences).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Неизвестно';
 
+  let selectedSkillsPrompt = "";
+  if (selectedSkills && selectedSkills.length > 0) {
+    selectedSkillsPrompt = `
+Кандидат указал, что обладает следующими навыками (стек пользователя): ${selectedSkills.join(', ')}.
+
+Пожалуйста, добавь в портрет специальный обязательный раздел:
+5. **Анализ соответствия кандидата (Job Matching)**:
+   - Проанализируй, насколько стек кандидата (${selectedSkills.join(', ')}) соответствует топ востребованных навыков (${topSkills}) и требованиям рынка.
+   - Оцени общую совместимость (например: Отличная, Средняя, Низкая) с подробным профессиональным обоснованием.
+   - Дай точечные рекомендации: какие именно из востребованных на рынке навыков кандидату стоит изучить в первую очередь, чтобы повысить свою конкурентоспособность.
+   - Предложи конкретные пути развития (какие фреймворки/инструменты подтянуть).
+`;
+  }
+
   const prompt = `Ты — экспертный IT-рекрутер и аналитик рынка труда.
 Я собрал данные по вакансиям по запросу "${safeQuery}".
 Всего вакансий: ${jobs.length}.
 Топ востребованных навыков: ${topSkills}.
 Самый частый формат работы: ${topFormat}.
 Самый частый требуемый опыт: ${topExp}.
-
+${selectedSkillsPrompt}
 На основе этих данных, составь краткий и красивый "Портрет идеального кандидата" в формате Markdown.
 Структура ответа должна включать:
 1. **Резюме** — кто этот специалист на рынке сейчас.
 2. **Ключевые компетенции** (Hard & Soft skills).
 3. **Требования рынка** (ожидания по опыту и формату работы).
 4. **Рекомендации кандидату** (на что сделать упор при поиске и развитию).
+${selectedSkills && selectedSkills.length > 0 ? "5. **Анализ соответствия кандидата (Job Matching)** — степень применимости стека и векторы развития." : ""}
 
 Пиши профессионально, ёмко, используй эмодзи и Markdown (жирный текст, списки). Не выводи никаких JSON, только красивый текст.`;
 

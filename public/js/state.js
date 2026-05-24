@@ -32,6 +32,7 @@ export const appStore = new Store({
   currentCurrency: 'RUB',
   baselineSettings: null,
   allReports: [],
+  userSkills: [],
 });
 
 export const charts = {

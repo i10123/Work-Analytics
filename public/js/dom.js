@@ -88,8 +88,15 @@ export const DOM = {
   get currencyStatusText() { return document.getElementById('currencyStatusText'); },
   get dataReportsCount() { return document.getElementById('dataReportsCount'); },
   get dataJobsCount() { return document.getElementById('dataJobsCount'); },
-  get btnDeleteAllReports() { return document.getElementById('btnDeleteAllReports'); },
-  get btnClearCache() { return document.getElementById('btnClearCache'); },
   get btnResetSettings() { return document.getElementById('btnResetSettings'); },
+
+  // Job Matching
+  get jobMatchingPanel() { return document.getElementById('jobMatchingPanel'); },
+  get userSkillsContainer() { return document.getElementById('userSkillsContainer'); },
+  get skillSearchInput() { return document.getElementById('skillSearchInput'); },
+  get skillSuggestionsDropdown() { return document.getElementById('skillSuggestionsDropdown'); },
+  get popularSkillsContainer() { return document.getElementById('popularSkillsContainer'); },
+  get btnUpdateAiSummary() { return document.getElementById('btnUpdateAiSummary'); },
+  get aiSummaryWarning() { return document.getElementById('aiSummaryWarning'); },
 
 };

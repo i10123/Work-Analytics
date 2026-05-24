@@ -70,7 +70,8 @@
 }
 
 html[data-theme="deep-aqua"] .dashboard__icon-box,
-html[data-theme="solar-coral"] .dashboard__icon-box {
+html[data-theme="solar-coral"] .dashboard__icon-box,
+html[data-theme="midnight-purple"] .dashboard__icon-box {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
 }
@@ -85,7 +86,8 @@ html[data-theme="solar-coral"] .dashboard__icon-box {
 }
 
 html[data-theme="deep-aqua"] .dashboard__icon-box::after,
-html[data-theme="solar-coral"] .dashboard__icon-box::after {
+html[data-theme="solar-coral"] .dashboard__icon-box::after,
+html[data-theme="midnight-purple"] .dashboard__icon-box::after {
   display: none;
 }
 
@@ -646,5 +648,55 @@ html[data-theme="midnight-purple"] .widget-dark {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   box-shadow: 0 0 15px var(--color-primary-glow);
+}
+
+/* AI Generate Button styling */
+.btn--ai-generate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed, #db2777, #4f46e5);
+  background-size: 300% 300%;
+  border: none;
+  border-radius: var(--border-radius, 10px);
+  color: #ffffff !important;
+  font-size: var(--font-size-sm, 14px);
+  font-weight: 700;
+  padding: 11px 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: aiShimmer 6s ease infinite;
+}
+
+.btn--ai-generate svg {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes aiShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.btn--ai-generate:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5), 0 0 8px rgba(219, 39, 119, 0.3);
+}
+
+.btn--ai-generate:active {
+  transform: translateY(0) scale(1);
+}
+
+.ai-sparkle-icon {
+  animation: sparkleRotate 4s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes sparkleRotate {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 

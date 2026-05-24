@@ -74,6 +74,8 @@ export function renderDashboard(report) {
 
   renderJobsTable(jobs, rates);
 
+  initJobMatching(report, rates);
+
   if (DOM.btnExportCsv) {
     DOM.btnExportCsv.onclick = () => exportToCSV(jobs, report.query);
   }
@@ -82,7 +84,7 @@ export function renderDashboard(report) {
 }
 
 function renderAiSummary(report) {
-  if (!DOM.aiSummaryCard || !DOM.btnGenerateAiSummary || !DOM.aiSummaryContent || !DOM.aiSummaryLoader) return;
+  if (!DOM.aiSummaryCard || !DOM.btnGenerateAiSummary || !DOM.btnUpdateAiSummary || !DOM.aiSummaryContent || !DOM.aiSummaryLoader || !DOM.aiSummaryWarning) return;
 
   DOM.aiSummaryLoader.style.display = 'none';
   DOM.aiSummaryContent.style.display = 'none';
@@ -91,11 +93,10 @@ function renderAiSummary(report) {
   if (DOM.aiSummaryCardHeader && !DOM.aiSummaryCardHeader.dataset.initialized) {
     DOM.aiSummaryCardHeader.dataset.initialized = 'true';
     DOM.aiSummaryCardHeader.addEventListener('click', (event) => {
-      
-      if (event.target.closest('#btnGenerateAiSummary')) {
+      if (event.target.closest('#btnGenerateAiSummary') || event.target.closest('#btnUpdateAiSummary')) {
         return;
       }
-      
+
       if (!DOM.aiSummaryCardHeader.classList.contains('ai-summary-card__header--clickable')) {
         return;
       }
@@ -115,10 +116,54 @@ function renderAiSummary(report) {
     DOM.btnCollapseAiSummary.style.display = 'none';
   }
 
+  const generateAction = async (btnToHide) => {
+    btnToHide.style.display = 'none';
+    DOM.btnGenerateAiSummary.style.display = 'none';
+    DOM.btnUpdateAiSummary.style.display = 'none';
+    DOM.aiSummaryLoader.style.display = 'flex';
+    DOM.aiSummaryContent.style.display = 'none';
+
+    try {
+      const { userSkills = [] } = appStore.getState();
+      const res = await fetch(`/api/reports/${report.id}/summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedSkills: userSkills })
+      });
+      const data = await res.json();
+
+      DOM.aiSummaryLoader.style.display = 'none';
+      if (data.success) {
+        report.aiSummary = data.summary;
+        DOM.aiSummaryContent.innerHTML = parseMarkdown(data.summary);
+        DOM.aiSummaryContent.style.display = 'block';
+        if (DOM.aiSummaryCardHeader) {
+          DOM.aiSummaryCardHeader.classList.add('ai-summary-card__header--clickable');
+        }
+        if (DOM.btnCollapseAiSummary) {
+          DOM.btnCollapseAiSummary.style.display = 'inline-flex';
+          if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(0deg)';
+        }
+        syncAiSummaryUI(report);
+      } else {
+        DOM.aiSummaryContent.innerHTML = `<div class="alert alert--warning" style="margin-top:10px;"><span class="alert__icon">❌</span> <span class="alert__text">${escapeHtml(data.error || 'Ошибка при генерации')}</span></div>`;
+        DOM.aiSummaryContent.style.display = 'block';
+        syncAiSummaryUI(report);
+      }
+    } catch (err) {
+      DOM.aiSummaryLoader.style.display = 'none';
+      DOM.aiSummaryContent.innerHTML = `<div class="alert alert--warning" style="margin-top:10px;"><span class="alert__icon">❌</span> <span class="alert__text">Сетевая ошибка: не удалось подключиться к серверу.</span></div>`;
+      DOM.aiSummaryContent.style.display = 'block';
+      syncAiSummaryUI(report);
+    }
+  };
+
+  DOM.btnGenerateAiSummary.onclick = () => generateAction(DOM.btnGenerateAiSummary);
+  DOM.btnUpdateAiSummary.onclick = () => generateAction(DOM.btnUpdateAiSummary);
+
   if (report.aiSummary) {
     DOM.aiSummaryContent.innerHTML = parseMarkdown(report.aiSummary);
     DOM.aiSummaryContent.style.display = 'none';
-    DOM.btnGenerateAiSummary.style.display = 'none';
     if (DOM.aiSummaryCardHeader) {
       DOM.aiSummaryCardHeader.classList.add('ai-summary-card__header--clickable');
     }
@@ -130,40 +175,9 @@ function renderAiSummary(report) {
     if (DOM.aiSummaryCardHeader) {
       DOM.aiSummaryCardHeader.classList.remove('ai-summary-card__header--clickable');
     }
-    DOM.btnGenerateAiSummary.style.display = 'inline-flex';
-    DOM.btnGenerateAiSummary.onclick = async () => {
-      DOM.btnGenerateAiSummary.style.display = 'none';
-      DOM.aiSummaryLoader.style.display = 'flex';
-
-      try {
-        const res = await fetch(`/api/reports/${report.id}/summary`, { method: 'POST' });
-        const data = await res.json();
-
-        DOM.aiSummaryLoader.style.display = 'none';
-        if (data.success) {
-          report.aiSummary = data.summary;
-          DOM.aiSummaryContent.innerHTML = parseMarkdown(data.summary);
-          DOM.aiSummaryContent.style.display = 'block';
-          if (DOM.aiSummaryCardHeader) {
-            DOM.aiSummaryCardHeader.classList.add('ai-summary-card__header--clickable');
-          }
-          if (DOM.btnCollapseAiSummary) {
-            DOM.btnCollapseAiSummary.style.display = 'inline-flex';
-            if (DOM.aiSummaryCollapseIcon) DOM.aiSummaryCollapseIcon.style.transform = 'rotate(0deg)';
-          }
-        } else {
-          DOM.aiSummaryContent.innerHTML = `<div class="alert alert--warning" style="margin-top:10px;"><span class="alert__icon">❌</span> <span class="alert__text">${escapeHtml(data.error || 'Ошибка при генерации')}</span></div>`;
-          DOM.aiSummaryContent.style.display = 'block';
-          DOM.btnGenerateAiSummary.style.display = 'inline-flex';
-        }
-      } catch (err) {
-        DOM.aiSummaryLoader.style.display = 'none';
-        DOM.aiSummaryContent.innerHTML = `<div class="alert alert--warning" style="margin-top:10px;"><span class="alert__icon">❌</span> <span class="alert__text">Сетевая ошибка: не удалось подключиться к серверу.</span></div>`;
-        DOM.aiSummaryContent.style.display = 'block';
-        DOM.btnGenerateAiSummary.style.display = 'inline-flex';
-      }
-    };
   }
+
+  syncAiSummaryUI(report);
 }
 
 function exportToCSV(jobs, query) {
@@ -260,4 +274,172 @@ function renderKPI(jobs, rates) {
   if (DOM.kpiRemote) {
     DOM.kpiRemote.textContent = `${remotePercent}%`;
   }
+}
+
+function syncAiSummaryUI(report) {
+  if (!DOM.aiSummaryCard || !DOM.btnGenerateAiSummary || !DOM.btnUpdateAiSummary || !DOM.aiSummaryWarning) return;
+
+  const { userSkills = [] } = appStore.getState();
+  const hasSkills = userSkills.length > 0;
+
+  if (!hasSkills) {
+    DOM.btnGenerateAiSummary.style.display = 'none';
+    DOM.btnUpdateAiSummary.style.display = 'none';
+    DOM.aiSummaryWarning.style.display = 'block';
+  } else {
+    DOM.aiSummaryWarning.style.display = 'none';
+    if (report.aiSummary) {
+      DOM.btnGenerateAiSummary.style.display = 'none';
+      DOM.btnUpdateAiSummary.style.display = 'inline-flex';
+    } else {
+      DOM.btnGenerateAiSummary.style.display = 'inline-flex';
+      DOM.btnUpdateAiSummary.style.display = 'none';
+    }
+  }
+}
+
+let isJobMatchingInitialized = false;
+let currentReport = null;
+let currentRates = null;
+let currentSortedSkills = [];
+let showAllSkills = false;
+
+function initJobMatching(report, rates) {
+  if (!DOM.jobMatchingPanel) return;
+
+  currentReport = report;
+  currentRates = rates;
+
+  const jobs = report.jobs || [];
+
+  const allSkillsMap = {};
+  jobs.forEach(job => {
+    (job.skills || []).forEach(s => {
+      const sLower = s.toLowerCase();
+      if (!allSkillsMap[sLower]) {
+        allSkillsMap[sLower] = { name: s, count: 0 };
+      }
+      allSkillsMap[sLower].count++;
+    });
+  });
+  currentSortedSkills = Object.values(allSkillsMap).sort((a, b) => b.count - a.count);
+
+  const renderUserSkills = () => {
+    const { userSkills = [] } = appStore.getState();
+    if (!DOM.userSkillsContainer) return;
+
+    const countBadge = document.getElementById('userSkillsCount');
+    if (countBadge) {
+      countBadge.textContent = userSkills.length;
+    }
+
+    if (userSkills.length === 0) {
+      DOM.userSkillsContainer.innerHTML = `<span class="job-matching-panel__empty-text">Вы еще не выбрали навыки. Выберите их из списка доступных ниже...</span>`;
+    } else {
+      DOM.userSkillsContainer.innerHTML = userSkills
+        .map(skill => `
+          <span class="user-stack-tag">
+            <span>${escapeHtml(skill)}</span>
+            <span class="user-stack-tag__remove" data-skill="${escapeHtml(skill)}">✕</span>
+          </span>
+        `).join('');
+    }
+  };
+
+  const renderPopularSkills = () => {
+    const { userSkills = [] } = appStore.getState();
+    if (!DOM.popularSkillsContainer) return;
+
+    // Фильтруем навыки: убираем те, что уже выбраны
+    const availableSkills = currentSortedSkills.filter(
+      skill => !userSkills.some(us => us.toLowerCase() === skill.name.toLowerCase())
+    );
+
+    const btnToggle = document.getElementById('btnToggleAllSkills');
+
+    // Лимит для 2 строк на средних экранах ~15-20 навыков.
+    // Если доступных навыков больше этого лимита, то показываем кнопку раскрытия.
+    const limit = 20;
+    const hasMore = availableSkills.length > limit;
+
+    if (btnToggle) {
+      if (hasMore) {
+        btnToggle.style.display = 'inline-block';
+        btnToggle.textContent = showAllSkills ? 'Свернуть' : 'Показать все';
+      } else {
+        btnToggle.style.display = 'none';
+      }
+    }
+
+    // Переключаем CSS-класс свертывания для 2 линий
+    if (showAllSkills) {
+      DOM.popularSkillsContainer.classList.remove('collapsed');
+    } else {
+      DOM.popularSkillsContainer.classList.add('collapsed');
+    }
+
+    if (availableSkills.length === 0) {
+      DOM.popularSkillsContainer.innerHTML = `<span class="job-matching-panel__empty-text">Все доступные навыки добавлены в ваш стек.</span>`;
+    } else {
+      DOM.popularSkillsContainer.innerHTML = availableSkills
+        .map(skill => {
+          return `<span class="popular-skill-tag" data-skill="${escapeHtml(skill.name)}">${escapeHtml(skill.name)} <small>(${skill.count})</small></span>`;
+        })
+        .join('');
+    }
+  };
+
+  const toggleUserSkill = (skillName) => {
+    let { userSkills = [] } = appStore.getState();
+    const sLower = skillName.toLowerCase();
+    const idx = userSkills.findIndex(s => s.toLowerCase() === sLower);
+
+    if (idx !== -1) {
+      userSkills = userSkills.filter((_, i) => i !== idx);
+    } else {
+      const exactSkill = currentSortedSkills.find(s => s.name.toLowerCase() === sLower);
+      userSkills = [...userSkills, exactSkill ? exactSkill.name : skillName];
+    }
+
+    appStore.setState({ userSkills });
+    renderUserSkills();
+    renderPopularSkills();
+    renderJobsTable(jobs, rates);
+    syncAiSummaryUI(report);
+  };
+
+  if (!isJobMatchingInitialized) {
+    isJobMatchingInitialized = true;
+
+    if (DOM.popularSkillsContainer) {
+      DOM.popularSkillsContainer.addEventListener('click', (e) => {
+        const tag = e.target.closest('.popular-skill-tag');
+        if (tag) {
+          const skill = tag.dataset.skill;
+          toggleUserSkill(skill);
+        }
+      });
+    }
+
+    if (DOM.userSkillsContainer) {
+      DOM.userSkillsContainer.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.user-stack-tag__remove');
+        if (removeBtn) {
+          const skill = removeBtn.dataset.skill;
+          toggleUserSkill(skill);
+        }
+      });
+    }
+
+    const btnToggle = document.getElementById('btnToggleAllSkills');
+    if (btnToggle) {
+      btnToggle.addEventListener('click', () => {
+        showAllSkills = !showAllSkills;
+        renderPopularSkills();
+      });
+    }
+  }
+
+  renderUserSkills();
+  renderPopularSkills();
 }

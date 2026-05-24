@@ -105,6 +105,7 @@ router.get('/reports/:id', async (req, res) => {
 
 router.post('/reports/:id/summary', async (req, res) => {
   const { id } = req.params;
+  const { selectedSkills } = req.body || {};
 
   if (!/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(id)) {
     return res.status(400).json({ success: false, error: 'Неверный формат ID отчёта.' });
@@ -116,14 +117,25 @@ router.post('/reports/:id/summary', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Отчёт не найден.' });
     }
 
-    if (report.aiSummary) {
+    const hasSameSkills = () => {
+      if (!report.aiSummary) return false;
+      const cachedSkills = report.aiSummarySkills || [];
+      const newSkills = selectedSkills || [];
+      if (cachedSkills.length !== newSkills.length) return false;
+      const s1 = [...cachedSkills].map(s => s.toLowerCase()).sort();
+      const s2 = [...newSkills].map(s => s.toLowerCase()).sort();
+      return s1.every((val, index) => val === s2[index]);
+    };
+
+    if (report.aiSummary && hasSameSkills()) {
       return res.json({ success: true, summary: report.aiSummary });
     }
 
-    console.log(`[API] ✨ Генерация AI сводки для отчёта: ${id}`);
-    const summary = await generateCandidateProfile(report);
+    console.log(`[API] ✨ Генерация AI сводки для отчёта: ${id} (выбранные навыки: ${selectedSkills ? selectedSkills.join(', ') : 'нет'})`);
+    const summary = await generateCandidateProfile(report, selectedSkills);
 
     report.aiSummary = summary;
+    report.aiSummarySkills = selectedSkills || [];
     await saveReport(report);
 
     return res.json({ success: true, summary });

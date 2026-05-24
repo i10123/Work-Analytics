@@ -88,6 +88,7 @@ export async function handleFormSubmit(e) {
       if (DOM.progressStep) DOM.progressStep.textContent = 'Задача добавлена в очередь...';
       loadQueueUI();
     } else {
+      console.warn('[App] ⚠️ Ошибка запуска сбора:', data.error);
       showErrorModal('Ошибка запуска', data.error);
     }
   } catch (error) {

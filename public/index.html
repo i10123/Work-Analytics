@@ -504,19 +504,74 @@
         </div>
 
         
+        <!-- Панель персонального скоринга (Job Matching) -->
+        <div class="job-matching-panel" id="jobMatchingPanel">
+          <div class="job-matching-panel__header">
+            <div class="job-matching-panel__title">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+              <span>Персональный скоринг вакансий</span>
+            </div>
+            <p class="job-matching-panel__subtitle">Нажимайте на нужные технологии в списке ниже, чтобы сформировать свой стек. ИИ мгновенно составит персональный портрет соответствия, а в таблице вакансий рассчитается процент вашей совместимости.</p>
+          </div>
+
+          <div class="job-matching-panel__main">
+            <!-- Секция выбранного стека -->
+            <div class="job-matching-panel__stack-section">
+              <div class="job-matching-panel__label">Мой стек навыков (<span id="userSkillsCount">0</span>):</div>
+              <div class="job-matching-panel__tags-container" id="userSkillsContainer">
+                <span class="job-matching-panel__empty-text">Вы еще не выбрали навыки. Выберите их из списка доступных ниже...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Секция доступных навыков из отчета -->
+          <div class="job-matching-panel__available-section">
+            <div class="job-matching-panel__available-header">
+              <span class="job-matching-panel__label">Доступные навыки из отчета:</span>
+              <button class="job-matching-panel__toggle-all-btn" id="btnToggleAllSkills" style="display: none;">Показать все</button>
+            </div>
+            <div class="job-matching-panel__available-tags collapsed" id="popularSkillsContainer">
+              <!-- Заполняется динамически -->
+            </div>
+          </div>
+        </div>
+
         <div class="ai-summary-card" id="aiSummaryCard">
           <div class="ai-summary-card__header" id="aiSummaryCardHeader">
             <div class="ai-summary-card__title">
-              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+              <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none"
                 stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                <path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+                <circle cx="19" cy="5" r="2"></circle>
+                <circle cx="5" cy="19" r="2"></circle>
+                <circle cx="19" cy="19" r="2"></circle>
+                <circle cx="5" cy="5" r="2"></circle>
+                <line x1="12" y1="12" x2="19" y2="5"></line>
+                <line x1="12" y1="12" x2="5" y2="19"></line>
+                <line x1="12" y1="12" x2="19" y2="19"></line>
+                <line x1="12" y1="12" x2="5" y2="5"></line>
               </svg>
-              ✨ Портрет идеального кандидата (AI)
+              <span>✨ Персональный ИИ-анализ совместимости</span>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-              <button class="btn btn--outline btn--sm" id="btnGenerateAiSummary">
-                <span>Сгенерировать</span>
+              <button class="btn btn--ai-generate" id="btnGenerateAiSummary">
+                <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                  <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/>
+                  <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"/>
+                </svg>
+                <span>Запустить ИИ-анализ</span>
+              </button>
+              <button class="btn btn--ai-generate" id="btnUpdateAiSummary" style="display: none;">
+                <svg class="ai-sparkle-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+                  <path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5 5 3Z"/>
+                  <path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"/>
+                </svg>
+                <span>Обновить анализ под стек</span>
               </button>
               <button class="btn btn--icon btn--sm" id="btnCollapseAiSummary" aria-label="Свернуть/Развернуть"
                 style="display: none; padding: 4px; background: transparent; border: none; color: inherit; cursor: pointer;">
@@ -530,6 +585,10 @@
           </div>
           <div class="ai-summary-card__content" id="aiSummaryContent" style="display: none;">
             
+          </div>
+          <!-- Предупреждение о необходимости выбрать навыки -->
+          <div class="ai-summary-warning" id="aiSummaryWarning" style="display: none; margin: 12px 20px 20px 20px;">
+            ⚠️ Чтобы составить ИИ-портрет соответствия, укажите ваши навыки в панели персонального скоринга выше.
           </div>
           <div class="ai-summary-card__loader" id="aiSummaryLoader" style="display: none;">
             <div class="ai-loader-spinner"></div>
@@ -626,6 +685,9 @@
                 style="max-width: 300px;">
             </div>
           </div>
+
+
+
           <div class="table-wrapper">
             <table class="data-table" id="jobsTable">
               <thead>
@@ -635,21 +697,7 @@
                   <th class="col-company" data-sort="company" style="cursor: pointer;">Компания <span class="sort-icon"></span></th>
                   <th class="col-experience" data-sort="experience" style="cursor: pointer;">Опыт / Грейд <span class="sort-icon"></span></th>
                   <th class="col-salary" data-sort="salary" style="cursor: pointer;">Зарплата <span class="sort-icon"></span></th>
-                  <th class="col-skills">Навыки</th>
-                  <th class="col-action">Действие</th>
-                </tr>
-              </thead>
-              <tbody id="jobsTableBody">
-                
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>or: pointer;">Источник <span class="sort-icon"></span></th>
-                  <th class="col-title" data-sort="title" style="cursor: pointer;">Вакансия <span class="sort-icon"></span></th>
-                  <th class="col-company" data-sort="company" style="cursor: pointer;">Компания <span class="sort-icon"></span></th>
-                  <th class="col-experience" data-sort="experience" style="cursor: pointer;">Опыт / Грейд <span class="sort-icon"></span></th>
-                  <th class="col-salary" data-sort="salary" style="cursor: pointer;">Зарплата <span class="sort-icon"></span></th>
+                  <th class="col-match" data-sort="match" style="cursor: pointer;">Совпадение <span class="sort-icon"></span></th>
                   <th class="col-skills">Навыки</th>
                   <th class="col-action">Действие</th>
                 </tr>

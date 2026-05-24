@@ -53,7 +53,7 @@ const TableManager = (() => {
         sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
       } else {
         sortConfig.key = key;
-        sortConfig.direction = 'asc';
+        sortConfig.direction = (key === 'match' || key === 'salary') ? 'desc' : 'asc';
       }
 
       const headers = table.querySelectorAll('th[data-sort]');
@@ -92,6 +92,15 @@ const TableManager = (() => {
 
       tr.classList.toggle('selected');
     });
+  }
+
+  function calculateCompatibility(jobSkills, userSkills) {
+    if (!jobSkills || jobSkills.length === 0) return 100;
+    if (!userSkills || userSkills.length === 0) return 0;
+    const vLower = jobSkills.map(s => s.toLowerCase());
+    const uLower = userSkills.map(s => s.toLowerCase());
+    const matches = vLower.filter(s => uLower.includes(s));
+    return Math.round((matches.length / vLower.length) * 100);
   }
 
   function getExperienceSortValue(job) {
@@ -139,6 +148,10 @@ const TableManager = (() => {
       } else if (key === 'experience') {
         valA = getExperienceSortValue(a);
         valB = getExperienceSortValue(b);
+      } else if (key === 'match') {
+        const { userSkills = [] } = appStore.getState();
+        valA = calculateCompatibility(a.skills, userSkills);
+        valB = calculateCompatibility(b.skills, userSkills);
       } else {
         valA = (a[key] || '').toString().toLowerCase();
         valB = (b[key] || '').toString().toLowerCase();
@@ -281,11 +294,12 @@ const TableManager = (() => {
     DOM.jobsTableBody.innerHTML = '';
 
     if (jobs.length === 0) {
-      DOM.jobsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">Вакансий не найдено</td></tr>';
+      DOM.jobsTableBody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">Вакансий не найдено</td></tr>';
       return;
     }
 
-    
+    const { userSkills = [] } = appStore.getState();
+
     let maxSalaryInDataset = 0;
     jobs.forEach(job => {
       if (job.salary) {
@@ -320,7 +334,6 @@ const TableManager = (() => {
           salaryText = `до ${formatSalary(maxConverted)} ${sym}`;
         }
 
-        
         let left = 0;
         let width = 0;
         const refMax = maxSalaryInDataset || 1;
@@ -353,10 +366,29 @@ const TableManager = (() => {
         `;
       }
 
+      const pct = calculateCompatibility(job.skills, userSkills);
+      let matchBadgeHtml = '';
+      if (!job.skills || job.skills.length === 0) {
+        matchBadgeHtml = `<span class="match-badge match-badge--none">Нет треб.</span>`;
+      } else if (pct >= 80) {
+        matchBadgeHtml = `<span class="match-badge match-badge--high">Совпадение: ${pct}%</span>`;
+      } else if (pct >= 40) {
+        matchBadgeHtml = `<span class="match-badge match-badge--medium">Совпадение: ${pct}%</span>`;
+      } else {
+        matchBadgeHtml = `<span class="match-badge match-badge--low">Совпадение: ${pct}%</span>`;
+      }
+
       const skillsHtml = (job.skills || [])
         .slice(0, 8)
-        .map((s) => `<span class="skill-tag">${highlightText(s, query)}</span>`)
+        .map((s) => {
+          const isMatch = userSkills.some(us => us.toLowerCase() === s.toLowerCase());
+          const classModifier = userSkills.length > 0
+            ? (isMatch ? ' skill-tag--match' : ' skill-tag--missing')
+            : '';
+          return `<span class="skill-tag${classModifier}">${highlightText(s, query)}</span>`;
+        })
         .join('');
+
       let sourceCapsuleHtml = '';
       if (job.source === 'hh') {
         sourceCapsuleHtml = `
@@ -401,6 +433,7 @@ const TableManager = (() => {
         <td class="col-company"><span class="company-text">${highlightText(cleanCompanyName(job.company), query)}</span></td>
         <td class="col-experience">${getExperienceHtml(job)}</td>
         <td class="col-salary">${salaryHtml}</td>
+        <td class="col-match">${matchBadgeHtml}</td>
         <td class="col-skills">${skillsHtml || '<span style="color: #64748b;">—</span>'}</td>
         <td class="col-action">${safeUrl !== '#' ? `
           <a href="${safeUrl}" target="_blank" rel="noopener" class="apply-btn">
