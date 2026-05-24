@@ -31,7 +31,6 @@ const INIT_ERROR_COOLDOWN_MS = 10000;
 async function ensureDataDirs() {
   try {
     await fs.promises.mkdir(REPORTS_DIR, { recursive: true });
-    console.log(`[Storage] 📂 Директория отчётов готова: ${REPORTS_DIR}`);
   } catch (error) {
     console.error('[Storage] ❌ Не удалось создать директории:', error.message);
     throw error;

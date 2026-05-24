@@ -22,7 +22,6 @@ async function startServer() {
     await ensureDataDirs();
     app.listen(PORT, () => {
       console.log(`[Server] ✅ Сервер запущен: http://localhost:${PORT}`);
-      console.log(`[Server] 📂 Статика: ${path.join(__dirname, '..', 'public')}`);
     });
   } catch (error) {
     console.error('[Server] ❌ Ошибка при запуске сервера:', error);
