@@ -89,6 +89,10 @@ export function showScreen(screen) {
   if (DOM.progressSection) DOM.progressSection.style.display = screen === 'progress' ? 'flex' : 'none';
   if (DOM.dashboard) DOM.dashboard.style.display = screen === 'dashboard' ? 'block' : 'none';
 
+  if (DOM.absoluteBack) {
+    DOM.absoluteBack.style.display = screen === 'dashboard' ? 'flex' : 'none';
+  }
+
   
   const pageLoader = document.getElementById('pageLoader');
   if (pageLoader && !pageLoader.classList.contains('page-loader--hidden')) {

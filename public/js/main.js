@@ -131,11 +131,32 @@ function setupEventListeners() {
     document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
   });
 
-  DOM.btnBackToWelcome?.addEventListener('click', () => {
+  const handleBackToWelcome = () => {
     showScreen('welcome');
     history.pushState({ type: 'welcome' }, '', window.location.pathname);
     document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
-  });
+  };
+
+  DOM.absoluteBack?.addEventListener('click', handleBackToWelcome);
+
+  // Обработка кнопки Наверх
+  const mainContent = document.getElementById('mainContent');
+  if (mainContent && DOM.btnScrollTop) {
+    mainContent.addEventListener('scroll', () => {
+      if (mainContent.scrollTop > 300) {
+        DOM.btnScrollTop.classList.add('visible');
+      } else {
+        DOM.btnScrollTop.classList.remove('visible');
+      }
+    });
+
+    DOM.btnScrollTop.addEventListener('click', () => {
+      mainContent.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+  }
   window.addEventListener('popstate', (event) => {
     const state = event.state;
     if (state && state.type === 'report') {

@@ -37,7 +37,6 @@ export const DOM = {
   get progressStep() { return document.getElementById('progressStep'); },
   get progressTime() { return document.getElementById('progressTime'); },
   get progressFill() { return document.getElementById('progressFill'); },
-  get btnBackToWelcome() { return document.getElementById('btnBackToWelcome'); },
   get dashTitle() { return document.getElementById('dashTitle'); },
   get dashSubtitle() { return document.getElementById('dashSubtitle'); },
   get alertPartial() { return document.getElementById('alertPartial'); },
@@ -101,5 +100,7 @@ export const DOM = {
   get popularSkillsContainer() { return document.getElementById('popularSkillsContainer'); },
   get btnUpdateAiSummary() { return document.getElementById('btnUpdateAiSummary'); },
   get aiSummaryWarning() { return document.getElementById('aiSummaryWarning'); },
+  get absoluteBack() { return document.getElementById('absoluteBack'); },
+  get btnScrollTop() { return document.getElementById('btnScrollTop'); },
 
 };

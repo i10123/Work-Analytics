@@ -43,6 +43,17 @@ function renderTabCharts(tabName, jobs, rates, currency) {
   }
 }
 
+function updateChartsTabIndicator() {
+  const nav = document.querySelector('.dashboard__charts-nav');
+  const activeTab = nav ? nav.querySelector('.dashboard__charts-tab.active') : null;
+  const indicator = nav ? nav.querySelector('.charts-nav-indicator') : null;
+
+  if (nav && activeTab && indicator) {
+    indicator.style.width = `${activeTab.offsetWidth}px`;
+    indicator.style.transform = `translateX(${activeTab.offsetLeft}px)`;
+  }
+}
+
 function initChartTabsListener(jobs, rates, currency) {
   const tabs = document.querySelectorAll('.dashboard__charts-tab');
   const sections = document.querySelectorAll('.charts-section');
@@ -77,9 +88,20 @@ function initChartTabsListener(jobs, rates, currency) {
         }
       });
 
+      updateChartsTabIndicator();
       renderTabCharts(selectedTab, jobs, rates, currency);
     };
   });
+
+  // Рассчитываем положение индикатора после отрисовки
+  setTimeout(updateChartsTabIndicator, 50);
+
+  if (!window._chartsNavResizeAttached) {
+    window._chartsNavResizeAttached = true;
+    window.addEventListener('resize', () => {
+      requestAnimationFrame(updateChartsTabIndicator);
+    });
+  }
 }
 
 export function renderDashboard(report) {

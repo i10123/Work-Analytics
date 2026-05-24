@@ -125,6 +125,7 @@
   cursor: pointer;
   z-index: 100;
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: left;
   box-shadow: var(--shadow-sm);
 }
 
@@ -226,4 +227,99 @@
 
 .btn--secondary:active {
   transform: translateY(0);
+}
+
+/* Фиксированная кнопка Назад под переключателем боковой панели */
+.absolute-back {
+  position: fixed;
+  top: 70px; /* 18px + 44px (height of toggle) + 8px (gap) */
+  left: 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-secondary);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--border-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: left;
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebar:not(.collapsed)~.main-content .absolute-back {
+  left: calc(var(--sidebar-width) + 20px);
+}
+
+.absolute-back:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-md);
+  transform: translateX(-2px);
+}
+
+.absolute-back:active {
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .absolute-back {
+    display: none !important;
+  }
+}
+
+/* Плавающая круглая кнопка Наверх */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-secondary);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 99;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+.scroll-top-btn.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.scroll-top-btn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-3px);
+}
+
+.scroll-top-btn:active {
+  transform: translateY(0) scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .scroll-top-btn {
+    bottom: 16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
+  }
 }

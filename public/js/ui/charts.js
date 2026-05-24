@@ -90,6 +90,7 @@ function commonOptions(opts = {}) {
   return {
     responsive: true,
     maintainAspectRatio: false,
+    resizeDelay: 150,
     animation: { duration: 800, easing: 'easeOutQuart' },
     plugins: {
       legend: {

@@ -302,20 +302,37 @@ html[data-theme="midnight-purple"] .dashboard__icon-box::after {
 }
 
 .dashboard__charts-nav {
+  position: relative;
   display: flex;
   gap: 6px;
-  background: var(--color-bg-tertiary);
-  border: 1px solid var(--color-border);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius, 12px);
   padding: 5px;
   margin-bottom: 24px;
   width: fit-content;
   flex-wrap: wrap;
   box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1;
+}
+
+.charts-nav-indicator {
+  position: absolute;
+  top: 5px;
+  left: 0;
+  height: calc(100% - 10px);
+  background: var(--color-primary);
+  border-radius: var(--border-radius-sm, 8px);
+  transition: transform var(--transition-slow, 0.3s), width var(--transition-slow, 0.3s);
+  z-index: 0;
+  box-shadow: 0 4px 12px var(--color-primary-glow);
+  pointer-events: none;
 }
 
 .dashboard__charts-tab {
-  background: transparent;
+  background: transparent !important;
   border: none;
   color: var(--color-text-secondary);
   font-family: var(--font-family, 'Inter', sans-serif);
@@ -327,23 +344,60 @@ html[data-theme="midnight-purple"] .dashboard__icon-box::after {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all var(--transition-fast, 0.2s);
+  transition: color var(--transition-fast, 0.12s), background-color var(--transition-fast, 0.12s);
+  position: relative;
+  z-index: 1;
 }
 
 .dashboard__charts-tab:hover {
   color: var(--color-text);
-  background: var(--color-surface-hover);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .dashboard__charts-tab.active {
-  background: var(--color-primary);
   color: #ffffff;
-  box-shadow: var(--shadow-sm);
+}
+
+html[data-theme="solar-coral"] .dashboard__charts-tab.active {
+  color: #1c0e0c; /* Высокий контраст на светлой подложке Solar Coral */
+}
+
+/* Иконки табов */
+.tab-icon {
+  transition: transform var(--transition-base, 0.22s);
+  flex-shrink: 0;
+}
+
+/* Покачивание для кошелька */
+.dashboard__charts-tab[data-chart-tab="money"]:hover .tab-icon {
+  animation: tabWiggle 0.6s ease-in-out;
+}
+
+@keyframes tabWiggle {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-10deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(4deg); }
+}
+
+/* Поворот для терминала */
+.dashboard__charts-tab[data-chart-tab="skills"]:hover .tab-icon {
+  transform: rotate(20deg);
+}
+
+/* Пульсация для диаграммы */
+.dashboard__charts-tab[data-chart-tab="market"]:hover .tab-icon {
+  animation: tabPulse 0.6s ease-in-out;
+}
+
+@keyframes tabPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2) translateY(-1px); }
 }
 
 .charts-section {
   display: none;
-  animation: fadeIn 0.4s ease;
 }
 
 .charts-section.active {
@@ -351,6 +405,18 @@ html[data-theme="midnight-purple"] .dashboard__icon-box::after {
   flex-wrap: wrap;
   gap: 18px;
   margin-bottom: 24px;
+  animation: chartSectionIn var(--transition-slow, 0.35s) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes chartSectionIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .chart-card {
