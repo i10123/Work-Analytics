@@ -11,6 +11,36 @@ const TableManager = (() => {
   let searchListenerAdded = false;
   let globalSortListenerAdded = false;
   let globalTableBodyListenerAdded = false;
+  let activeSkillFilters = [];
+  let activeFiltersListenerAdded = false;
+
+  function getFilteredJobs(jobs) {
+    const searchInput = document.getElementById('jobsTableSearch');
+    const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    return jobs.filter(j => {
+      // 1. Text Search matching
+      const matchesSearch = !q ||
+        (j.title || '').toLowerCase().includes(q) ||
+        (j.company || '').toLowerCase().includes(q) ||
+        (j.experience || '').toLowerCase().includes(q) ||
+        (j.grade || '').toLowerCase().includes(q) ||
+        (j.skills || []).join(' ').toLowerCase().includes(q);
+
+      if (!matchesSearch) return false;
+
+      // 2. Active Skill Tags matching
+      if (activeSkillFilters.length > 0) {
+        const jobSkillsLower = (j.skills || []).map(s => s.toLowerCase());
+        const hasAllActiveFilters = activeSkillFilters.every(f => 
+          jobSkillsLower.includes(f.toLowerCase())
+        );
+        if (!hasAllActiveFilters) return false;
+      }
+
+      return true;
+    });
+  }
 
   function initSearch() {
     const searchInput = document.getElementById('jobsTableSearch');
@@ -21,15 +51,7 @@ const TableManager = (() => {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           const q = e.target.value.toLowerCase();
-
-          const filtered = currentJobs.filter(j =>
-            (j.title || '').toLowerCase().includes(q) ||
-            (j.company || '').toLowerCase().includes(q) ||
-            (j.experience || '').toLowerCase().includes(q) ||
-            (j.grade || '').toLowerCase().includes(q) ||
-            (j.skills || []).join(' ').toLowerCase().includes(q)
-          );
-
+          const filtered = getFilteredJobs(currentJobs);
           const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
           renderTableRows(sorted, currentRates, q);
         }, 300); 
@@ -62,14 +84,7 @@ const TableManager = (() => {
       const searchInput = document.getElementById('jobsTableSearch');
       const q = searchInput ? searchInput.value.toLowerCase() : '';
 
-      const filtered = currentJobs.filter(j =>
-        (j.title || '').toLowerCase().includes(q) ||
-        (j.company || '').toLowerCase().includes(q) ||
-        (j.experience || '').toLowerCase().includes(q) ||
-        (j.grade || '').toLowerCase().includes(q) ||
-        (j.skills || []).join(' ').toLowerCase().includes(q)
-      );
-
+      const filtered = getFilteredJobs(currentJobs);
       const sorted = sortData(filtered, currentRates);
       renderTableRows(sorted, currentRates, q);
     });
@@ -80,6 +95,17 @@ const TableManager = (() => {
     globalTableBodyListenerAdded = true;
 
     DOM.jobsTableBody.addEventListener('click', (e) => {
+      // Check if skill tag was clicked
+      const skillTag = e.target.closest('.skill-tag');
+      if (skillTag) {
+        e.stopPropagation();
+        const skill = skillTag.dataset.skill;
+        if (skill) {
+          toggleSkillFilter(skill);
+        }
+        return;
+      }
+
       const tr = e.target.closest('tr');
       if (!tr) return;
 
@@ -92,6 +118,79 @@ const TableManager = (() => {
 
       tr.classList.toggle('selected');
     });
+  }
+
+  function toggleSkillFilter(skill) {
+    const index = activeSkillFilters.findIndex(f => f.toLowerCase() === skill.toLowerCase());
+    if (index === -1) {
+      activeSkillFilters.push(skill);
+    } else {
+      activeSkillFilters.splice(index, 1);
+    }
+    applyActiveFilters();
+  }
+
+  function applyActiveFilters() {
+    renderActiveFilterChips();
+
+    const searchInput = document.getElementById('jobsTableSearch');
+    const q = searchInput ? searchInput.value.toLowerCase() : '';
+
+    const filtered = getFilteredJobs(currentJobs);
+    const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
+
+    renderTableRows(sorted, currentRates, q);
+  }
+
+  function renderActiveFilterChips() {
+    const bar = document.getElementById('tableActiveFiltersBar');
+    const container = document.getElementById('tableActiveFiltersList');
+    if (!bar || !container) return;
+
+    if (activeSkillFilters.length === 0) {
+      bar.style.display = 'none';
+      container.innerHTML = '';
+      return;
+    }
+
+    bar.style.display = 'flex';
+    container.innerHTML = activeSkillFilters
+      .map(tag => `
+        <span class="active-filter-chip">
+          ${escapeHtml(tag)}
+          <button class="active-filter-chip__clear" data-tag="${escapeHtml(tag)}" type="button" aria-label="Удалить фильтр">✕</button>
+        </span>
+      `).join('');
+  }
+
+  function initActiveFiltersListeners() {
+    if (activeFiltersListenerAdded) return;
+
+    const bar = document.getElementById('tableActiveFiltersBar');
+    if (bar) {
+      activeFiltersListenerAdded = true;
+
+      bar.addEventListener('click', (e) => {
+        const clearBtn = e.target.closest('.active-filter-chip__clear');
+        if (clearBtn) {
+          const tag = clearBtn.dataset.tag;
+          if (tag) {
+            const idx = activeSkillFilters.findIndex(f => f.toLowerCase() === tag.toLowerCase());
+            if (idx !== -1) {
+              activeSkillFilters.splice(idx, 1);
+              applyActiveFilters();
+            }
+          }
+          return;
+        }
+
+        const resetBtn = e.target.closest('#btnResetTableFilters');
+        if (resetBtn) {
+          activeSkillFilters = [];
+          applyActiveFilters();
+        }
+      });
+    }
   }
 
   function calculateCompatibility(jobSkills, userSkills) {
@@ -381,11 +480,17 @@ const TableManager = (() => {
       const skillsHtml = (job.skills || [])
         .slice(0, 8)
         .map((s) => {
+          const isActive = activeSkillFilters.some(af => af.toLowerCase() === s.toLowerCase());
           const isMatch = userSkills.some(us => us.toLowerCase() === s.toLowerCase());
-          const classModifier = userSkills.length > 0
-            ? (isMatch ? ' skill-tag--match' : ' skill-tag--missing')
-            : '';
-          return `<span class="skill-tag${classModifier}">${highlightText(s, query)}</span>`;
+          
+          let classModifier = '';
+          if (isActive) {
+            classModifier = ' skill-tag--active-filter';
+          } else if (userSkills.length > 0) {
+            classModifier = isMatch ? ' skill-tag--match' : ' skill-tag--missing';
+          }
+
+          return `<span class="skill-tag${classModifier}" data-skill="${escapeHtml(s)}">${highlightText(s, query)}</span>`;
         })
         .join('');
 
@@ -458,16 +563,25 @@ const TableManager = (() => {
       const table = document.getElementById('jobsTable');
       if (!table) return;
 
+      if (currentJobs !== jobs) {
+        activeSkillFilters = [];
+      }
+
       currentJobs = jobs;
       currentRates = rates;
 
       initSearch();
       initSort();
       initTableBodyDelegation();
+      initActiveFiltersListeners();
+
+      renderActiveFilterChips();
 
       const searchInput = document.getElementById('jobsTableSearch');
       const q = searchInput ? searchInput.value.toLowerCase() : '';
-      const dataToRender = sortConfig.key ? sortData(jobs, rates) : jobs;
+      
+      const filtered = getFilteredJobs(jobs);
+      const dataToRender = sortConfig.key ? sortData(filtered, rates) : filtered;
       renderTableRows(dataToRender, rates, q);
     }
   };
