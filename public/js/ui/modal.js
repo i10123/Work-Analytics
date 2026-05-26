@@ -79,8 +79,6 @@ export async function handleFormSubmit(e) {
       const panel = document.getElementById('welcomeSearchPanel');
       if (panel) panel.classList.remove('active');
       
-      window.isProgressMinimized = false;
-      sessionStorage.removeItem('isProgressMinimized');
       showScreen('progress');
 
       if (DOM.progressTitle) DOM.progressTitle.textContent = `Сбор данных: "${query}"`;

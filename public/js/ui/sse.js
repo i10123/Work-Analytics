@@ -140,8 +140,6 @@ async function handleTaskUpdate(task) {
       }, 1000);
     }
   } else if (task.status === 'completed' || task.status === 'partial') {
-    window.isProgressMinimized = false;
-    sessionStorage.removeItem('isProgressMinimized');
     if (progressTimerInterval) {
       clearInterval(progressTimerInterval);
       progressTimerInterval = null;
@@ -168,8 +166,6 @@ async function handleTaskUpdate(task) {
     }
     loadReportsList().then(() => updateWelcomeStats());
   } else if (task.status === 'failed') {
-    window.isProgressMinimized = false;
-    sessionStorage.removeItem('isProgressMinimized');
     if (progressTimerInterval) {
       clearInterval(progressTimerInterval);
       progressTimerInterval = null;

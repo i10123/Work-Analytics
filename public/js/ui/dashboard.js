@@ -506,6 +506,15 @@ function initJobMatching(report, rates) {
     }
 
     appStore.setState({ userSkills });
+
+    if (currentReport && currentReport.id) {
+      try {
+        localStorage.setItem(`user-skills-${currentReport.id}`, JSON.stringify(userSkills));
+      } catch (e) {
+        console.warn('[Dashboard] Не удалось сохранить навыки в localStorage:', e);
+      }
+    }
+
     renderUserSkills();
     renderPopularSkills();
     renderJobsTable(jobs, rates);

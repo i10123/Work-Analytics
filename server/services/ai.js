@@ -1,5 +1,4 @@
-const axios = require('axios');
-
+const { askBrowserAi } = require('./browserAiService');
 
 const DEFAULT_METADATA = {
   skills: [],
@@ -15,196 +14,58 @@ const DEFAULT_METADATA = {
   techCategory: 'Другое',
   education: 'Не указано',
 };
+
 const VALID_WORK_FORMATS = ['Remote', 'Office', 'Hybrid', 'Не указано'];
 const VALID_EXPERIENCES = ['Intern', 'Junior', 'Middle', 'Senior', 'Lead', 'Не указано'];
 const VALID_ENGLISH_LEVELS = ['Нет', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'Не указано'];
 const VALID_TECH_CATEGORIES = ['Frontend', 'Backend', 'Fullstack', 'QA', 'DevOps', 'Mobile', 'Data Science', 'Другое'];
 const VALID_EDUCATIONS = ['Высшее', 'Среднее', 'Не требуется', 'Не указано'];
 
-let cachedConfig = null;
-const bannedKeys = new Set();
-
-function getGroqConfig() {
-  if (cachedConfig) return cachedConfig;
-  const keysStr = process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '';
-  const modelsStr = process.env.GROQ_MODELS || '';
-  const keys = keysStr.split(',').map(k => k.trim()).filter(k => k && !k.startsWith('YOUR_'));
-  let models = modelsStr.split(',').map(m => m.trim()).filter(m => m);
-  if (models.length === 0) models = ['llama-3.3-70b-versatile'];
-
-  cachedConfig = { keys, models };
-  return cachedConfig;
-}
-
-function getRandomGroqKey() {
-  const config = getGroqConfig();
-  if (!config.keys || config.keys.length === 0) return null;
-  const activeKeys = config.keys.filter(k => !bannedKeys.has(k));
-  if (activeKeys.length === 0) return null;
-  const randomIndex = Math.floor(Math.random() * activeKeys.length);
-  return activeKeys[randomIndex];
-}
-
-
-const rateLimitChainByKey = new Map();
-const currentDelayByKey = new Map();
-
-const BASE_DELAY_MS = 5000;
-const MAX_DELAY_MS = 15000;
-
-function getDelayForKey(apiKey) {
-  return currentDelayByKey.get(apiKey) || BASE_DELAY_MS;
-}
-
-function onRateLimitHit(apiKey) {
-  const current = getDelayForKey(apiKey);
-  const next = Math.min(current * 2, MAX_DELAY_MS);
-  currentDelayByKey.set(apiKey, next);
-  console.warn(`[AI] ⏳ Лимит запросов превышен для ключа ${apiKey.slice(0, 10)}... Увеличиваем задержку до ${next}мс`);
-}
-
-function onSuccess(apiKey) {
-  const current = getDelayForKey(apiKey);
-  if (current > BASE_DELAY_MS) {
-    const next = Math.max(current * 0.9, BASE_DELAY_MS);
-    currentDelayByKey.set(apiKey, next);
-  }
-}
-
-function waitForRateLimit(apiKey, cancelFlag) {
-  const prev = rateLimitChainByKey.get(apiKey) || Promise.resolve();
-  const currentDelay = getDelayForKey(apiKey);
-  
-  const delay = currentDelay + Math.floor(Math.random() * 500) - 250;
-  const next = prev.then(() => cancellableDelay(Math.max(delay, 500), cancelFlag).catch(() => {}));
-  rateLimitChainByKey.set(apiKey, next);
-  return prev;
-}
+const UNINFORMATIVE_VALUES = new Set(['Не указано']);
 
 async function extractMetadataFromJobs(jobs, onProgress = null, isDeepScrape = false, cancelFlag = null) {
-  const groqConfig = getGroqConfig();
-
-  if (!groqConfig.keys.length) {
-    console.warn('[AI] ⚠️ Провайдеры (Groq) не настроены. Метаданные не будут извлечены.');
-    return jobs.map((job) => ({
-      ...job,
-      skills: job.skills || [],
-      programmingLanguages: [],
-      frameworksAndTools: job.skills || [],
-      softSkills: [],
-      workFormat: job.workFormat || 'Не указано',
-      experience: job.experience || 'Не указано',
-      grade: job.experience || 'Не указано',
-      englishLevel: 'Не указано',
-      techCategory: 'Другое',
-      education: 'Не указано',
-    }));
-  }
-
-  console.log(`[AI] 🤖 Начинаю извлечение метаданных для ${jobs.length} вакансий...`);
+  if (!jobs || jobs.length === 0) return [];
 
   const batchSize = isDeepScrape ? 5 : 10;
   const batches = splitIntoBatches(jobs, batchSize);
-  const queue = batches.map((batch, index) => ({ batch, batchIndex: index }));
   const enrichedJobs = [];
-  const results = new Array(batches.length);
 
-  let processedBatchesCount = 0;
+  console.log(`[AI] 🤖 Начинаю извлечение метаданных для ${jobs.length} вакансий (всего батчей: ${batches.length}) с помощью Browser AI...`);
 
-  async function worker(workerIndex) {
-    let currentModelIndex = 0;
-
-    while (queue.length > 0) {
-      if (cancelFlag && cancelFlag.isStopped) break;
-
-      const activeKeys = groqConfig.keys.filter(k => !bannedKeys.has(k));
-      if (activeKeys.length === 0) {
-        console.error('[AI] ❌ Все доступные API-ключи заблокированы!');
-        if (onProgress) {
-          onProgress(
-            processedBatchesCount,
-            batches.length,
-            '⚠️ Все ключи API заблокированы. Сбор продолжается без ИИ...'
-          );
-        }
-        
-        while (queue.length > 0) {
-          const item = queue.shift();
-          if (item) {
-            results[item.batchIndex] = { batch: item.batch, metadataMap: {} };
-          }
-        }
-        break;
-      }
-
-      const item = queue.shift();
-      if (!item) break;
-      const { batch, batchIndex } = item;
-      let metadataMap = {};
-
-      
-      const apiKey = activeKeys[workerIndex % activeKeys.length];
-
-      try {
-        await waitForRateLimit(apiKey, cancelFlag);
-        metadataMap = await processBatchWithKey(
-          batch,
-          apiKey,
-          groqConfig.models,
-          currentModelIndex,
-          (newModelIdx) => { currentModelIndex = newModelIdx; },
-          cancelFlag
-        );
-        console.log(`[AI] ✅ Батч ${batchIndex + 1}/${batches.length} обработан (поток ${workerIndex + 1}).`);
-        results[batchIndex] = { batch, metadataMap };
-        processedBatchesCount++;
-        if (onProgress) onProgress(processedBatchesCount, batches.length);
-      } catch (orError) {
-        if (cancelFlag && cancelFlag.isStopped) break;
-
-        const isBanError = orError.response && [401, 403].includes(orError.response.status);
-        if (isBanError) {
-          console.error(`[AI] ❌ Ключ ${apiKey.slice(0, 10)}... забанен (статус ${orError.response.status}). Добавляем в черный список.`);
-          bannedKeys.add(apiKey);
-        }
-
-        
-        item.attempts = (item.attempts || 0) + 1;
-        if (item.attempts < 3) {
-          console.warn(`[AI] 🔁 Ошибка батча ${batchIndex + 1} в потоке ${workerIndex + 1}: ${orError.message}. Возврат в очередь (попытка ${item.attempts}/3).`);
-          queue.unshift(item);
-        } else {
-          console.error(`[AI] ❌ Превышен лимит попыток (3) для батча ${batchIndex + 1}: ${orError.message}. Пропускаем с дефолтными значениями.`);
-          results[batchIndex] = { batch, metadataMap: {} };
-          processedBatchesCount++;
-          if (onProgress) onProgress(processedBatchesCount, batches.length);
-        }
-      }
+  for (let i = 0; i < batches.length; i++) {
+    if (cancelFlag && cancelFlag.isStopped) {
+      console.log('[AI] 🛑 Извлечение метаданных отменено пользователем.');
+      break;
     }
-  }
 
-  const workers = [];
-  for (let i = 0; i < groqConfig.keys.length; i++) {
-    workers.push(worker(i));
-  }
+    const batch = batches[i];
+    console.log(`[AI] 🌐 Обработка батча ${i + 1}/${batches.length}...`);
 
-  await Promise.all(workers);
+    if (onProgress) {
+      onProgress(i, batches.length, `AI-анализ вакансий: обработка батча ${i + 1} из ${batches.length}...`);
+    }
 
-  if (cancelFlag && cancelFlag.isStopped) {
-    console.log('[AI] 🛑 Извлечение метаданных отменено пользователем.');
-  }
+    let metadataMap = {};
+    try {
+      const prompt = generatePrompt(batch);
+      const rawText = await askBrowserAi({ prompt, thinking: isDeepScrape });
+      metadataMap = parseJsonFromAi(rawText, batch.length);
+      console.log(`[AI] ✅ Батч ${i + 1}/${batches.length} успешно обработан.`);
+    } catch (error) {
+      console.error(`[AI] ❌ Ошибка при обработке батча ${i + 1}:`, error.message);
+      if (cancelFlag && cancelFlag.isStopped) break;
+      metadataMap = {};
+    }
 
-  for (let i = 0; i < results.length; i++) {
-    if (!results[i]) continue;
-    const { batch, metadataMap } = results[i];
     for (let j = 0; j < batch.length; j++) {
       const aiData = metadataMap ? (metadataMap[String(j)] || {}) : {};
       enrichedJobs.push(mergeAiMetadata(batch[j], aiData));
     }
-  }
 
-  const totalSkills = enrichedJobs.reduce((sum, j) => sum + j.skills.length, 0);
-  console.log(`[AI] 🏁 Извлечение завершено. Найдено навыков: ${totalSkills}`);
+    if (onProgress) {
+      onProgress(i + 1, batches.length);
+    }
+  }
 
   return enrichedJobs;
 }
@@ -212,8 +73,6 @@ async function extractMetadataFromJobs(jobs, onProgress = null, isDeepScrape = f
 function getValidEnum(value, validList, defaultValue) {
   return validList.includes(value) ? value : defaultValue;
 }
-
-const UNINFORMATIVE_VALUES = new Set(['Не указано']);
 
 function getValidEnumPreferJob(aiValue, jobValue, validList, defaultValue) {
   const validAi = validList.includes(aiValue) ? aiValue : null;
@@ -265,80 +124,6 @@ function mergeAiMetadata(job, aiData) {
     techCategory: getValidEnum(aiData.techCategory, VALID_TECH_CATEGORIES, DEFAULT_METADATA.techCategory),
     education: getValidEnum(aiData.education, VALID_EDUCATIONS, DEFAULT_METADATA.education),
   };
-}
-
-async function processBatchWithKey(batch, apiKey, models, startModelIndex, updateModelIndexCallback, cancelFlag) {
-  let attempts = 0;
-  const maxAttempts = models.length + 1;
-  let currentModelIdx = startModelIndex;
-
-  while (attempts < maxAttempts) {
-    if (cancelFlag && cancelFlag.isStopped) throw new Error('Canceled');
-
-    const model = models[currentModelIdx];
-    try {
-      const result = await processBatchOpenAI(batch, apiKey, 'https://api.groq.com/openai/v1/chat/completions', model, cancelFlag);
-      onSuccess(apiKey);
-      return result;
-    } catch (error) {
-      if (cancelFlag && cancelFlag.isStopped) throw error;
-
-      
-      const isBanError = error.response && [401, 403].includes(error.response.status);
-      if (isBanError) {
-        throw error;
-      }
-
-      const isQuotaError = error.response && [402, 429].includes(error.response.status);
-
-      attempts++;
-      currentModelIdx = (currentModelIdx + 1) % models.length;
-      updateModelIndexCallback(currentModelIdx);
-
-      const nextModel = models[currentModelIdx];
-
-      if (isQuotaError) {
-        onRateLimitHit(apiKey);
-        console.warn(`[AI] 🔁 Ошибка 429/Квота. Поток переключается на модель ${nextModel}...`);
-        try { await cancellableDelay(1500 * attempts, cancelFlag); } catch { throw new Error('Canceled'); }
-        continue;
-      }
-
-      console.warn(`[AI] ⚠️ Ошибка запроса к API. Поток переключается на ${nextModel}...`);
-      try { await cancellableDelay(2000, cancelFlag); } catch { throw new Error('Canceled'); }
-      continue;
-    }
-  }
-  throw new Error('All models failed for this key');
-}
-
-function buildAxiosOptions(apiKey, cancelFlag) {
-  const options = {
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    timeout: 60000
-  };
-  if (cancelFlag?.abortController) {
-    options.signal = cancelFlag.abortController.signal;
-  }
-  return options;
-}
-
-async function processBatchOpenAI(batch, apiKey, url, model, cancelFlag) {
-  const prompt = generatePrompt(batch);
-  console.log(`[AI] 🌐 Отправка батча из ${batch.length} вакансий к API Groq (модель: ${model})...`);
-
-  const response = await axios.post(url, {
-    model: model,
-    messages: [
-      { role: 'system', content: 'You are a helpful data extraction assistant. You must output only a valid JSON object. Do not include markdown formatting or explanations.' },
-      { role: 'user', content: prompt }
-    ],
-    temperature: 0.1,
-    response_format: { type: "json_object" }
-  }, buildAxiosOptions(apiKey, cancelFlag));
-
-  const rawText = response.data?.choices?.[0]?.message?.content || '{}';
-  return parseJsonFromAi(rawText, batch.length);
 }
 
 function safeTruncate(text, maxLength) {
@@ -408,9 +193,7 @@ function parseJsonFromAi(rawText, expectedLength) {
     return parsed;
   } catch (e) {
     console.error(`[AI] ❌ Ошибка валидации/парсинга JSON: ${e.message}`);
-    if (process.env.NODE_ENV === 'development' || process.env.AI_DEBUG === 'true') {
-      console.error(`[AI] 📝 Сырой ответ ИИ: ${rawText.substring(0, 300)}...`);
-    }
+    console.error(`[AI] 📝 Сырой ответ ИИ: ${rawText.substring(0, 500)}...`);
     throw new Error(`Parse AI JSON Error: ${e.message}`);
   }
 }
@@ -421,20 +204,6 @@ function splitIntoBatches(array, size) {
     batches.push(array.slice(i, i + size));
   }
   return batches;
-}
-
-
-function cancellableDelay(ms, cancelFlag) {
-  if (cancelFlag && cancelFlag.isStopped) return Promise.reject(new Error('Canceled'));
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, ms);
-    const signal = cancelFlag?.abortController?.signal;
-    if (signal) {
-      if (signal.aborted) { clearTimeout(timer); reject(new Error('Canceled')); return; }
-      const onAbort = () => { clearTimeout(timer); reject(new Error('Canceled')); };
-      signal.addEventListener('abort', onAbort, { once: true });
-    }
-  });
 }
 
 async function generateCandidateProfile(report, selectedSkills = [], cancelFlag = null) {
@@ -508,49 +277,17 @@ ${selectedSkills && selectedSkills.length > 0 ? "5. **Анализ соотве�
 }
 
 async function generateTextFromAI(prompt, cancelFlag = null) {
-  const config = getGroqConfig();
+  if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
 
-  if (config.keys.length > 0) {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const key = getRandomGroqKey();
-      const model = config.models[0] || 'llama-3.3-70b-versatile';
-      if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
-
-      try {
-        console.log(`[AI] 🌐 Отправка запроса к API Groq (модель: ${model}, попытка ${attempt + 1})...`);
-        const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
-          model: model,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.7
-        }, buildAxiosOptions(key, cancelFlag));
-
-        console.log(`[AI] ✅ Текст сводки успешно получен от ИИ (${response.data?.choices?.[0]?.message?.content?.length || 0} символов)`);
-        return response.data?.choices?.[0]?.message?.content || "Не удалось сгенерировать сводку.";
-      } catch (error) {
-        if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
-
-        const isBanError = error.response && [401, 403].includes(error.response.status);
-        if (isBanError) {
-          console.error(`[AI] ❌ Ключ ${key.slice(0, 10)}... забанен при генерации сводки (статус ${error.response.status}). Добавляем в черный список.`);
-          bannedKeys.add(key);
-        }
-
-        const isQuotaError = error.response && [402, 429].includes(error.response.status);
-
-        if (isQuotaError || isBanError) {
-          console.warn(`[AI] 🔁 Лимит ключа исчерпан (генерация сводки). Переключаюсь...`);
-          try { await cancellableDelay(1500, cancelFlag); } catch { return "Анализ отменён."; }
-          continue;
-        }
-        console.warn(`[AI] ⚠️ Ошибка генерации текста (без деталей). Переключаюсь...`);
-        try { await cancellableDelay(2000, cancelFlag); } catch { return "Анализ отменён."; }
-        continue;
-      }
-    }
-    console.warn('[AI] ❌ Все попытки исчерпаны для генерации сводки.');
+  try {
+    console.log(`[AI] 🌐 Отправка запроса к Browser AI для генерации сводки...`);
+    const response = await askBrowserAi({ prompt });
+    return response || "Не удалось сгенерировать сводку.";
+  } catch (error) {
+    if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
+    console.error(`[AI] ❌ Ошибка генерации сводки:`, error.message);
+    return `Ошибка генерации сводки: ${error.message}`;
   }
-
-  return "Ошибка: Не настроен AI провайдер (Groq) для генерации сводки.";
 }
 
 module.exports = {

@@ -15,7 +15,6 @@
    HH_CLIENT_ID=your_id
    HH_CLIENT_SECRET=your_secret
    EXCHANGE_RATE_API_KEYS=your_exchange_keys
-   GROQ_API_KEYS=your_groq_api_keys
    ```
 
 3. **Запустите приложение**:

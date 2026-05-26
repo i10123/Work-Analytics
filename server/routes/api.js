@@ -126,9 +126,17 @@ router.post('/reports/:id/summary', async (req, res) => {
       const s2 = [...newSkills].map(s => s.toLowerCase()).sort();
       return s1.every((val, index) => val === s2[index]);
     };
-
     if (report.aiSummary && hasSameSkills()) {
       return res.json({ success: true, summary: report.aiSummary });
+    }
+
+    const { isProcessing } = getQueueStatus();
+    if (isProcessing) {
+      console.warn(`[API] ⚠️ Генерация сводки отклонена: ИИ занят парсингом.`);
+      return res.status(409).json({
+        success: false,
+        error: 'Данная функция пока недоступна, пока идет работа с ИИ (парсинг новых вакансий).'
+      });
     }
 
     console.log(`[API] ✨ Генерация AI сводки для отчёта: ${id} (выбранные навыки: ${selectedSkills ? selectedSkills.join(', ') : 'нет'})`);
@@ -214,8 +222,6 @@ router.put('/queue/:id', (req, res) => {
 router.get('/status', (req, res) => {
   const currencyKeysStr = process.env.EXCHANGE_RATE_API_KEYS || '';
   const currencyKeys = currencyKeysStr.split(',').map((k) => k.trim()).filter(Boolean);
-  const groqKeysStr = process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '';
-  const groqKeys = groqKeysStr.split(',').map(k => k.trim()).filter(Boolean);
 
   const maskKey = (key) => {
     if (!key) return null;
@@ -227,10 +233,6 @@ router.get('/status', (req, res) => {
     currency: {
       configured: currencyKeys.length > 0,
       keys: currencyKeys.map(maskKey),
-    },
-    groq: {
-      configured: groqKeys.length > 0,
-      keys: groqKeys.map(maskKey),
     }
   });
 });

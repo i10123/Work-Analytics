@@ -85,6 +85,14 @@ export function restoreScrollPosition(screen) {
 }
 
 export function showScreen(screen) {
+  if (screen === 'progress') {
+    window.isProgressMinimized = false;
+    sessionStorage.removeItem('isProgressMinimized');
+  } else {
+    window.isProgressMinimized = true;
+    sessionStorage.setItem('isProgressMinimized', 'true');
+  }
+
   if (DOM.welcomeScreen) DOM.welcomeScreen.style.display = screen === 'welcome' ? 'flex' : 'none';
   if (DOM.progressSection) DOM.progressSection.style.display = screen === 'progress' ? 'flex' : 'none';
   if (DOM.dashboard) DOM.dashboard.style.display = screen === 'dashboard' ? 'block' : 'none';

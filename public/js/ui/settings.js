@@ -277,15 +277,7 @@ async function loadApiStatus() {
 
     let hasApiError = false;
 
-    
-    if (data.groq) {
-      updateStatus(DOM.groqStatusText, data.groq.configured);
-      if (!data.groq.configured) hasApiError = true;
-    } else {
-      hasApiError = true;
-    }
-
-    
+    // Currency API Status
     if (data.currency) {
       updateStatus(DOM.currencyStatusText, data.currency.configured, 'Настроены', 'Не настроены');
       if (!data.currency.configured) hasApiError = true;
@@ -298,7 +290,7 @@ async function loadApiStatus() {
   } catch (error) {
     console.error('[Settings] ❌ Ошибка загрузки статуса API:', error);
     updateApiTabIndicator(true);
-    const elements = [DOM.groqStatusText, DOM.currencyStatusText];
+    const elements = [DOM.currencyStatusText];
     elements.forEach(el => {
       if (el) {
         el.className = 'settings-api-status__value settings-api-status__value--error';

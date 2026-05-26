@@ -90,8 +90,6 @@ export function setupSidebarListeners() {
       } else {
         const task = cachedQueue.find(t => String(t.id) === String(id));
         if (task && task.status === 'processing') {
-          window.isProgressMinimized = false;
-          sessionStorage.removeItem('isProgressMinimized');
           import('./common.js').then(({ showScreen }) => {
             showScreen('progress');
           });
@@ -256,6 +254,12 @@ async function deleteReportById(id, query) {
         state.appStore.setState({ currentReport: null });
         localStorage.removeItem('lastReportId');
         showScreen('welcome');
+      }
+
+      try {
+        localStorage.removeItem(`user-skills-${id}`);
+      } catch (e) {
+        console.warn('[Sidebar] Не удалось удалить навыки из localStorage:', e);
       }
 
       loadReportsList();

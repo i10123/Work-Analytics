@@ -36,7 +36,23 @@ export async function loadReportById(reportId, skipHistory = false) {
         });
       }
 
-      appStore.setState({ currentReport: data.report });
+      // Загрузка навыков для конкретного отчета
+      let reportSkills = [];
+      try {
+        const localSkills = localStorage.getItem(`user-skills-${reportId}`);
+        if (localSkills) {
+          reportSkills = JSON.parse(localSkills);
+        } else if (data.report && Array.isArray(data.report.aiSummarySkills)) {
+          reportSkills = data.report.aiSummarySkills;
+        }
+      } catch (e) {
+        console.warn('[Report] Ошибка при загрузке сохраненных навыков:', e);
+      }
+
+      appStore.setState({ 
+        currentReport: data.report,
+        userSkills: reportSkills
+      });
       localStorage.setItem('lastReportId', reportId);
 
       if (!skipHistory) {

@@ -107,8 +107,6 @@ function setupEventListeners() {
 
   DOM.btnNewReport?.addEventListener('click', (e) => {
     e.stopPropagation();
-    window.isProgressMinimized = false;
-    sessionStorage.removeItem('isProgressMinimized');
     showScreen('welcome');
     history.pushState({ type: 'welcome' }, '', window.location.pathname);
     
@@ -124,8 +122,6 @@ function setupEventListeners() {
   });
 
   DOM.btnMinimizeProgress?.addEventListener('click', () => {
-    window.isProgressMinimized = true;
-    sessionStorage.setItem('isProgressMinimized', 'true');
     showScreen('welcome');
     history.pushState({ type: 'welcome' }, '', window.location.pathname);
     document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));

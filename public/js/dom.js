@@ -86,7 +86,6 @@ export const DOM = {
   get settingsSourceHH() { return document.getElementById('settingsSourceHH'); },
   get settingsSourceRabotaby() { return document.getElementById('settingsSourceRabotaby'); },
   get settingsSourceHabr() { return document.getElementById('settingsSourceHabr'); },
-  get groqStatusText() { return document.getElementById('groqStatusText'); },
   get currencyStatusText() { return document.getElementById('currencyStatusText'); },
   get dataReportsCount() { return document.getElementById('dataReportsCount'); },
   get dataJobsCount() { return document.getElementById('dataJobsCount'); },
