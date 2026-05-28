@@ -13,7 +13,7 @@ function askBrowserAi(options = {}) {
 
     const prompt = options.prompt;
     if (!prompt) {
-      return reject(new Error('Prompt is required'));
+      return reject(new Error('Промпт обязателен'));
     }
 
     const profileDir = path.join(PROFILES_DIR, model);
@@ -26,7 +26,6 @@ function askBrowserAi(options = {}) {
       bridgePath,
       '--model', model,
       '--profile-dir', profileDir,
-      '--prompt', prompt,
     ];
 
     if (headless) args.push('--headless');
@@ -38,6 +37,9 @@ function askBrowserAi(options = {}) {
     console.log(`[BrowserAI] ⚙️ Headless: ${headless}, Thinking: ${thinking}, Search: ${search}`);
 
     const pyProcess = spawn('python', args);
+    pyProcess.stdin.write(prompt, 'utf-8');
+    pyProcess.stdin.end();
+
     let stdoutData = '';
     let stderrData = '';
 

@@ -52,7 +52,7 @@ class HabrParser extends BaseParser {
     const maxRetries = 3;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      if (cancelFlag?.isStopped) throw new Error('Canceled');
+      if (cancelFlag?.isStopped) throw new Error('Задача отменена');
 
       if (this.activeBackoffDelay) {
         console.log(`[Parser:Habr] ⏳ Режим задержки: ожидание ${this.activeBackoffDelay}мс...`);

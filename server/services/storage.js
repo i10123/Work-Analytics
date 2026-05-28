@@ -8,17 +8,17 @@ const LEGACY_INDEX_FILE = path.join(REPORTS_DIR, 'index.json');
 
 function getSecureFilepath(reportId, action) {
   if (!reportId || typeof reportId !== 'string' || !/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
-    throw new Error(`Invalid report ID format for ${action}`);
+    throw new Error(`Неверный формат ID отчёта для действия: ${action}`);
   }
   const filename = `${reportId}.json`;
   const safeFilename = path.basename(filename);
   if (safeFilename !== filename) {
-    throw new Error(`Path traversal attempt detected in filename for ${action}`);
+    throw new Error(`Обнаружена попытка выхода за пределы директории в имени файла для действия: ${action}`);
   }
   const filepath = path.resolve(REPORTS_DIR, safeFilename);
   const normalizedReportsDir = path.resolve(REPORTS_DIR);
   if (!filepath.startsWith(normalizedReportsDir + path.sep)) {
-    throw new Error(`Path traversal attempt detected in resolved path for ${action}`);
+    throw new Error(`Обнаружена попытка выхода за пределы директории в разрешенном пути для действия: ${action}`);
   }
   return filepath;
 }
@@ -64,7 +64,7 @@ async function listReports() {
 
   if (!cacheInitPromise) {
     if (Date.now() - lastInitErrorTime < INIT_ERROR_COOLDOWN_MS) {
-      console.warn('[Storage] ⚠️ listReports() cooldown active, returning empty list.');
+      console.warn('[Storage] ⚠️ Активен кулдаун для listReports(), возвращается пустой список.');
       return [];
     }
 
@@ -131,7 +131,7 @@ async function listReports() {
 }
 
 async function saveReport(report) {
-  if (!report) throw new Error('Invalid report object');
+  if (!report) throw new Error('Некорректный объект отчёта');
   const filepath = getSecureFilepath(report.id, 'saving');
   const filename = path.basename(filepath);
 

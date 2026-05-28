@@ -100,7 +100,13 @@ async function runPipeline(task, emitUpdate) {
   if (stats.duplicatesRemoved > 0) {
     console.log(`[Pipeline] 📋 Список удаленных дубликатов:`);
     stats.mergedPairs.forEach((pair, idx) => {
-      console.log(`  [Дубликат #${idx + 1}] (Причина: ${pair.reason})`);
+      const reasonTranslations = {
+        'sourceId_exact': 'точное совпадение ID',
+        'sourceId_cross': 'совпадение ID между источниками',
+        'fuzzy': 'нечеткое совпадение'
+      };
+      const translatedReason = reasonTranslations[pair.reason] || pair.reason;
+      console.log(`  [Дубликат #${idx + 1}] (Причина: ${translatedReason})`);
       console.log(`    ❌ Удален:      [${pair.duplicate.source.toUpperCase()}] "${pair.duplicate.title}" от "${pair.duplicate.company}" (${pair.duplicate.url})`);
       console.log(`    ✅ Сохранен в:  [${pair.primary.source.toUpperCase()}] "${pair.primary.title}" от "${pair.primary.company}" (${pair.primary.url})`);
     });

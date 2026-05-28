@@ -173,14 +173,14 @@ function parseJsonFromAi(rawText, expectedLength) {
     const lastBrace = rawText.lastIndexOf('}');
 
     if (firstBrace === -1 || lastBrace <= firstBrace) {
-      throw new Error('No JSON object found in AI response');
+      throw new Error('JSON-объект не найден в ответе ИИ');
     }
 
     const jsonStr = rawText.substring(firstBrace, lastBrace + 1);
     const parsed = JSON.parse(jsonStr);
 
     if (Object.keys(parsed).length === 0 && expectedLength > 0) {
-      throw new Error('Parsed JSON is empty, expected data');
+      throw new Error('Распарсенный JSON пуст, ожидались данные');
     }
 
     console.log(`[AI] ✅ Успешно распарсен JSON-ответ от ИИ (извлечено объектов: ${Object.keys(parsed).length})`);
@@ -188,7 +188,7 @@ function parseJsonFromAi(rawText, expectedLength) {
   } catch (e) {
     console.error(`[AI] ❌ Ошибка валидации/парсинга JSON: ${e.message}`);
     console.error(`[AI] 📝 Сырой ответ ИИ: ${rawText.substring(0, 500)}...`);
-    throw new Error(`Parse AI JSON Error: ${e.message}`);
+    throw new Error(`Ошибка парсинга JSON от ИИ: ${e.message}`);
   }
 }
 
