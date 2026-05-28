@@ -1,4 +1,3 @@
-
 import { DOM } from '../dom.js';
 import { loadSettings, saveSettings, DEFAULT_SETTINGS } from '../utils/settings.js';
 import { showToast, showScreen } from './common.js';
@@ -93,7 +92,7 @@ export async function closeSettings(force = false) {
     const currentSettings = JSON.stringify(getSettingsFromUI());
     if (currentSettings !== baselineSettings) {
       const choice = await showConfirmModal();
-      
+
       if (choice === 'save') {
         await handleSaveSettings();
         return;
@@ -124,24 +123,24 @@ function showConfirmModal() {
 export function showConfirm(options) {
   return new Promise((resolve) => {
     const { title, text, icon = '⚠️', buttons = [] } = options;
-    
+
     const overlay = DOM.confirmModalOverlay;
     const titleEl = document.getElementById('confirmTitle');
     const textEl = document.getElementById('confirmText');
     const iconEl = document.getElementById('confirmIcon');
     const actionsEl = document.getElementById('confirmActions');
-    
+
     if (!overlay || !titleEl || !actionsEl) return resolve(null);
 
     titleEl.textContent = title;
     textEl.textContent = text;
     if (iconEl) iconEl.textContent = icon;
-    
+
     actionsEl.innerHTML = '';
-    
+
     const isRow = buttons.length === 2 && buttons.every(b => b.text.length <= 15);
     actionsEl.classList.toggle('confirm-modal__actions--row', isRow);
-    
+
     buttons.forEach((b) => {
       const btn = document.createElement('button');
       btn.className = `btn btn--${b.type || 'outline'}`;
@@ -153,9 +152,9 @@ export function showConfirm(options) {
       };
       actionsEl.appendChild(btn);
     });
-    
+
     overlay.style.display = 'flex';
-    
+
     overlay.onclick = (e) => {
       if (e.target === overlay) {
         overlay.style.display = 'none';
@@ -193,7 +192,7 @@ async function handleSaveSettings() {
     return;
   }
 
-  
+
   saveSettings(settings).catch(err => {
     console.warn('[Settings] ⚠️ Ошибка сохранения настроек:', err);
   });
@@ -215,7 +214,7 @@ async function handleSaveSettings() {
   closeSettings(true);
   showToast('Настройки сохранены', 'success');
 
-  
+
   const welcomePeriodRadio = document.querySelector(`input[name="welcomePeriod"][value="${settings.defaultPeriod}"]`);
   if (welcomePeriodRadio) {
     welcomePeriodRadio.checked = true;
@@ -263,7 +262,7 @@ async function loadApiStatus() {
 
     if (!data.success) return;
 
-    
+
     const updateStatus = (element, configured, textOk = 'Настроен', textFail = 'Не настроен') => {
       if (!element) return;
       if (configured) {
@@ -392,7 +391,7 @@ async function handleResetSettings() {
   });
   if (DOM.inputLimit) DOM.inputLimit.value = DEFAULT_SETTINGS.defaultLimit;
 
-  
+
   const defaultRadio = document.querySelector(`input[name="period"][value="${DEFAULT_SETTINGS.defaultPeriod}"]`);
   if (defaultRadio) {
     defaultRadio.checked = true;
@@ -435,9 +434,6 @@ export function setupStepperListeners() {
     }
 
     input.value = value;
-    
-    
-    
 
     if (accelerationFactor < 10) accelerationFactor += 0.2;
 
@@ -503,10 +499,8 @@ export function setupSegmentedControlListeners() {
       input.addEventListener('change', updateIndicator);
     });
 
-    
     updateIndicator();
 
-    
     control.addEventListener('updateIndicator', updateIndicator);
   });
 }

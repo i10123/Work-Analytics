@@ -67,8 +67,8 @@ function mapExperienceToLevel(exp) {
   if (!exp) return null;
   const l = exp.toLowerCase();
   if (['intern', 'junior', 'middle', 'senior', 'lead'].includes(exp)) return exp;
-  if (l.includes('нет опыта') || l.includes('junior')) return 'Junior'; 
-  if (l.includes('от 1 года') || l.includes('1-3') || l.includes('middle')) return 'Middle'; 
+  if (l.includes('нет опыта') || l.includes('junior')) return 'Junior';
+  if (l.includes('от 1 года') || l.includes('1-3') || l.includes('middle')) return 'Middle';
   if (l.includes('от 3 до 6') || l.includes('3-6') || l.includes('senior')) return 'Senior';
   if (l.includes('более 6') || l.includes('lead')) return 'Lead';
   return null;
@@ -96,12 +96,12 @@ function commonOptions(opts = {}) {
       legend: {
         display: opts.legend !== false,
         position: opts.legendPosition || 'top',
-        labels: { 
-          color: textColor, 
-          font: { family: "'Outfit', 'Inter', sans-serif", size: 11, weight: 600 }, 
-          padding: 12, 
-          usePointStyle: true, 
-          pointStyle: 'circle' 
+        labels: {
+          color: textColor,
+          font: { family: "'Outfit', 'Inter', sans-serif", size: 11, weight: 600 },
+          padding: 12,
+          usePointStyle: true,
+          pointStyle: 'circle'
         },
       },
       tooltip: {
@@ -154,11 +154,6 @@ function formatBinLabel(start, size) {
   return `${formatVal(start)} — ${formatVal(end)}`;
 }
 
-// ----------------------------------------------------
-// Вкладка 1: ФИНАНСЫ
-// ----------------------------------------------------
-
-// 1. Диапазоны зарплат по грейдам (Floating Bar Chart)
 export function renderChartSalaryGradeRange(jobs, rates, currency) {
   const canvas = document.getElementById('chartSalaryGradeRange');
   if (!canvas) return;
@@ -257,7 +252,6 @@ export function renderChartSalaryGradeRange(jobs, rates, currency) {
   });
 }
 
-// 2. Распределение зарплат (Интервальный Bar Chart)
 export function renderChartSalary(jobs, rates, currency) {
   const canvas = document.getElementById('chartSalary');
   if (!canvas) return;
@@ -313,7 +307,6 @@ export function renderChartSalary(jobs, rates, currency) {
   });
 }
 
-// 3. Влияние английского на зарплату (Gradient Bar Chart)
 export function renderChartEnglishSalary(jobs, rates, currency) {
   const canvas = document.getElementById('chartEnglishSalary');
   if (!canvas) return;
@@ -374,11 +367,6 @@ export function renderChartEnglishSalary(jobs, rates, currency) {
   });
 }
 
-// ----------------------------------------------------
-// Вкладка 2: СТЕК И НАВЫКИ
-// ----------------------------------------------------
-
-// 4. Топ-15 Hard Skills (Horizontal Bar Chart)
 export function renderChartSkills(jobs) {
   const canvas = document.getElementById('chartSkills');
   if (!canvas) return;
@@ -449,7 +437,6 @@ export function renderChartSkills(jobs) {
   });
 }
 
-// 5. Языки vs Фреймворки (Grouped Bar Chart)
 export function renderChartLanguagesVsFrameworks(jobs) {
   const canvas = document.getElementById('chartLanguagesVsFrameworks');
   if (!canvas) return;
@@ -480,7 +467,7 @@ export function renderChartLanguagesVsFrameworks(jobs) {
   const toolData = labels.map(lbl => toolCount[lbl] || 0);
 
   const ctx = canvas.getContext('2d');
-  
+
   const gradLang = ctx.createLinearGradient(0, 0, 0, 300);
   gradLang.addColorStop(0, 'rgba(168, 85, 247, 0.85)'); // Purple
   gradLang.addColorStop(1, 'rgba(168, 85, 247, 0.3)');
@@ -518,7 +505,6 @@ export function renderChartLanguagesVsFrameworks(jobs) {
   });
 }
 
-// 6. Радар Soft Skills (Radar Chart)
 export function renderChartSoftSkillsRadar(jobs) {
   const canvas = document.getElementById('chartSoftSkillsRadar');
   if (!canvas) return;
@@ -576,7 +562,6 @@ export function renderChartSoftSkillsRadar(jobs) {
   });
 }
 
-// 7. Синергия технологий (сопутствующие навыки)
 export function renderChartSkillSynergy(jobs) {
   const canvas = document.getElementById('chartSkillSynergy');
   if (!canvas) return;
@@ -659,11 +644,6 @@ export function renderChartSkillSynergy(jobs) {
   });
 }
 
-// ----------------------------------------------------
-// Вкладка 3: СТРУКТУРА РЫНКА
-// ----------------------------------------------------
-
-// 8. Индекс востребованности грейдов (Semi-Doughnut Chart)
 export function renderChartGradeDemandDoughnut(jobs) {
   const canvas = document.getElementById('chartGradeDemandDoughnut');
   if (!canvas) return;
@@ -724,7 +704,6 @@ export function renderChartGradeDemandDoughnut(jobs) {
   });
 }
 
-// 9. Формат работы - Doughnut (Структура форматов)
 export function renderChartWorkFormatDoughnut(jobs) {
   const canvas = document.getElementById('chartWorkFormatDoughnut');
   if (!canvas) return;
@@ -789,7 +768,6 @@ export function renderChartWorkFormatDoughnut(jobs) {
   });
 }
 
-// 10. Формат работы - Bar (Зарплаты по форматам)
 export function renderChartWorkFormatBar(jobs, rates, currency) {
   const canvas = document.getElementById('chartWorkFormatBar');
   if (!canvas) return;
@@ -848,12 +826,6 @@ export function renderChartWorkFormatBar(jobs, rates, currency) {
     }),
   });
 }
-
-
-
-// ----------------------------------------------------
-// Системные методы управления
-// ----------------------------------------------------
 
 export function destroyAllCharts() {
   for (const key of Object.keys(charts)) {

@@ -424,7 +424,6 @@
                   </div>
                 </div>
 
-                <!-- Row: Period and Limit -->
                 <div class="welcome-search__row">
                   <div class="welcome-search__group">
                     <label class="welcome-search__label">Период</label>
@@ -713,7 +712,6 @@
         </div>
 
 
-        <!-- Панель персонального скоринга (Job Matching) -->
         <div class="job-matching-panel" id="jobMatchingPanel">
           <div class="job-matching-panel__header">
             <div class="job-matching-panel__title">
@@ -730,7 +728,6 @@
           </div>
 
           <div class="job-matching-panel__main">
-            <!-- Секция выбранного стека -->
             <div class="job-matching-panel__stack-section">
               <div class="job-matching-panel__label">Мой стек навыков (<span id="userSkillsCount">0</span>):</div>
               <div class="job-matching-panel__tags-container" id="userSkillsContainer">
@@ -740,7 +737,6 @@
             </div>
           </div>
 
-          <!-- Секция доступных навыков из отчета -->
           <div class="job-matching-panel__available-section">
             <div class="job-matching-panel__available-header">
               <span class="job-matching-panel__label">Доступные навыки из отчета:</span>
@@ -748,7 +744,6 @@
                 все</button>
             </div>
             <div class="job-matching-panel__available-tags collapsed" id="popularSkillsContainer">
-              <!-- Заполняется динамически -->
             </div>
           </div>
         </div>
@@ -816,7 +811,6 @@
             <p class="ai-summary-placeholder__text" id="aiSummaryPlaceholderText">Добавьте свой стек навыков, чтобы ИИ
               проанализировал ваше соответствие рынку</p>
           </div>
-          <!-- Для совместимости -->
           <div class="ai-summary-warning" id="aiSummaryWarning" style="display: none;"></div>
 
           <div class="ai-summary-card__loader" id="aiSummaryLoader" style="display: none;">
@@ -827,11 +821,11 @@
 
 
 
-        <!-- Навигация по вкладкам графиков -->
         <div class="dashboard__charts-nav">
           <div class="charts-nav-indicator"></div>
           <button class="dashboard__charts-tab active" data-chart-tab="money">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2"
+              fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 12V7H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14v4"></path>
               <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path>
               <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path>
@@ -839,14 +833,16 @@
             <span>Финансы</span>
           </button>
           <button class="dashboard__charts-tab" data-chart-tab="skills">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2"
+              fill="none" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="4 17 10 11 4 5"></polyline>
               <line x1="12" y1="19" x2="20" y2="19"></line>
             </svg>
             <span>Стек и Навыки</span>
           </button>
           <button class="dashboard__charts-tab" data-chart-tab="market">
-            <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="tab-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.2"
+              fill="none" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"></line>
               <line x1="12" y1="20" x2="12" y2="4"></line>
               <line x1="6" y1="20" x2="6" y2="14"></line>
@@ -855,7 +851,6 @@
           </button>
         </div>
 
-        <!-- Раздел 1: Финансы -->
         <div class="charts-section active" id="chartsSection-money">
           <div class="chart-card chart-card--wide">
             <h3 class="chart-card__title">Диапазоны зарплат по грейдам</h3>
@@ -877,7 +872,6 @@
           </div>
         </div>
 
-        <!-- Раздел 2: Стек и навыки -->
         <div class="charts-section" id="chartsSection-skills" style="display: none;">
           <div class="chart-card chart-card--wide chart-card--skills">
             <h3 class="chart-card__title">Топ-15 Hard Skills</h3>
@@ -905,7 +899,6 @@
           </div>
         </div>
 
-        <!-- Раздел 3: Структура рынка -->
         <div class="charts-section" id="chartsSection-market" style="display: none;">
           <div class="chart-card">
             <h3 class="chart-card__title">Индекс востребованности грейдов</h3>
@@ -925,8 +918,6 @@
             </div>
           </div>
         </div>
-
-
 
 
         <div class="table-card">
@@ -983,7 +974,6 @@
         </div>
       </section>
 
-
       <footer class="footer-signature">
         <a href="https://github.com/i10123" target="_blank" rel="noopener noreferrer" class="footer-signature__link">
           create by NIFRANCHIN
@@ -991,7 +981,6 @@
       </footer>
     </main>
   </div>
-
 
   <div class="settings-overlay" id="settingsOverlay" style="display: none;">
     <div class="settings-modal" id="settingsModal">
@@ -1355,7 +1344,6 @@
         </div>
       </div>
 
-
       <div class="settings-modal__footer">
         <button class="btn btn--primary" id="settingsSave">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -1369,8 +1357,6 @@
       </div>
     </div>
   </div>
-
-
 
   <div class="modal-overlay--confirm" id="confirmModalOverlay" style="display: none;">
     <div class="confirm-modal" id="confirmModal">

@@ -1,4 +1,3 @@
-
 export function initializePremiumUI() {
   console.log('[UI] ✨ Инициализация премиальных эффектов...');
   setupCustomValidation();
@@ -10,7 +9,7 @@ export function validateForm(form) {
     if (firstInvalid) {
       showValidationTooltip(firstInvalid);
       firstInvalid.focus();
-      
+
       firstInvalid.classList.add('shake');
       setTimeout(() => firstInvalid.classList.remove('shake'), 500);
     }

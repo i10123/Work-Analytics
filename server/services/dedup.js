@@ -90,19 +90,19 @@ function areFuzzyDuplicates(a, b) {
   const companyA = a._norm.company;
   const companyB = b._norm.company;
 
-  
+
   if (a._norm.titleKey === b._norm.titleKey && companyA === companyB) {
     return true;
   }
 
   const titleSimilarity = jaccardSimilarity(a._norm.titleSet, b._norm.titleSet);
 
-  
+
   if (titleSimilarity >= JACCARD_THRESHOLD_TITLE && companyA === companyB) {
     return true;
   }
 
-  
+
   if (titleSimilarity >= JACCARD_THRESHOLD_TITLE_HIGH) {
     const companySimilarity = jaccardSimilarity(a._norm.companySet, b._norm.companySet);
     if (companySimilarity >= JACCARD_THRESHOLD_COMPANY) {
@@ -115,7 +115,7 @@ function areFuzzyDuplicates(a, b) {
 
 
 function mergeJobs(primary, duplicate) {
-  
+
   if (duplicate.salary) {
     const pSal = primary.salary;
     const dSal = duplicate.salary;
@@ -125,7 +125,7 @@ function mergeJobs(primary, duplicate) {
     } else {
       const pHasBoth = pSal.min && pSal.max;
       const dHasBoth = dSal.min && dSal.max;
-      
+
       if (!pHasBoth && dHasBoth) {
         primary.salary = { ...dSal };
       } else if (!pHasBoth && !dHasBoth) {
@@ -135,7 +135,7 @@ function mergeJobs(primary, duplicate) {
     }
   }
 
-  
+
   if (duplicate.skills && duplicate.skills.length > 0) {
     const existingLower = new Set((primary.skills || []).map(s => s.toLowerCase()));
     for (const skill of duplicate.skills) {
@@ -146,26 +146,26 @@ function mergeJobs(primary, duplicate) {
     }
   }
 
-  
+
   if (duplicate.description && (!primary.description || duplicate.description.length > primary.description.length)) {
     primary.description = duplicate.description;
   }
-  
+
   if ((!primary.experience || primary.experience === 'Не указан') && duplicate.experience && duplicate.experience !== 'Не указан') {
     primary.experience = duplicate.experience;
   }
-  
+
   if ((!primary.employment || primary.employment === 'Не указан') && duplicate.employment && duplicate.employment !== 'Не указан') {
     primary.employment = duplicate.employment;
   }
 
-  
+
   const isSelf = primary.source === duplicate.source && primary.sourceId === duplicate.sourceId;
-  
+
   if (!isSelf) {
     if (!primary.mergedFrom) primary.mergedFrom = [];
     const alreadyMerged = primary.mergedFrom.some(m => m.source === duplicate.source && m.sourceId === duplicate.sourceId);
-    
+
     if (!alreadyMerged) {
       primary.mergedFrom.push({
         source: duplicate.source,
@@ -208,9 +208,9 @@ function deduplicateJobs(jobs) {
   precomputeNorms(jobs);
   const isDuplicate = new Set();
 
-  
-  const idMap = new Map(); 
-  
+
+  const idMap = new Map();
+
   for (let i = 0; i < jobs.length; i++) {
     if (isDuplicate.has(i)) continue;
     const job = jobs[i];
@@ -225,15 +225,15 @@ function deduplicateJobs(jobs) {
 
       for (const idx of existingIndices) {
         const existingJob = jobs[idx];
-        
-        
-        const isSameSource = existingJob.source === job.source;
-        
-        
-        const isHhRabotaCross = (existingJob.source === 'hh' && job.source === 'rabotaby') ||
-                                (existingJob.source === 'rabotaby' && job.source === 'hh');
 
-        
+
+        const isSameSource = existingJob.source === job.source;
+
+
+        const isHhRabotaCross = (existingJob.source === 'hh' && job.source === 'rabotaby') ||
+          (existingJob.source === 'rabotaby' && job.source === 'hh');
+
+
         if (isSameSource || isHhRabotaCross) {
           mergeJobs(existingJob, job);
           isDuplicate.add(i);
@@ -260,16 +260,16 @@ function deduplicateJobs(jobs) {
       }
 
       if (!merged) {
-        existingIndices.push(i); 
+        existingIndices.push(i);
       }
     }
   }
 
-  
-  
+
+
   for (let i = 0; i < jobs.length; i++) {
     if (isDuplicate.has(i)) continue;
-    
+
     for (let j = i + 1; j < jobs.length; j++) {
       if (isDuplicate.has(j)) continue;
 

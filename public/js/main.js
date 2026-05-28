@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setupWelcomeScreen();
   setupSSE();
 
-  
+
   (async () => {
-    await initSettings(); 
-    initializeSettings(); 
+    await initSettings();
+    initializeSettings();
 
     let isRestoredProgress = false;
 
@@ -81,7 +81,7 @@ function initializeSettings() {
     const control = welcomePeriodRadio.closest('.segmented-control');
     if (control) control.dispatchEvent(new CustomEvent('updateIndicator'));
   }
-  
+
   const welcomeInputLimit = document.getElementById('welcomeInputLimit');
   if (welcomeInputLimit) {
     welcomeInputLimit.value = settings.defaultLimit;
@@ -109,7 +109,7 @@ function setupEventListeners() {
     e.stopPropagation();
     showScreen('welcome');
     history.pushState({ type: 'welcome' }, '', window.location.pathname);
-    
+
     const input = document.getElementById('welcomeSearchInput');
     const panel = document.getElementById('welcomeSearchPanel');
     if (input) {

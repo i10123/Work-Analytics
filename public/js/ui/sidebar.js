@@ -1,4 +1,3 @@
-
 import { DOM } from '../dom.js';
 import { escapeHtml, formatDuration } from '../utils/formatters.js';
 
@@ -33,7 +32,6 @@ export function setupSidebarListeners() {
     });
   }
 
-  // Сброс поиска по Escape при активном фокусе
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && document.activeElement === DOM.reportsSearch) {
       if (DOM.reportsSearch.value.length > 0) {
@@ -191,7 +189,7 @@ export function renderReportsList(reports, updateCache = true) {
 
       DOM.reportsList.insertBefore(div, DOM.reportsEmpty);
 
-      
+
       const wrapper = div.querySelector('.report-item__query-wrapper');
       const span = wrapper ? wrapper.querySelector('span') : null;
       if (wrapper && span && span.scrollWidth > wrapper.clientWidth) {
@@ -481,11 +479,11 @@ async function queueAction(id, action) {
 
 async function queueEdit(task) {
   const newQuery = prompt('Ключевое слово:', task.query);
-  if (newQuery === null) return; 
+  if (newQuery === null) return;
 
   const currentLimit = task.filters?.limit || 50;
   const newLimitStr = prompt('Лимит вакансий (5–200):', String(currentLimit));
-  if (newLimitStr === null) return; 
+  if (newLimitStr === null) return;
 
   const newLimit = parseInt(newLimitStr, 10);
   if (isNaN(newLimit) || newLimit < 5 || newLimit > 200) {

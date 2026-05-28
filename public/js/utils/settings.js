@@ -1,5 +1,3 @@
-
-
 export const SETTINGS_KEY = 'workanalytics-settings';
 
 export const DEFAULT_SETTINGS = {
@@ -48,7 +46,7 @@ export function loadSettings() {
 export async function saveSettings(settings) {
   currentSettings = { ...currentSettings, ...settings };
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(currentSettings));
-  
+
   try {
     await fetch('/api/settings', {
       method: 'POST',

@@ -1,4 +1,3 @@
-
 import { DOM } from '../dom.js';
 import { appStore } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
@@ -452,15 +451,12 @@ function initJobMatching(report, rates) {
     const { userSkills = [] } = appStore.getState();
     if (!DOM.popularSkillsContainer) return;
 
-    // Фильтруем навыки: убираем те, что уже выбраны
     const availableSkills = currentSortedSkills.filter(
       skill => !userSkills.some(us => us.toLowerCase() === skill.name.toLowerCase())
     );
 
     const btnToggle = document.getElementById('btnToggleAllSkills');
 
-    // Лимит для 2 строк на средних экранах ~15-20 навыков.
-    // Если доступных навыков больше этого лимита, то показываем кнопку раскрытия.
     const limit = 20;
     const hasMore = availableSkills.length > limit;
 
@@ -473,7 +469,6 @@ function initJobMatching(report, rates) {
       }
     }
 
-    // Переключаем CSS-класс свертывания для 2 линий
     if (showAllSkills) {
       DOM.popularSkillsContainer.classList.remove('collapsed');
     } else {

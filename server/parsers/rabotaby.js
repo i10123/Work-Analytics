@@ -2,7 +2,7 @@ const { HhParser } = require('./hh');
 
 class RabotaByParser extends HhParser {
   constructor() {
-    super(16); 
+    super(16);
     this.name = 'Rabota.by';
   }
 

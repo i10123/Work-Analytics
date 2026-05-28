@@ -483,7 +483,7 @@ export function updateWelcomeStats() {
   if (topTechDupEl) {
     topTechDupEl.textContent = topQuery;
   }
-  
+
   adjustMarquee();
 }
 
@@ -500,7 +500,7 @@ function setupMarqueeObserver() {
   marqueeObserver = new ResizeObserver(() => {
     adjustMarquee();
   });
-  
+
   marqueeObserver.observe(topTechWrapper);
 }
 
@@ -509,10 +509,10 @@ export function adjustMarquee() {
   const topTechWrapper = document.getElementById('welcomeStatTopTechWrapper');
   if (!topTechEl || !topTechWrapper) return;
 
-  
+
   if (topTechWrapper.clientWidth === 0) return;
 
-  
+
   const hadMarquee = topTechWrapper.classList.contains('has-marquee');
   topTechWrapper.classList.remove('has-marquee');
 

@@ -265,7 +265,7 @@ class HabrParser extends BaseParser {
 
         const publishedAt = $card.find('time.basic-date').attr('datetime') || $card.find('time').attr('datetime') || '';
 
-        
+
         let experience = '';
         if (lowerMeta.match(/стажер|стажёр|intern/)) experience = 'Intern';
         else if (lowerMeta.match(/junior|младший/)) experience = 'Junior';
@@ -273,13 +273,13 @@ class HabrParser extends BaseParser {
         else if (lowerMeta.match(/senior|старший/)) experience = 'Senior';
         else if (lowerMeta.match(/lead|ведущий/)) experience = 'Lead';
 
-        
+
         let employment = '';
         if (lowerMeta.match(/полн/)) employment = 'Полная занятость';
         else if (lowerMeta.match(/неполн|частичн/)) employment = 'Частичная занятость';
         else if (lowerMeta.match(/проект/)) employment = 'Проектная работа';
 
-        
+
         let city = 'Не указан';
         const cityCandidate = metaNodes.find(n => !n.toLowerCase().match(/(полн|частичн|проект|junior|middle|senior|lead|стажер|младший|средний|старший|ведущий)/));
         if (cityCandidate) {

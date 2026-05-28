@@ -1,4 +1,3 @@
-
 import { renderDashboard } from './dashboard.js';
 import { appStore } from '../state.js';
 

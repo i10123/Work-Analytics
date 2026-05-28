@@ -1,5 +1,3 @@
-
-
 import { showScreen, showToast } from './ui/common.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { appStore } from './state.js';
@@ -36,7 +34,6 @@ export async function loadReportById(reportId, skipHistory = false) {
         });
       }
 
-      // Загрузка навыков для конкретного отчета
       let reportSkills = [];
       try {
         const localSkills = localStorage.getItem(`user-skills-${reportId}`);
@@ -49,7 +46,7 @@ export async function loadReportById(reportId, skipHistory = false) {
         console.warn('[Report] Ошибка при загрузке сохраненных навыков:', e);
       }
 
-      appStore.setState({ 
+      appStore.setState({
         currentReport: data.report,
         userSkills: reportSkills
       });
@@ -77,22 +74,22 @@ export async function loadReportById(reportId, skipHistory = false) {
 
 function cleanSkills(skills) {
   if (!Array.isArray(skills) || skills.length <= 1) return skills || [];
-  
+
   const strippedAll = skills.map(s => s.replace(/\s+/g, ''));
   const totalLength = strippedAll.reduce((sum, s) => sum + s.length, 0);
 
   return skills.filter((skill, index) => {
     const strippedSkill = strippedAll[index];
-    
-    
+
+
     if (strippedSkill.length === totalLength - strippedSkill.length) {
       const concatOthers = strippedAll.filter((_, idx) => idx !== index).join('');
       if (strippedSkill === concatOthers) {
         return false;
       }
     }
-    
-    
+
+
     if (skill.length > 30) {
       let containedCount = 0;
       let totalLengthOfContained = 0;
@@ -108,7 +105,7 @@ function cleanSkills(skills) {
         return false;
       }
     }
-    
+
     return true;
   });
 }

@@ -127,7 +127,7 @@ async function runPipeline(task, emitUpdate) {
     console.warn(`[Pipeline] ⚠️ Ошибка или прерывание AI: ${err.message}`);
   }
 
-  
+
   const enrichedIds = new Set(enrichedJobs.map(j => j.sourceId));
   for (const job of allJobs) {
     if (!enrichedIds.has(job.sourceId)) {
@@ -140,12 +140,12 @@ async function runPipeline(task, emitUpdate) {
   const sourceCounts = { hh: 0, rabotaby: 0, habr: 0 };
 
   for (const job of enrichedJobs) {
-    
+
     if (sourceCounts[job.source] !== undefined) {
       sourceCounts[job.source]++;
     }
 
-    
+
     if (job.salary && (job.salary.min || job.salary.max)) {
       const avg = job.salary.min && job.salary.max
         ? (job.salary.min + job.salary.max) / 2
@@ -160,7 +160,7 @@ async function runPipeline(task, emitUpdate) {
   let status = (errors.length > 0 && allJobs.length > 0) ? 'partial'
     : (allJobs.length === 0) ? 'failed'
       : 'completed';
-      
+
   if (isCancelled() && allJobs.length > 0) {
     status = 'partial';
   }
@@ -194,7 +194,7 @@ async function runPipeline(task, emitUpdate) {
 
   emitUpdate({ ...task, step: 'Сохранение отчёта...' });
   await saveReport(report);
-  
+
   task.status = report.status;
   task.error = failMessage;
   task.reportId = task.id;

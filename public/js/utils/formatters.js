@@ -1,5 +1,3 @@
-
-
 export function formatSalary(value) {
   if (!value)
     return '—';
@@ -23,11 +21,11 @@ export function formatDuration(seconds) {
 
   if (seconds < 60)
     return `${seconds} сек.`;
-    
+
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  
+
   if (h > 0) {
     return `${h} ч. ${m} мин.`;
   }
@@ -39,7 +37,7 @@ export function parseMarkdown(md) {
   if (typeof window !== 'undefined' && window.marked) {
     return window.marked.parse(md);
   }
-  
+
   let html = escapeHtml(md);
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');

@@ -1,4 +1,3 @@
-
 import { DOM } from '../dom.js';
 import { showScreen } from './common.js';
 import { loadReportById, loadReportsList } from '../report.js';
@@ -11,7 +10,6 @@ import { appStore, clientId } from '../state.js';
 export function setupSSE() {
   console.log('[App] 📡 Подключение к SSE...');
   const eventSource = new EventSource('/api/events?clientId=' + clientId);
-
 
   let isDisconnected = false;
 
@@ -27,17 +25,17 @@ export function setupSSE() {
       try {
         const res = await fetch('/api/queue');
         const data = await res.json();
-        
+
         if (data.success) {
           if (data.currentTask) {
             handleTaskUpdate(data.currentTask);
           } else if (progressTimerInterval) {
-            
+
             await loadReportsList();
             const { allReports } = appStore.getState();
             if (allReports.length > 0) {
               const latest = allReports[0];
-              
+
               handleTaskUpdate({
                 status: latest.status,
                 reportId: latest.id,
@@ -45,7 +43,7 @@ export function setupSSE() {
               });
             }
           }
-          
+
           updateQueueBadge(data);
         }
       } catch (err) {
@@ -86,7 +84,7 @@ export function setupSSE() {
   window.addEventListener('beforeunload', (e) => {
     if (progressTimerInterval) {
       e.preventDefault();
-      e.returnValue = ''; 
+      e.returnValue = '';
     }
   });
 
@@ -124,11 +122,11 @@ async function handleTaskUpdate(task) {
     if (task.step && DOM.progressStep) {
       DOM.progressStep.textContent = task.step;
     }
-    
+
     if (task.progress !== undefined && DOM.progressFill) {
       DOM.progressFill.style.width = `${task.progress}%`;
     }
-    
+
     if (!progressTimerInterval) {
       progressStartTime = task.startedAt ? new Date(task.startedAt).getTime() : Date.now();
       if (DOM.progressTime) {
@@ -147,14 +145,14 @@ async function handleTaskUpdate(task) {
     const totalSeconds = progressStartTime ? Math.max(0, Math.floor((Date.now() - progressStartTime) / 1000)) : 0;
     progressStartTime = null;
 
-    const msg = task.status === 'completed' 
-      ? `Сбор успешно завершен за ${formatDuration(totalSeconds)}` 
+    const msg = task.status === 'completed'
+      ? `Сбор успешно завершен за ${formatDuration(totalSeconds)}`
       : `Сбор завершен (или прерван) за ${formatDuration(totalSeconds)}`;
-    
+
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-      new Notification("Work Analytics", { 
-        body: msg, 
-        icon: '/favicon.ico' 
+      new Notification("Work Analytics", {
+        body: msg,
+        icon: '/favicon.ico'
       });
     }
 

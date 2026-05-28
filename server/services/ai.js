@@ -6,9 +6,9 @@ const DEFAULT_METADATA = {
   frameworksAndTools: [],
   softSkills: [],
   workFormat: 'Не указано',
-  grade: 'Не указано', 
-  experience_years_min: null, 
-  experience_years_max: null, 
+  grade: 'Не указано',
+  experience_years_min: null,
+  experience_years_max: null,
   experience: 'Не указано',
   englishLevel: 'Не указано',
   techCategory: 'Другое',
@@ -96,17 +96,17 @@ function mergeAiMetadata(job, aiData) {
   const jobSkills = sanitizeStringArray(job.skills);
   const aiLanguages = sanitizeStringArray(aiData.programmingLanguages);
   const aiFrameworks = sanitizeStringArray(aiData.frameworksAndTools);
-  
+
   const mergedSkillsMap = new Map();
   for (const s of jobSkills) mergedSkillsMap.set(s.toLowerCase(), s);
   for (const s of aiLanguages) mergedSkillsMap.set(s.toLowerCase(), s);
   for (const s of aiFrameworks) mergedSkillsMap.set(s.toLowerCase(), s);
-  
+
   const mergedSkills = Array.from(mergedSkillsMap.values());
   const cleanSoftSkills = sanitizeStringArray(aiData.softSkills);
   const cleanLanguages = Array.from(new Set(aiLanguages));
   const cleanFrameworks = Array.from(new Set(aiFrameworks));
-  
+
   const assignedGrade = getValidEnum(aiData.grade, VALID_EXPERIENCES, DEFAULT_METADATA.grade);
 
   return {
@@ -126,16 +126,10 @@ function mergeAiMetadata(job, aiData) {
   };
 }
 
-function safeTruncate(text, maxLength) {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength).replace(/\s\S*$/, '');
-}
-
 function generatePrompt(batch) {
   const payload = batch.map((job, idx) => ({
     id: String(idx),
-    text: safeTruncate(`${job.title || ''} | ${job.description || ''}`.trim(), 1500)
+    text: `${job.title || ''} | ${job.description || ''}`.trim()
   }));
   return `Проанализируй описания ${batch.length} вакансий. Для КАЖДОЙ извлеки структурированные метаданные.
 ПРАВИЛА:

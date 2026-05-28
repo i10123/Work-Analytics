@@ -1,5 +1,3 @@
-
-
 .table-card {
   width: 100%;
   background: var(--glass-bg);
@@ -455,7 +453,7 @@ td.col-salary {
 
 .salary-value-text--high {
   color: #10b981;
-  
+
   text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
   font-weight: 700;
 }
@@ -591,7 +589,6 @@ mark.search-highlight {
   letter-spacing: 0.2px;
 }
 
-/* Job Matching Panel */
 .job-matching-panel {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
@@ -735,7 +732,7 @@ mark.search-highlight {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid var(--glass-border);
   user-select: none;
-  position: relative; /* Необходмо для корректного z-index при наведении */
+  position: relative;
 }
 
 :root[data-theme="slate-modernity"] .popular-skill-tag {
@@ -754,7 +751,7 @@ mark.search-highlight {
   color: var(--color-primary);
   transform: translateY(-2px) scale(1.05);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
-  z-index: 5; /* Всплывает над другими элементами, чтобы не обрезаться */
+  z-index: 5;
 }
 
 :root[data-theme="slate-modernity"] .popular-skill-tag:hover {
@@ -768,7 +765,6 @@ mark.search-highlight {
   opacity: 0.6;
 }
 
-/* User Stack Tag */
 .user-stack-tag {
   display: inline-flex;
   align-items: center;
@@ -819,7 +815,6 @@ mark.search-highlight {
   text-decoration: underline;
 }
 
-/* Match Badge Column */
 .col-match {
   width: 135px;
 }
@@ -871,7 +866,6 @@ mark.search-highlight {
   border: 1px solid rgba(220, 38, 38, 0.25) !important;
 }
 
-/* AI Summary constraint styles */
 .ai-summary-warning {
   display: flex;
   align-items: center;
@@ -916,8 +910,15 @@ mark.search-highlight {
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Active skill filter tag bar styles */
@@ -952,7 +953,6 @@ mark.search-highlight {
   gap: 8px;
 }
 
-/* Active tag chip styling */
 .active-filter-chip {
   display: inline-flex;
   align-items: center;
@@ -1007,7 +1007,6 @@ mark.search-highlight {
   background: rgba(99, 102, 241, 0.08);
 }
 
-/* Interactive hover and styling for clickable skill tags inside table rows */
 .col-skills .skill-tag {
   cursor: pointer;
   user-select: none;
@@ -1023,7 +1022,6 @@ mark.search-highlight {
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.1);
 }
 
-/* Highlight matching tag */
 .col-skills .skill-tag.skill-tag--active-filter {
   background: linear-gradient(135deg, var(--color-primary), var(--color-accent)) !important;
   color: #ffffff !important;
@@ -1033,6 +1031,13 @@ mark.search-highlight {
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

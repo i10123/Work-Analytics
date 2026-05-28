@@ -1,4 +1,3 @@
-
 import { DOM } from '../dom.js';
 import { appStore } from '../state.js';
 import { convertCurrency, getCurrencySymbol } from '../utils/currency.js';
@@ -19,7 +18,6 @@ const TableManager = (() => {
     const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
     return jobs.filter(j => {
-      // 1. Text Search matching
       const matchesSearch = !q ||
         (j.title || '').toLowerCase().includes(q) ||
         (j.company || '').toLowerCase().includes(q) ||
@@ -29,10 +27,9 @@ const TableManager = (() => {
 
       if (!matchesSearch) return false;
 
-      // 2. Active Skill Tags matching
       if (activeSkillFilters.length > 0) {
         const jobSkillsLower = (j.skills || []).map(s => s.toLowerCase());
-        const hasAllActiveFilters = activeSkillFilters.every(f => 
+        const hasAllActiveFilters = activeSkillFilters.every(f =>
           jobSkillsLower.includes(f.toLowerCase())
         );
         if (!hasAllActiveFilters) return false;
@@ -54,7 +51,7 @@ const TableManager = (() => {
           const filtered = getFilteredJobs(currentJobs);
           const sorted = sortConfig.key ? sortData(filtered, currentRates) : filtered;
           renderTableRows(sorted, currentRates, q);
-        }, 300); 
+        }, 300);
       });
     }
   }
@@ -67,7 +64,7 @@ const TableManager = (() => {
       const th = e.target.closest('th[data-sort]');
       if (!th) return;
       const table = th.closest('#jobsTable');
-      if (!table) return; 
+      if (!table) return;
 
       const key = th.dataset.sort;
 
@@ -95,7 +92,6 @@ const TableManager = (() => {
     globalTableBodyListenerAdded = true;
 
     DOM.jobsTableBody.addEventListener('click', (e) => {
-      // Check if skill tag was clicked
       const skillTag = e.target.closest('.skill-tag');
       if (skillTag) {
         e.stopPropagation();
@@ -355,11 +351,11 @@ const TableManager = (() => {
 
   function cleanCompanyName(company) {
     if (!company) return '';
-    
+
     let cleaned = company.replace(/["'«»‘’“”]|(^|[\s"«'‘])(ооо|ип|зао|оао)([\s"»'’]|$)/gi, ' ').trim();
     cleaned = cleaned.replace(/^["«'‘](.*)["»'’]$/, '$1').trim();
 
-    
+
     return cleaned
       .toLowerCase()
       .replace(/(^|[\s\-\/])([a-zа-яё])/gi, (m, p, l) => p + l.toUpperCase())
@@ -369,7 +365,7 @@ const TableManager = (() => {
   function getTitleHtml(title, query) {
     if (!title) return '';
 
-    
+
     const match = title.match(/^(.*?)\s*\((.*?)\)\s*$/);
     if (match) {
       const mainTitle = match[1];
@@ -482,7 +478,7 @@ const TableManager = (() => {
         .map((s) => {
           const isActive = activeSkillFilters.some(af => af.toLowerCase() === s.toLowerCase());
           const isMatch = userSkills.some(us => us.toLowerCase() === s.toLowerCase());
-          
+
           let classModifier = '';
           if (isActive) {
             classModifier = ' skill-tag--active-filter';
@@ -528,7 +524,7 @@ const TableManager = (() => {
             safeUrl = escapeHtml(job.url);
           }
         } catch (e) {
-          
+
         }
       }
 
@@ -579,7 +575,7 @@ const TableManager = (() => {
 
       const searchInput = document.getElementById('jobsTableSearch');
       const q = searchInput ? searchInput.value.toLowerCase() : '';
-      
+
       const filtered = getFilteredJobs(jobs);
       const dataToRender = sortConfig.key ? sortData(filtered, rates) : filtered;
       renderTableRows(dataToRender, rates, q);

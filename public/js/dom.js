@@ -1,7 +1,5 @@
-
-
 export const DOM = {
-  
+
   get sidebar() { return document.getElementById('sidebar'); },
   get sidebarToggle() { return document.getElementById('sidebarToggle'); },
   get btnNewReport() { return document.getElementById('btnNewReport'); },
@@ -11,12 +9,12 @@ export const DOM = {
   get queueStatus() { return document.getElementById('queueStatus'); },
   get queueText() { return document.getElementById('queueText'); },
 
-  
+
   get welcomeScreen() { return document.getElementById('welcomeScreen'); },
   get progressSection() { return document.getElementById('progressSection'); },
   get dashboard() { return document.getElementById('dashboard'); },
 
-  
+
   get modalOverlay() { return document.getElementById('modalOverlay'); },
   get modalClose() { return document.getElementById('modalClose'); },
   get parseForm() { return document.getElementById('parseForm'); },
@@ -29,7 +27,7 @@ export const DOM = {
   get parseDeepScrape() { return document.getElementById('parseDeepScrape'); },
 
 
-  
+
   get btnExportCsv() { return document.getElementById('btnExportCsv'); },
   get btnStopParsing() { return document.getElementById('btnStopParsing'); },
   get btnMinimizeProgress() { return document.getElementById('btnMinimizeProgress'); },
@@ -42,7 +40,7 @@ export const DOM = {
   get alertPartial() { return document.getElementById('alertPartial'); },
   get alertPartialText() { return document.getElementById('alertPartialText'); },
 
-  
+
   get aiSummaryCard() { return document.getElementById('aiSummaryCard'); },
   get aiSummaryCardHeader() { return document.getElementById('aiSummaryCardHeader'); },
   get btnGenerateAiSummary() { return document.getElementById('btnGenerateAiSummary'); },
@@ -53,7 +51,7 @@ export const DOM = {
   get aiSummaryPlaceholder() { return document.getElementById('aiSummaryPlaceholder'); },
   get aiSummaryPlaceholderText() { return document.getElementById('aiSummaryPlaceholderText'); },
 
-  
+
   get kpiTotal() { return document.getElementById('kpiTotal'); },
   get kpiNoSalary() { return document.getElementById('kpiNoSalary'); },
   get kpiAvgSalary() { return document.getElementById('kpiAvgSalary'); },
@@ -61,16 +59,16 @@ export const DOM = {
   get kpiCompanies() { return document.getElementById('kpiCompanies'); },
   get kpiRemote() { return document.getElementById('kpiRemote'); },
 
-  
+
   get currencyBtns() { return document.querySelectorAll('.currency-btn'); },
 
-  
+
   get jobsTableBody() { return document.getElementById('jobsTableBody'); },
 
-  
+
   get mobileMenuToggle() { return document.getElementById('mobileMenuToggle'); },
 
-  
+
   get btnSettings() { return document.getElementById('btnSettings'); },
   get settingsOverlay() { return document.getElementById('settingsOverlay'); },
   get settingsClose() { return document.getElementById('settingsClose'); },
@@ -78,7 +76,7 @@ export const DOM = {
   get confirmModal() { return document.getElementById('confirmModal'); },
   get confirmModalOverlay() { return document.getElementById('confirmModalOverlay'); },
 
-  
+
   get settingsTabs() { return document.getElementById('settingsTabs'); },
   get settingsThemeGrid() { return document.getElementById('settingsThemeGrid'); },
   get settingsDefaultCurrency() { return document.getElementById('settingsDefaultCurrency'); },

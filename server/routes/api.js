@@ -266,7 +266,7 @@ router.get('/events', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.flushHeaders();
 
-  
+
   const heartbeat = setInterval(() => {
     res.write(`:heartbeat\n\n`);
   }, 30000);

@@ -26,7 +26,7 @@ function getSecureFilepath(reportId, action) {
 let reportsCache = null;
 let cacheInitPromise = null;
 let lastInitErrorTime = 0;
-const INIT_ERROR_COOLDOWN_MS = 10000; 
+const INIT_ERROR_COOLDOWN_MS = 10000;
 
 async function ensureDataDirs() {
   try {

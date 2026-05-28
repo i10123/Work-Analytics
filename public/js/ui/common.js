@@ -1,4 +1,3 @@
-
 import { DOM } from '../dom.js';
 import { escapeHtml } from '../utils/formatters.js';
 
@@ -18,7 +17,7 @@ export function initScrollRestoration() {
   const mainContent = document.getElementById('mainContent');
   if (!mainContent) return;
 
-  
+
   const originalPushState = history.pushState;
   history.pushState = function (state, title, url) {
     let target = 'scroll_welcome';
@@ -33,14 +32,14 @@ export function initScrollRestoration() {
     return originalPushState.apply(this, arguments);
   };
 
-  
+
   mainContent.addEventListener('scroll', () => {
     if (isRestoring) return;
     const key = getScrollKey();
     sessionStorage.setItem(key, mainContent.scrollTop);
   });
 
-  
+
   window.addEventListener('beforeunload', () => {
     const key = getScrollKey();
     sessionStorage.setItem(key, mainContent.scrollTop);
@@ -59,21 +58,21 @@ export function restoreScrollPosition(screen) {
   if (saved !== null) {
     const scrollTop = parseInt(saved, 10);
 
-    
+
     mainContent.classList.add('scroll-restoring');
     mainContent.scrollTop = scrollTop;
 
-    
+
     requestAnimationFrame(() => {
       mainContent.scrollTop = scrollTop;
     });
 
-    
+
     setTimeout(() => {
       mainContent.scrollTop = scrollTop;
       isRestoring = false;
-      
-      
+
+
       mainContent.classList.remove('scroll-restoring');
     }, 120);
   } else {
@@ -101,7 +100,7 @@ export function showScreen(screen) {
     DOM.absoluteBack.style.display = screen === 'dashboard' ? 'flex' : 'none';
   }
 
-  
+
   const pageLoader = document.getElementById('pageLoader');
   if (pageLoader && !pageLoader.classList.contains('page-loader--hidden')) {
     pageLoader.classList.add('page-loader--hidden');

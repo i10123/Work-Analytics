@@ -32,7 +32,7 @@ class BaseParser {
 
       const timeoutPromise = new Promise((_, reject) => {
         timerId = setTimeout(() => reject(new Error('Таймаут парсинга (15с)')), 15000);
-        
+
         if (cancelFlag?.abortController?.signal) {
           abortHandler = () => {
             clearTimeout(timerId);
@@ -45,9 +45,9 @@ class BaseParser {
       const promise = Promise.race([fetchPromise, timeoutPromise])
         .catch(err => {
           if (err.message.includes('прерван') || err.name === 'AbortError' || err.code === 'ERR_CANCELED') {
-             console.warn(`[BaseParser] Парсинг элемента прерван.`);
+            console.warn(`[BaseParser] Парсинг элемента прерван.`);
           } else {
-             console.warn(`[BaseParser] Ошибка элемента: ${err.message}`);
+            console.warn(`[BaseParser] Ошибка элемента: ${err.message}`);
           }
           return null;
         })

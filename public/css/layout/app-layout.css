@@ -1,5 +1,3 @@
-
-
 .app-layout {
   display: flex;
   height: 100vh;
@@ -11,9 +9,9 @@
 .main-content {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 32px 24px 80px; 
+  padding: 24px 32px 24px 80px;
   position: relative;
-  padding-top: 24px; 
+  padding-top: 24px;
   transition: opacity 0.18s ease-in-out;
 }
 
@@ -62,15 +60,27 @@
 }
 
 @keyframes floatOrb {
-  0% { transform: translate(0, 0) scale(1); opacity: 0.4; }
-  50% { transform: translate(40px, 60px) scale(1.05); opacity: 0.5; }
-  100% { transform: translate(-30px, -30px) scale(0.95); opacity: 0.4; }
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: translate(40px, 60px) scale(1.05);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translate(-30px, -30px) scale(0.95);
+    opacity: 0.4;
+  }
 }
 
 @media (max-width: 768px) {
   .app-layout {
     flex-direction: column;
   }
+
   .main-content {
     padding: 16px;
     padding-top: 16px;
@@ -146,11 +156,23 @@
 }
 
 @keyframes rotateLoader {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes pulseText {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
