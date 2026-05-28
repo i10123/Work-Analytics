@@ -3,7 +3,6 @@ import os
 import json
 import argparse
 
-# Устанавливаем UTF-8 для корректной передачи кириллицы на Windows
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 
@@ -26,8 +25,6 @@ def main():
     
     ai_client = None
     try:
-        # Проверяем, существует ли папка профиля перед запуском (если не режим настройки)
-        # majorchik-api бросает исключение ProfileNotFoundError, если папки нет или она пуста
         ai_client = get_ai_client(
             model_name=args.model,
             profile_dir=args.profile_dir,
@@ -40,10 +37,8 @@ def main():
             kwargs["thinking"] = args.thinking
             kwargs["web_search"] = args.search
             
-        # Запрос к ИИ
         response = ai_client.ask(args.prompt, **kwargs)
         
-        # Возвращаем успешный JSON
         print(json.dumps({"success": True, "result": response}, ensure_ascii=False))
         
     except Exception as e:
