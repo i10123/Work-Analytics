@@ -4,15 +4,18 @@ class Store {
     this.listeners = new Set();
   }
 
+  // Получение текущего состояния хранилища (state)
   getState() {
     return this.state;
   }
 
+  // Частичное обновление состояния с уведомлением всех подписанных слушателей
   setState(newState) {
     this.state = { ...this.state, ...newState };
     this.notify();
   }
 
+  // Подписка функции-слушателя на изменения состояния с мгновенным начальным вызовом
   subscribe(listener) {
     this.listeners.add(listener);
 
@@ -20,6 +23,7 @@ class Store {
     return () => this.listeners.delete(listener);
   }
 
+  // Оповещение всех активных слушателей о произошедшем изменении состояния
   notify() {
     for (const listener of this.listeners) {
       listener(this.state);
@@ -45,6 +49,7 @@ export const charts = {
   techCategory: null,
 };
 
+// Генерация или получение из sessionStorage уникального ID сессии браузера для привязки SSE-событий
 export const clientId = (() => {
   let id = sessionStorage.getItem('clientId');
   if (!id) {

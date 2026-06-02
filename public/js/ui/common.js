@@ -1,8 +1,13 @@
+//Сохранение и восстановление позиции прокрутки при переходах между экранами.
+//Переключение основных экранов приложения с сопутствующей анимацией лоадера.
+//Отображение всплывающих уведомлений.
+
 import { DOM } from '../dom.js';
 import { escapeHtml } from '../utils/formatters.js';
 
 let isRestoring = false;
 
+// Получение ключа для сохранения позиции прокрутки
 function getScrollKey(screen) {
   if (screen === 'dashboard') {
     return 'scroll_' + (window.location.hash || 'welcome');
@@ -13,6 +18,7 @@ function getScrollKey(screen) {
   return 'scroll_' + (window.location.hash || 'welcome');
 }
 
+// Инициализация обработчиков для автоматического сохранения позиции скролла
 export function initScrollRestoration() {
   const mainContent = document.getElementById('mainContent');
   if (!mainContent) return;
@@ -46,6 +52,7 @@ export function initScrollRestoration() {
   });
 }
 
+// Восстановление сохраненной позиции скролла для указанного экрана
 export function restoreScrollPosition(screen) {
   const mainContent = document.getElementById('mainContent');
   if (!mainContent) return;
@@ -83,6 +90,7 @@ export function restoreScrollPosition(screen) {
   }
 }
 
+// Переключение активного экрана приложения и скрытие лоадера
 export function showScreen(screen) {
   if (screen === 'progress') {
     window.isProgressMinimized = false;
@@ -114,6 +122,7 @@ export function showScreen(screen) {
   }
 }
 
+// Отображение всплывающего уведомления
 export function showToast(message, type = 'success') {
   const existing = document.querySelector('.toast');
   if (existing) existing.remove();

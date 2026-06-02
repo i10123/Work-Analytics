@@ -10,6 +10,7 @@ const hhParser = new HhParser();
 const rabotabyParser = new RabotaByParser();
 const habrParser = new HabrParser();
 
+// Запуск парсеров с повторными попытками при ошибках
 async function runParsersWithRetry(query, filters, cancelFlag) {
   const allowedSources = filters.sources || { hh: true, rabotaby: true, habr: true };
 
@@ -65,6 +66,7 @@ async function runParsersWithRetry(query, filters, cancelFlag) {
 }
 
 
+// Основной конвейер сбора, дедупликации, анализа и сохранения данных
 async function runPipeline(task, emitUpdate) {
   let isCancelled = () => task.cancelFlag.isStopped;
 

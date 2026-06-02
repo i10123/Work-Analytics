@@ -1,3 +1,4 @@
+// Конвертация валют
 export function convertCurrency(amount, from, to, rates) {
   if (!amount || from === to)
     return amount;

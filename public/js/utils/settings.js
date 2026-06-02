@@ -22,6 +22,7 @@ try {
   console.warn('[Settings] ⚠️ Ошибка чтения локальных настроек:', e);
 }
 
+// Асинхронная инициализация настроек (загрузка с сервера и синхронизация с локальным хранилищем)
 export async function initSettings() {
   try {
     const res = await fetch('/api/settings');
@@ -39,10 +40,12 @@ export async function initSettings() {
   return currentSettings;
 }
 
+// Синхронное получение копии текущих настроек из оперативной памяти
 export function loadSettings() {
   return { ...currentSettings };
 }
 
+// Сохранение настроек в памяти, локальном хранилище и отправка изменений на сервер
 export async function saveSettings(settings) {
   currentSettings = { ...currentSettings, ...settings };
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(currentSettings));

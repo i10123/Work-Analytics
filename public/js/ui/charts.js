@@ -1,3 +1,5 @@
+// Модуль визуализации аналитических данных о вакансиях с использованием Chart.js.
+
 import { charts } from '../state.js';
 import { convertCurrency } from '../utils/currency.js';
 
@@ -19,6 +21,7 @@ const PALETTE = [
   'rgba(251, 146, 60, 0.85)', // Amber
 ];
 
+// Фильтрует вакансии, исключая записи с невалидными или незаполненными значениями в указанном поле.
 function filterValid(jobs, field) {
   return jobs.filter(j => {
     const v = j[field];
@@ -26,6 +29,7 @@ function filterValid(jobs, field) {
   });
 }
 
+// Вычисляет среднюю зарплату для переданного списка вакансий с конвертацией валют.
 function avgSalary(jobs, rates, currency) {
   const withSalary = jobs.filter(j => j.salary && (j.salary.min > 0 || j.salary.max > 0));
   if (withSalary.length === 0) return 0;
@@ -40,6 +44,7 @@ function avgSalary(jobs, rates, currency) {
   return Math.round(sum / withSalary.length);
 }
 
+// Создание или обновление существующего экземпляра графика Chart.js
 function safeCreateChart(chartKey, canvasId, config) {
   if (charts[chartKey]) {
     charts[chartKey].destroy();
@@ -76,10 +81,12 @@ function mapExperienceToLevel(exp) {
 
 let currentTextColor = null;
 
+// Обновление основных цветов текста графиков в соответствии с темой оформления
 export function updateChartColors() {
   currentTextColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || '#94a3b8';
 }
 
+// генерирует общий набор опций для диаграмм Chart.js (адаптивность, анимации, стили легенды и тултипов, сетки).
 function commonOptions(opts = {}) {
   if (!currentTextColor) {
     updateChartColors();
@@ -154,6 +161,7 @@ function formatBinLabel(start, size) {
   return `${formatVal(start)} — ${formatVal(end)}`;
 }
 
+// Отрисовка графика диапазонов (вилки) зарплат и средней зарплаты по грейдам
 export function renderChartSalaryGradeRange(jobs, rates, currency) {
   const canvas = document.getElementById('chartSalaryGradeRange');
   if (!canvas) return;
@@ -252,6 +260,7 @@ export function renderChartSalaryGradeRange(jobs, rates, currency) {
   });
 }
 
+// Отрисовка гистограммы распределения заработных плат
 export function renderChartSalary(jobs, rates, currency) {
   const canvas = document.getElementById('chartSalary');
   if (!canvas) return;
@@ -367,6 +376,7 @@ export function renderChartEnglishSalary(jobs, rates, currency) {
   });
 }
 
+// Отрисовка диаграммы самых востребованных навыков (Hard Skills)
 export function renderChartSkills(jobs) {
   const canvas = document.getElementById('chartSkills');
   if (!canvas) return;
@@ -437,6 +447,7 @@ export function renderChartSkills(jobs) {
   });
 }
 
+// Отрисовка сравнительного графика Языков программирования против Фреймворков и Инструментов
 export function renderChartLanguagesVsFrameworks(jobs) {
   const canvas = document.getElementById('chartLanguagesVsFrameworks');
   if (!canvas) return;
@@ -505,6 +516,7 @@ export function renderChartLanguagesVsFrameworks(jobs) {
   });
 }
 
+// Отрисовка лепестковой диаграммы популярности гибких навыков (Soft Skills)
 export function renderChartSoftSkillsRadar(jobs) {
   const canvas = document.getElementById('chartSoftSkillsRadar');
   if (!canvas) return;
@@ -644,6 +656,7 @@ export function renderChartSkillSynergy(jobs) {
   });
 }
 
+// Отрисовка круговой диаграммы востребованности специалистов по грейдам (Junior/Middle/Senior/Lead)
 export function renderChartGradeDemandDoughnut(jobs) {
   const canvas = document.getElementById('chartGradeDemandDoughnut');
   if (!canvas) return;
@@ -704,6 +717,7 @@ export function renderChartGradeDemandDoughnut(jobs) {
   });
 }
 
+// Отрисовка круговой диаграммы распределения форматов работы (удаленка, офис, гибрид)
 export function renderChartWorkFormatDoughnut(jobs) {
   const canvas = document.getElementById('chartWorkFormatDoughnut');
   if (!canvas) return;
@@ -827,6 +841,7 @@ export function renderChartWorkFormatBar(jobs, rates, currency) {
   });
 }
 
+// Полное уничтожение всех активных экземпляров графиков для очистки памяти
 export function destroyAllCharts() {
   for (const key of Object.keys(charts)) {
     if (charts[key]) {

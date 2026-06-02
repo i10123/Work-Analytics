@@ -5,9 +5,9 @@ import { validateForm, showValidationTooltip } from './ui-premium.js';
 import { loadQueueUI } from './sidebar.js';
 import { clientId } from '../state.js';
 
-export function openModal() {}
-export function closeModal() {}
 
+
+// Обработка отправки формы поискового запроса и запуск парсинга
 export async function handleFormSubmit(e) {
   if (e) e.preventDefault();
 
@@ -99,6 +99,7 @@ export async function handleFormSubmit(e) {
   }
 }
 
+// Отображение модального окна с ошибкой (через системные уведомления-тосты)
 export function showErrorModal(title, text) {
   import('./common.js').then(({ showToast }) => {
     showToast(`${title}: ${text}`, 'error');

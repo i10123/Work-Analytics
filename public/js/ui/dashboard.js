@@ -22,6 +22,7 @@ import { restoreScrollPosition } from './common.js';
 let activeChartTab = localStorage.getItem('active-chart-tab') || 'money';
 let lastRenderedReportId = null;
 
+// Отрисовка графиков, относящихся к выбранной вкладке табов
 function renderTabCharts(tabName, jobs, rates, currency) {
   destroyAllCharts();
   updateChartColors();
@@ -42,6 +43,7 @@ function renderTabCharts(tabName, jobs, rates, currency) {
   }
 }
 
+// Обновление положения и ширины скользящего индикатора активной вкладки графиков
 function updateChartsTabIndicator() {
   const nav = document.querySelector('.dashboard__charts-nav');
   const activeTab = nav ? nav.querySelector('.dashboard__charts-tab.active') : null;
@@ -53,6 +55,7 @@ function updateChartsTabIndicator() {
   }
 }
 
+// Инициализация обработчиков переключения вкладок графиков
 function initChartTabsListener(jobs, rates, currency) {
   const tabs = document.querySelectorAll('.dashboard__charts-tab');
   const sections = document.querySelectorAll('.charts-section');
@@ -103,6 +106,7 @@ function initChartTabsListener(jobs, rates, currency) {
   }
 }
 
+// Главная функция рендеринга всего дашборда аналитики на основе полученного отчета
 export function renderDashboard(report) {
   const jobs = report.jobs || [];
   const rates = report.exchangeRates?.rates || { RUB: 1, USD: 93.5, EUR: 100.2, BYN: 28.5 };
@@ -163,6 +167,7 @@ export function renderDashboard(report) {
   restoreScrollPosition('dashboard');
 }
 
+// Управление секцией автогенерации ИИ-сводки по стеку технологий
 function renderAiSummary(report) {
   if (!DOM.aiSummaryCard || !DOM.btnGenerateAiSummary || !DOM.btnUpdateAiSummary || !DOM.aiSummaryContent || !DOM.aiSummaryLoader || !DOM.aiSummaryWarning) return;
 
@@ -266,6 +271,7 @@ function renderAiSummary(report) {
   syncAiSummaryUI(report);
 }
 
+// Экспорт отфильтрованного списка вакансий в формат CSV с поддержкой BOM для Excel
 function exportToCSV(jobs, query) {
   if (!jobs || jobs.length === 0) return;
 
@@ -319,6 +325,7 @@ function exportToCSV(jobs, query) {
   document.body.removeChild(link);
 }
 
+// Расчет и отображение ключевых показателей эффективности (KPI) на панелях
 function renderKPI(jobs, rates) {
   if (!DOM.kpiTotal) return;
   DOM.kpiTotal.textContent = jobs.length;
@@ -362,6 +369,7 @@ function renderKPI(jobs, rates) {
   }
 }
 
+// Синхронизация состояния кнопок и заглушек ИИ-анализа в зависимости от наличия навыков пользователя
 function syncAiSummaryUI(report) {
   if (!DOM.aiSummaryCard || !DOM.btnGenerateAiSummary || !DOM.btnUpdateAiSummary || !DOM.aiSummaryWarning) return;
 
@@ -405,6 +413,7 @@ let currentRates = null;
 let currentSortedSkills = [];
 let showAllSkills = false;
 
+// Инициализация интерактивной панели подбора вакансий по навыкам (Job Matching)
 function initJobMatching(report, rates) {
   if (!DOM.jobMatchingPanel) return;
 

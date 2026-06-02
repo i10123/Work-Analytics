@@ -3,11 +3,13 @@ import { appStore } from '../state.js';
 
 import { loadSettings } from '../utils/settings.js';
 
+// Инициализация темы оформления приложения при старте
 export function initializeTheme() {
   const settings = loadSettings();
   setAppTheme(settings.theme || 'slate-modernity');
 }
 
+// Установка темы оформления приложения на html-элемент и обновление стилей графиков
 export function setAppTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('app-theme', theme);

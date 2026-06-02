@@ -1,3 +1,4 @@
+// Форматирование числового значения зарплаты с разделением тысяч
 export function formatSalary(value) {
   if (!value)
     return '—';
@@ -9,12 +10,14 @@ const HTML_ENTITIES = {
   '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
 };
 
+// Экранирование спецсимволов HTML для предотвращения XSS-атак
 export function escapeHtml(text) {
   if (!text)
     return '';
   return String(text).replace(/[&<>'"]/g, tag => HTML_ENTITIES[tag]);
 }
 
+// Преобразование секунд в человекочитаемый текстовый формат длительности
 export function formatDuration(seconds) {
   if (seconds < 0)
     seconds = 0;
@@ -32,6 +35,7 @@ export function formatDuration(seconds) {
   return `${m} мин. ${s} сек.`;
 }
 
+// Преобразование Markdown-текста в HTML (с использованием Marked или кастомного регулярного парсера)
 export function parseMarkdown(md) {
   if (!md) return '';
   if (typeof window !== 'undefined' && window.marked) {

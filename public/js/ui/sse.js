@@ -7,6 +7,7 @@ import { loadQueueUI } from './sidebar.js';
 import { formatDuration } from '../utils/formatters.js';
 import { appStore, clientId } from '../state.js';
 
+// Настройка EventSource для Server-Sent Events (подписка на обновления отчетов и очереди задач в реальном времени)
 export function setupSSE() {
   console.log('[App] 📡 Подключение к SSE...');
   const eventSource = new EventSource('/api/events?clientId=' + clientId);
@@ -109,6 +110,7 @@ export function setupSSE() {
 let progressTimerInterval = null;
 let progressStartTime = null;
 
+// Обработка поступающих от сервера обновлений статуса активной задачи
 async function handleTaskUpdate(task) {
   if (task.status === 'processing') {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -181,6 +183,7 @@ async function handleTaskUpdate(task) {
   loadQueueUI();
 }
 
+// Обновление плашки очереди задач в сайдбаре при изменении общего числа активных процессов
 function updateQueueBadge(status) {
   if (!DOM.queueStatus || !DOM.queueText) return;
   const totalActive = (status.isProcessing ? 1 : 0) + (status.queueLength || 0);

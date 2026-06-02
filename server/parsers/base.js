@@ -4,6 +4,7 @@ class BaseParser {
     this.MAX_PAGES_TO_SCAN = 15;
   }
 
+  // Умная отменяемая пауза
   async delay(ms, cancelFlag = null) {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(resolve, ms);
@@ -19,6 +20,8 @@ class BaseParser {
   async parse(query, filters = {}) {
     throw new Error(`[${this.name}] Метод parse() должен быть переопределен.`);
   }
+
+  // Конкурентный детальный сбор
   async fetchDeepWithConcurrency(items, fetchFn, concurrencyLimit = 3, cancelFlag = null) {
     const results = [];
     const executing = new Set();
@@ -70,6 +73,7 @@ class BaseParser {
     return Promise.all(results);
   }
 
+  // Компилятор стоп-слов
   compileStopWords(stopWordsStr) {
     if (!stopWordsStr) return [];
     return stopWordsStr.split(',').map(w => w.trim()).filter(Boolean)

@@ -23,6 +23,7 @@ const VALID_EDUCATIONS = ['Высшее', 'Среднее', 'Не требует
 
 const UNINFORMATIVE_VALUES = new Set(['Не указано']);
 
+// Анализ вакансий через ИИ
 async function extractMetadataFromJobs(jobs, onProgress = null, isDeepScrape = false, cancelFlag = null) {
   if (!jobs || jobs.length === 0) return [];
 
@@ -92,6 +93,7 @@ function sanitizeStringArray(arr) {
     .filter(Boolean);
 }
 
+// Объединение ИИ-данных с вакансией
 function mergeAiMetadata(job, aiData) {
   const jobSkills = sanitizeStringArray(job.skills);
   const aiLanguages = sanitizeStringArray(aiData.programmingLanguages);
@@ -126,6 +128,7 @@ function mergeAiMetadata(job, aiData) {
   };
 }
 
+// Генерация системного промпта
 function generatePrompt(batch) {
   const payload = batch.map((job, idx) => ({
     id: String(idx),
@@ -167,6 +170,7 @@ ${JSON.stringify(payload, null, 2)}
 ОТВЕТ (ТОЛЬКО JSON-объект):`;
 }
 
+// Выделение и парсинг JSON
 function parseJsonFromAi(rawText, expectedLength) {
   try {
     const firstBrace = rawText.indexOf('{');
@@ -192,6 +196,7 @@ function parseJsonFromAi(rawText, expectedLength) {
   }
 }
 
+// Разбивка массива на батчи
 function splitIntoBatches(array, size) {
   const batches = [];
   for (let i = 0; i < array.length; i += size) {
@@ -200,6 +205,7 @@ function splitIntoBatches(array, size) {
   return batches;
 }
 
+// Создание профиля кандидата
 async function generateCandidateProfile(report, selectedSkills = [], cancelFlag = null) {
   if (selectedSkills && !Array.isArray(selectedSkills)) {
     cancelFlag = selectedSkills;
@@ -270,6 +276,7 @@ ${selectedSkills && selectedSkills.length > 0 ? "5. **Анализ соотве�
   return await generateTextFromAI(prompt, cancelFlag);
 }
 
+// Текстовый запрос к ИИ
 async function generateTextFromAI(prompt, cancelFlag = null) {
   if (cancelFlag && cancelFlag.isStopped) return "Анализ отменён.";
 

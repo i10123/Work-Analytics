@@ -25,12 +25,14 @@ class HhParser extends BaseParser {
     this._uaIndex = 0;
   }
 
+  // Ротация User-Agent заголовков
   _getNextUserAgent() {
     const ua = USER_AGENTS[this._uaIndex % USER_AGENTS.length];
     this._uaIndex++;
     return ua;
   }
 
+  // Получение и кэширование OAuth2 access_token
   getAccessToken() {
     const clientId = process.env.HH_CLIENT_ID;
     const clientSecret = process.env.HH_CLIENT_SECRET;
@@ -84,10 +86,12 @@ class HhParser extends BaseParser {
     return sharedTokenPromise;
   }
 
+  // Генерация случайной задержки (jitter)
   _getRandomDelay(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
   }
 
+  // Формирование заголовков запроса
   _buildHeaders(token) {
     const ua = this._getNextUserAgent();
     const headers = {
@@ -103,6 +107,7 @@ class HhParser extends BaseParser {
     return headers;
   }
 
+  // Запрос к API с повторными попытками (retry)
   async _requestWithRetry(url, params, token, cancelFlag) {
     let lastError = null;
 
@@ -149,6 +154,7 @@ class HhParser extends BaseParser {
     throw lastError || new Error('Все попытки запроса исчерпаны');
   }
 
+  // Главный метод парсинга вакансий
   async parse(query, filters = {}, cancelFlag = null) {
     const limit = filters.limit || 50;
     const period = this.mapPeriodToDays(filters.period);
@@ -252,6 +258,7 @@ class HhParser extends BaseParser {
     return allJobs;
   }
 
+  // Глубокий сбор детальных описаний и навыков
   async fetchDeepDescriptions(jobs, token = null, cancelFlag = null) {
     const fetchFn = async (job) => {
       if (cancelFlag?.isStopped) return;
@@ -293,6 +300,7 @@ class HhParser extends BaseParser {
     await this.fetchDeepWithConcurrency(jobs, fetchFn, 3, cancelFlag);
   }
 
+  // Нормализация данных вакансии
   normalizeVacancy(vacancy) {
     const salary = vacancy.salary || {};
 
@@ -323,6 +331,7 @@ class HhParser extends BaseParser {
     };
   }
 
+  // Преобразование периода поиска в дни
   mapPeriodToDays(period) {
     const periodMap = {
       '1day': 1, '3days': 3, '7days': 7, '30days': 30,

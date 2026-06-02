@@ -3,6 +3,7 @@ import { appStore } from '../state.js';
 import { getCurrencySymbol, convertCurrency } from '../utils/currency.js';
 import { formatSalary } from '../utils/formatters.js';
 
+// Инициализация всех интерактивных элементов приветственного экрана (Welcome Screen)
 export function setupWelcomeScreen() {
   setupCanvasBackground();
   setupTypewriter();
@@ -14,6 +15,7 @@ export function setupWelcomeScreen() {
   setupQuickSearchPanelListeners();
 }
 
+// Настройка фоновой интерактивной анимации синусоидальных волн на элементе Canvas
 function setupCanvasBackground() {
   const canvas = document.getElementById('welcomeCanvas');
   if (!canvas) return;
@@ -137,6 +139,7 @@ function setupCanvasBackground() {
   animate();
 }
 
+// Настройка анимации автопечатания поисковых подсказок (эффект пишущей машинки) в плейсхолдере ввода
 function setupTypewriter() {
   const input = document.getElementById('welcomeSearchInput');
   if (!input) return;
@@ -233,6 +236,7 @@ function setupTypewriter() {
   typewriterLoop();
 }
 
+// Настройка обработчиков клика по тегам быстрой вставки ключевых слов
 function setupQuickTags() {
   const tags = document.querySelectorAll('.welcome-tag');
   const input = document.getElementById('welcomeSearchInput');
@@ -252,6 +256,7 @@ function setupQuickTags() {
   });
 }
 
+// Настройка кнопки отправки формы поиска
 function setupSearchInput() {
   const input = document.getElementById('welcomeSearchInput');
   const submitBtn = document.getElementById('welcomeSearchSubmit');
@@ -279,18 +284,9 @@ function setupSearchInput() {
     fillEmptyWithPlaceholder();
     form.dispatchEvent(new Event('submit', { cancelable: true }));
   });
-
-  document.addEventListener('keydown', (e) => {
-    const welcomeScreen = document.getElementById('welcomeScreen');
-    if (welcomeScreen && welcomeScreen.style.display !== 'none') {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        input.focus();
-      }
-    }
-  });
 }
 
+// Управление открытием/закрытием выпадающей панели настроек парсинга при фокусе на поиске
 function setupQuickSearchPanelListeners() {
   const input = document.getElementById('welcomeSearchInput');
   const panel = document.getElementById('welcomeSearchPanel');
@@ -317,6 +313,7 @@ function setupQuickSearchPanelListeners() {
   });
 }
 
+// Настройка интерактивного 3D-эффекта наклона (Tilt) для карточек статистики при наведении мыши
 function setupTiltEffect() {
   const cards = document.querySelectorAll('.welcome-stat-card');
 
@@ -341,6 +338,7 @@ function setupTiltEffect() {
   });
 }
 
+// Вспомогательная функция плавного счетчика (числовой анимации) от одного значения к другому
 function animateValue(obj, start, end, duration, formatFn = null) {
   if (!obj) return;
   let startTimestamp = null;
@@ -361,6 +359,7 @@ function animateValue(obj, start, end, duration, formatFn = null) {
   window.requestAnimationFrame(step);
 }
 
+// Расчет и рендеринг суммарной статистики (число отчетов, вакансий, топ-технология, средняя ЗП) на приветственном экране
 export function updateWelcomeStats() {
   const reportsCountEl = document.getElementById('welcomeStatReports');
   const jobsCountEl = document.getElementById('welcomeStatJobs');
@@ -489,6 +488,7 @@ export function updateWelcomeStats() {
 
 let marqueeObserver = null;
 
+// Инициализация ResizeObserver для адаптивной бегущей строки самого высокооплачиваемого направления
 function setupMarqueeObserver() {
   const topTechWrapper = document.getElementById('welcomeStatTopTechWrapper');
   if (!topTechWrapper) return;
@@ -504,6 +504,7 @@ function setupMarqueeObserver() {
   marqueeObserver.observe(topTechWrapper);
 }
 
+// Проверка переполнения и принудительное включение анимации прокрутки текста (бегущая строка) при необходимости
 export function adjustMarquee() {
   const topTechEl = document.getElementById('welcomeStatTopTech');
   const topTechWrapper = document.getElementById('welcomeStatTopTechWrapper');

@@ -3,6 +3,7 @@ import { renderDashboard } from './ui/dashboard.js';
 import { appStore } from './state.js';
 import { renderReportsList } from './ui/sidebar.js';
 
+// Загрузка списка всех отчетов с сервера и обновление сайдбара
 export async function loadReportsList() {
   try {
     const response = await fetch('/api/reports');
@@ -20,6 +21,7 @@ export async function loadReportsList() {
   }
 }
 
+// Загрузка детальных данных отчета по его ID, подготовка навыков и отрисовка дашборда
 export async function loadReportById(reportId, skipHistory = false) {
   try {
     const response = await fetch(`/api/reports/${reportId}`);
@@ -72,6 +74,7 @@ export async function loadReportById(reportId, skipHistory = false) {
   }
 }
 
+// Очистка и фильтрация массива навыков от дубликатов и склеенных длинных строк
 function cleanSkills(skills) {
   if (!Array.isArray(skills) || skills.length <= 1) return skills || [];
 

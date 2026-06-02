@@ -4,7 +4,7 @@ import { loadSettings, initSettings } from './utils/settings.js';
 import { appStore } from './state.js';
 import { loadReportsList, loadReportById } from './report.js';
 
-import { openModal, closeModal, handleFormSubmit } from './ui/modal.js';
+import { handleFormSubmit } from './ui/modal.js';
 import { renderDashboard } from './ui/dashboard.js';
 import { showScreen, initScrollRestoration } from './ui/common.js';
 import { setupSidebarListeners, loadQueueUI } from './ui/sidebar.js';
@@ -65,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 });
 
+// Первоначальное заполнение полей ввода и переключателей в соответствии с настройками пользователя
 function initializeSettings() {
   const settings = loadSettings();
 
@@ -98,6 +99,7 @@ function initializeSettings() {
   if (welcomeDeepScrape) welcomeDeepScrape.checked = settings.deepScrape || false;
 }
 
+// Настройка глобальных обработчиков событий (клики по кнопкам навигации, изменение валюты, свертывание боковой панели)
 function setupEventListeners() {
 
   DOM.sidebarToggle?.addEventListener('click', () => {
@@ -203,6 +205,7 @@ function setupEventListeners() {
 
 }
 
+// Контроль корректности вводимых лимитов количества вакансий (от 5 до 200) с автоматическим исправлением
 function setupLimitValidation() {
   const limits = [DOM.inputLimit, DOM.settingsDefaultLimit];
 

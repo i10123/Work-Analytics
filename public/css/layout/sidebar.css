@@ -1,3 +1,5 @@
+/*левое боковое меню*/
+
 .sidebar {
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);

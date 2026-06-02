@@ -17,6 +17,7 @@ const parseLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Запуск задачи на парсинг
 router.post('/parse', parseLimiter, (req, res) => {
   const { query, period, limit, sources, stopWords, deepScrape, clientId } = req.body;
 
@@ -71,6 +72,7 @@ router.post('/parse', parseLimiter, (req, res) => {
   });
 });
 
+// Получение списка отчетов
 router.get('/reports', async (req, res) => {
   try {
     const reports = await listReports();
@@ -82,6 +84,7 @@ router.get('/reports', async (req, res) => {
   }
 });
 
+// Получение отчета по его ID
 router.get('/reports/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -103,6 +106,7 @@ router.get('/reports/:id', async (req, res) => {
   }
 });
 
+// Генерация AI-сводки по отчету
 router.post('/reports/:id/summary', async (req, res) => {
   const { id } = req.params;
   const { selectedSkills } = req.body || {};
@@ -117,6 +121,7 @@ router.post('/reports/:id/summary', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Отчёт не найден.' });
     }
 
+    // Сравнение набора навыков для кэширования
     const hasSameSkills = () => {
       if (!report.aiSummary) return false;
       const cachedSkills = report.aiSummarySkills || [];
@@ -153,6 +158,7 @@ router.post('/reports/:id/summary', async (req, res) => {
   }
 });
 
+// Удаление отчета по его ID
 router.delete('/reports/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -175,6 +181,7 @@ router.delete('/reports/:id', async (req, res) => {
   }
 });
 
+// Удаление всех отчетов
 router.delete('/reports', async (req, res) => {
   try {
     const count = await deleteAllReports();
@@ -185,11 +192,13 @@ router.delete('/reports', async (req, res) => {
   }
 });
 
+// Получение текущего состояния очереди
 router.get('/queue', (req, res) => {
   const state = getFullQueueState();
   return res.json({ success: true, ...state });
 });
 
+// Удаление задачи из очереди
 router.post('/queue/:id/delete', (req, res) => {
   const { id } = req.params;
   const ok = deleteTask(id);
@@ -197,6 +206,7 @@ router.post('/queue/:id/delete', (req, res) => {
   return res.json({ success: true, message: 'Задача удалена.' });
 });
 
+// Остановка выполняющейся задачи
 router.post('/queue/:id/stop', (req, res) => {
   const { id } = req.params;
   const ok = gracefulStop(id);
@@ -204,6 +214,7 @@ router.post('/queue/:id/stop', (req, res) => {
   return res.json({ success: true, message: 'Сбор данных будет завершен досрочно.' });
 });
 
+// Повышение приоритета задачи
 router.post('/queue/:id/priority', (req, res) => {
   const { id } = req.params;
   const ok = prioritizeTask(id);
@@ -211,6 +222,7 @@ router.post('/queue/:id/priority', (req, res) => {
   return res.json({ success: true, message: 'Задача перемещена в начало очереди.' });
 });
 
+// Обновление параметров задачи
 router.put('/queue/:id', (req, res) => {
   const { id } = req.params;
   const { query, limit, period, sources } = req.body;
@@ -219,10 +231,12 @@ router.put('/queue/:id', (req, res) => {
   return res.json({ success: true, message: 'Параметры задачи обновлены.' });
 });
 
+// Получение статуса конфигурации API-ключей
 router.get('/status', (req, res) => {
   const currencyKeysStr = process.env.EXCHANGE_RATE_API_KEYS || '';
   const currencyKeys = currencyKeysStr.split(',').map((k) => k.trim()).filter(Boolean);
 
+  // Маскирование ключей
   const maskKey = (key) => {
     if (!key) return null;
     return key.slice(0, 4) + '...';
@@ -237,6 +251,7 @@ router.get('/status', (req, res) => {
   });
 });
 
+// Получение настроек
 router.get('/settings', async (req, res) => {
   try {
     const settings = await getSettings();
@@ -247,6 +262,7 @@ router.get('/settings', async (req, res) => {
   }
 });
 
+// Сохранение настроек
 router.post('/settings', async (req, res) => {
   try {
     const settings = req.body;
@@ -258,6 +274,7 @@ router.post('/settings', async (req, res) => {
   }
 });
 
+// Открытие SSE-соединения для событий очереди
 router.get('/events', (req, res) => {
   const { clientId } = req.query;
 
@@ -271,12 +288,14 @@ router.get('/events', (req, res) => {
     res.write(`:heartbeat\n\n`);
   }, 30000);
 
+  // Обработчик обновления задачи
   const onTaskUpdate = (task) => {
     if (!task.clientId || task.clientId === clientId) {
       res.write(`event: taskUpdate\ndata: ${JSON.stringify(task)}\n\n`);
     }
   };
 
+  // Обработчик изменения статуса очереди
   const onQueueStatus = (status) => {
     res.write(`event: queueStatus\ndata: ${JSON.stringify(status)}\n\n`);
   };

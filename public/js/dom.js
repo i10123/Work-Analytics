@@ -88,6 +88,7 @@ export const DOM = {
   get dataReportsCount() { return document.getElementById('dataReportsCount'); },
   get dataJobsCount() { return document.getElementById('dataJobsCount'); },
   get btnResetSettings() { return document.getElementById('btnResetSettings'); },
+  get btnDeleteAllReports() { return document.getElementById('btnDeleteAllReports'); },
 
   // Job Matching
   get jobMatchingPanel() { return document.getElementById('jobMatchingPanel'); },

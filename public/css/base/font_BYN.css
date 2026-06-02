@@ -1,3 +1,5 @@
+/*специальный символ белорусского рубля (BYN)*/
+
 @font-face {
     font-family: "nbrb";
     src: url("/fonts/nbrb.woff2") format("woff2"),

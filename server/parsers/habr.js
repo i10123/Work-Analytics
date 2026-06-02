@@ -29,6 +29,7 @@ class HabrParser extends BaseParser {
     this.activeBackoffDelay = null;
   }
 
+  // Получение заголовков для маскировки под браузер
   _getHeaders() {
     return {
       'User-Agent': this.getRandomUserAgent(),
@@ -47,6 +48,7 @@ class HabrParser extends BaseParser {
     };
   }
 
+  // Выполнение HTTP-запроса с адаптивной задержкой
   async _requestWithAdaptiveBackoff(url, config, cancelFlag) {
     let lastError = null;
     const maxRetries = 3;
@@ -88,6 +90,7 @@ class HabrParser extends BaseParser {
     throw lastError || new Error('Все попытки Adaptive Backoff исчерпаны');
   }
 
+  // Основной метод сбора вакансий
   async parse(query, filters = {}, cancelFlag = null) {
     const limit = filters.limit || 50;
     const stopRegexes = this.compileStopWords(filters.stopWords || '');
@@ -197,6 +200,7 @@ class HabrParser extends BaseParser {
     return allJobs;
   }
 
+  // Парсинг HTML-кода страницы со списком вакансий
   parseHabrHTML(html) {
     const $ = cheerio.load(html);
     const jobs = [];
@@ -327,6 +331,7 @@ class HabrParser extends BaseParser {
     return jobs;
   }
 
+  // Глубокий парсинг детального описания вакансий
   async fetchDeepDescriptions(jobs, cancelFlag = null) {
     const fetchFn = async (job) => {
       if (cancelFlag?.isStopped) return;
@@ -355,6 +360,7 @@ class HabrParser extends BaseParser {
     await this.fetchDeepWithConcurrency(jobs, fetchFn, this.currentConcurrency, cancelFlag);
   }
 
+  // Разбор текстового описания зарплаты
   parseSalaryText(text) {
     if (!text) return { min: null, max: null, currency: 'RUB' };
 
@@ -389,10 +395,12 @@ class HabrParser extends BaseParser {
     return { min: cleanedNumbers[0], max: cleanedNumbers[0], currency };
   }
 
+  // Получение случайного User-Agent из списка
   getRandomUserAgent() {
     return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
   }
 
+  // Получение случайной задержки для имитации человека
   getRandomDelay() {
     return MIN_DELAY_MS + Math.floor(Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS));
   }

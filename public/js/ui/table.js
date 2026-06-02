@@ -13,6 +13,7 @@ const TableManager = (() => {
   let activeSkillFilters = [];
   let activeFiltersListenerAdded = false;
 
+  // Фильтрация списка вакансий по текстовому запросу и выбранным тегам навыков
   function getFilteredJobs(jobs) {
     const searchInput = document.getElementById('jobsTableSearch');
     const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
@@ -39,6 +40,7 @@ const TableManager = (() => {
     });
   }
 
+  // Инициализация живого поиска по таблице с задержкой (debounce) в 300 мс
   function initSearch() {
     const searchInput = document.getElementById('jobsTableSearch');
     if (searchInput && !searchListenerAdded) {
@@ -56,6 +58,7 @@ const TableManager = (() => {
     }
   }
 
+  // Настройка обработчиков сортировки колонок таблицы при клике на заголовки th
   function initSort() {
     if (globalSortListenerAdded) return;
     globalSortListenerAdded = true;
@@ -87,6 +90,7 @@ const TableManager = (() => {
     });
   }
 
+  // Делегирование кликов на теле таблицы для выбора строк и переключения тегов-фильтров
   function initTableBodyDelegation() {
     if (globalTableBodyListenerAdded || !DOM.jobsTableBody) return;
     globalTableBodyListenerAdded = true;
@@ -116,6 +120,7 @@ const TableManager = (() => {
     });
   }
 
+  // Переключение активности тега навыка в качестве фильтра
   function toggleSkillFilter(skill) {
     const index = activeSkillFilters.findIndex(f => f.toLowerCase() === skill.toLowerCase());
     if (index === -1) {
@@ -126,6 +131,7 @@ const TableManager = (() => {
     applyActiveFilters();
   }
 
+  // Применение активных фильтров, обновление плашек и перерисовка строк таблицы
   function applyActiveFilters() {
     renderActiveFilterChips();
 
@@ -138,6 +144,7 @@ const TableManager = (() => {
     renderTableRows(sorted, currentRates, q);
   }
 
+  // Отрисовка плашек (чипсов) выбранных фильтров навыков
   function renderActiveFilterChips() {
     const bar = document.getElementById('tableActiveFiltersBar');
     const container = document.getElementById('tableActiveFiltersList');
@@ -159,6 +166,7 @@ const TableManager = (() => {
       `).join('');
   }
 
+  // Настройка обработчиков удаления отдельных фильтров или сброса всех фильтров
   function initActiveFiltersListeners() {
     if (activeFiltersListenerAdded) return;
 
@@ -189,6 +197,7 @@ const TableManager = (() => {
     }
   }
 
+  // Расчет процента совместимости вакансии со стеком пользователя
   function calculateCompatibility(jobSkills, userSkills) {
     if (!jobSkills || jobSkills.length === 0) return 100;
     if (!userSkills || userSkills.length === 0) return 0;
@@ -198,6 +207,7 @@ const TableManager = (() => {
     return Math.round((matches.length / vLower.length) * 100);
   }
 
+  // Получение числового веса опыта/грейда для корректной сортировки
   function getExperienceSortValue(job) {
     if (typeof job.experience_years_min === 'number') {
       return job.experience_years_min;
@@ -226,6 +236,7 @@ const TableManager = (() => {
     return gradeWeights[grade] || 0;
   }
 
+  // Сортировка массива вакансий по выбранному полю и направлению
   function sortData(data, rates) {
     const { key, direction } = sortConfig;
     const dir = direction === 'asc' ? 1 : -1;
@@ -258,6 +269,7 @@ const TableManager = (() => {
     });
   }
 
+  // Вычисление средней конвертированной зарплаты вакансии для сортировки
   function getSalarySortValue(job, rates) {
     if (!job.salary) return 0;
 
@@ -271,6 +283,7 @@ const TableManager = (() => {
     return 0;
   }
 
+  // Склонение слова "год/года/лет" в зависимости от числа
   function pluralizeYears(n) {
     const lastDigit = n % 10;
     const lastTwo = n % 100;
@@ -280,6 +293,7 @@ const TableManager = (() => {
     return 'лет';
   }
 
+  // Генерация HTML-разметки для отображения грейда и требуемого опыта
   function getExperienceHtml(job) {
     let grade = job.grade || 'Не указано';
     if (grade === 'Не указано' && job.experience) {
@@ -329,6 +343,7 @@ const TableManager = (() => {
     `;
   }
 
+  // Подсветка искомого слова (query) в тексте (выделение тегом mark)
   function highlightText(text, query) {
     if (!text) return '';
     if (!query || !query.trim()) return escapeHtml(text);
@@ -349,6 +364,7 @@ const TableManager = (() => {
     }
   }
 
+  // Очистка юридических префиксов (ООО, ИП) и форматирование регистра названия компании
   function cleanCompanyName(company) {
     if (!company) return '';
 
@@ -362,6 +378,7 @@ const TableManager = (() => {
       .replace(/\b(it|ai|ml|hr|qa|ui|ux|pr|ceo|cto|coo)\b/gi, (m) => m.toUpperCase());
   }
 
+  // Генерация HTML-разметки должности с разделением на основное название и детали в скобках
   function getTitleHtml(title, query) {
     if (!title) return '';
 
@@ -385,6 +402,7 @@ const TableManager = (() => {
     `;
   }
 
+  // Генерация HTML-разметки строк таблицы и вставка фрагмента в DOM
   function renderTableRows(jobs, rates, query = '') {
     DOM.jobsTableBody.innerHTML = '';
 
@@ -554,6 +572,7 @@ const TableManager = (() => {
   }
 
   return {
+    // Публичный метод инициализации и перерисовки всей таблицы вакансий
     render(jobs, rates) {
       if (!DOM.jobsTableBody) return;
       const table = document.getElementById('jobsTable');

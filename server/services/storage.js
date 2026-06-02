@@ -6,6 +6,7 @@ const REPORTS_DIR = path.join(__dirname, '..', '..', 'data', 'reports');
 const INDEX_FILE = path.join(REPORTS_DIR, 'index.jsonl');
 const LEGACY_INDEX_FILE = path.join(REPORTS_DIR, 'index.json');
 
+// Возвращает безопасный абсолютный путь к файлу отчёта с валидацией пути
 function getSecureFilepath(reportId, action) {
   if (!reportId || typeof reportId !== 'string' || !/^report_[a-zA-Z0-9а-яА-ЯёЁ_\-]+$/.test(reportId)) {
     throw new Error(`Неверный формат ID отчёта для действия: ${action}`);
@@ -28,6 +29,7 @@ let cacheInitPromise = null;
 let lastInitErrorTime = 0;
 const INIT_ERROR_COOLDOWN_MS = 10000;
 
+// Создает директорию для отчетов, если она не существует
 async function ensureDataDirs() {
   try {
     await fs.promises.mkdir(REPORTS_DIR, { recursive: true });
@@ -37,6 +39,7 @@ async function ensureDataDirs() {
   }
 }
 
+// Добавляет запись отчета в index.jsonl
 async function _appendToIndex(cacheItem) {
   if (!cacheItem) return;
   try {
@@ -47,6 +50,7 @@ async function _appendToIndex(cacheItem) {
   }
 }
 
+// Перезаписывает index.jsonl для удаления устаревших и удаленных записей
 async function _compactIndex() {
   if (reportsCache === null) return;
   try {
@@ -59,6 +63,7 @@ async function _compactIndex() {
   }
 }
 
+// Возвращает отсортированный список всех отчетов с кэшированием и миграцией индекса
 async function listReports() {
   if (reportsCache !== null) return reportsCache;
 
@@ -130,6 +135,7 @@ async function listReports() {
   }
 }
 
+// Сохраняет отчет в JSON-файл и обновляет индекс в кэше и на диске
 async function saveReport(report) {
   if (!report) throw new Error('Некорректный объект отчёта');
   const filepath = getSecureFilepath(report.id, 'saving');
@@ -169,6 +175,7 @@ async function saveReport(report) {
   }
 }
 
+// Загружает и возвращает объект отчета по его ID
 async function loadReport(reportId) {
   const filepath = getSecureFilepath(reportId, 'loading');
   try {
@@ -185,6 +192,7 @@ async function loadReport(reportId) {
   }
 }
 
+// Удаляет файл отчета и отмечает его удаленным в индексе
 async function deleteReport(reportId) {
   const filepath = getSecureFilepath(reportId, 'deletion');
   try {
@@ -210,6 +218,7 @@ async function deleteReport(reportId) {
   }
 }
 
+// Удаляет все файлы отчетов и очищает кэш индекса
 async function deleteAllReports() {
   try {
     const files = await fs.promises.readdir(REPORTS_DIR);

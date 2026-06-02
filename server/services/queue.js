@@ -12,6 +12,7 @@ const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT_TASKS, 10) || 1;
 let activeTasksCount = 0;
 let currentTask = null;
 
+// Очистка поискового запроса для ID
 function sanitizeQueryForId(query) {
   let sanitized = transliterate(query)
     .replace(/[^a-zA-Z0-9_]+/g, '_')
@@ -19,6 +20,7 @@ function sanitizeQueryForId(query) {
   return sanitized || 'query';
 }
 
+// Форматирование даты/времени в YYYY-MM-DD_HH-mm-ss
 function formatDateTime() {
   const now = new Date();
   const year = now.getFullYear();
@@ -30,6 +32,7 @@ function formatDateTime() {
   return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
 }
 
+// Добавление задачи в очередь
 function enqueueTask(params) {
   if (taskQueue.length >= MAX_QUEUE_SIZE) {
     throw new Error('Очередь сервера переполнена. Повторите попытку позже.');
@@ -68,6 +71,7 @@ function enqueueTask(params) {
   return task;
 }
 
+// Запуск следующей задачи из очереди
 function processNext() {
   if (activeTasksCount >= MAX_CONCURRENT) return;
 
@@ -83,6 +87,7 @@ function processNext() {
   processNext();
 }
 
+// Асинхронная обработка задачи
 async function _processTask(task) {
   task.cancelFlag.isStopped = false;
   task.cancelFlag.abortController = new AbortController();
@@ -145,6 +150,7 @@ async function _processTask(task) {
   }
 }
 
+// Принудительная остановка задачи
 function abortTask(id) {
   const task = findTask(id);
   if (!task) return false;
@@ -165,6 +171,7 @@ function abortTask(id) {
   return false;
 }
 
+// Мягкая остановка задачи с сохранением данных
 function gracefulStop(id) {
   const task = findTask(id);
   if (!task) return false;
@@ -184,6 +191,7 @@ function gracefulStop(id) {
   return false;
 }
 
+// Удаление задачи из очереди
 function deleteTask(id) {
   const task = findTask(id);
   if (!task) return false;
@@ -198,6 +206,7 @@ function deleteTask(id) {
   return true;
 }
 
+// Перемещение задачи в начало очереди
 function prioritizeTask(id) {
   const idx = taskQueue.findIndex(t => t.id === id);
   if (idx === -1 || idx === 0) return false;
@@ -215,6 +224,7 @@ function prioritizeTask(id) {
   return true;
 }
 
+// Обновление параметров задачи в очереди
 function updateTask(id, params) {
   const task = findTask(id);
   if (!task || task.status === 'processing') return false;
@@ -229,6 +239,7 @@ function updateTask(id, params) {
   return true;
 }
 
+// Получение полного состояния очереди и активной задачи
 function getFullQueueState() {
   return {
     queue: taskQueue.map(t => ({
@@ -254,10 +265,12 @@ function getFullQueueState() {
   };
 }
 
+// Поиск задачи в очереди по ID
 function findTask(id) {
   return taskQueue.find(t => t.id === id) || null;
 }
 
+// Удаление задачи из очереди по ID
 function removeTaskFromQueue(id) {
   const idx = taskQueue.findIndex(t => t.id === id);
   if (idx !== -1) {
@@ -265,6 +278,7 @@ function removeTaskFromQueue(id) {
   }
 }
 
+// Отправка событий обновления состояния
 function emitUpdate(task) {
   if (currentTask && currentTask.id === task.id) {
     currentTask.progress = task.progress;
@@ -274,6 +288,7 @@ function emitUpdate(task) {
   taskEmitter.emit('queueStatus', getQueueStatus());
 }
 
+// Получение краткого статуса активности очереди
 function getQueueStatus() {
   return {
     isProcessing: activeTasksCount > 0,

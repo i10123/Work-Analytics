@@ -1,3 +1,5 @@
+/*ошибочные всплывающие сообщения*/
+
 .modal-overlay--error {
   position: fixed;
   top: 0;

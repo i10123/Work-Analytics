@@ -6,6 +6,7 @@ import { renderDashboard } from './dashboard.js';
 import { loadReportsList } from '../report.js';
 import { appStore } from '../state.js';
 
+// Настройка обработчиков событий для элементов управления в панели настроек
 export function setupSettingsListeners() {
   if (DOM.btnSettings) DOM.btnSettings.addEventListener('click', openSettings);
   if (DOM.settingsClose) DOM.settingsClose.addEventListener('click', () => closeSettings(false));
@@ -49,6 +50,7 @@ export function setupSettingsListeners() {
   if (DOM.settingsSave) DOM.settingsSave.addEventListener('click', handleSaveSettings);
 }
 
+// Открытие оверлея настроек и заполнение полей текущими значениями
 export function openSettings() {
   const settings = loadSettings();
 
@@ -86,6 +88,7 @@ export function openSettings() {
   appStore.setState({ baselineSettings: JSON.stringify(getSettingsFromUI()) });
 }
 
+// Закрытие оверлея настроек с проверкой на наличие несохраненных изменений
 export async function closeSettings(force = false) {
   const { baselineSettings } = appStore.getState();
   if (!force && baselineSettings) {
@@ -107,6 +110,7 @@ export async function closeSettings(force = false) {
   appStore.setState({ baselineSettings: null });
 }
 
+// Отображение диалога подтверждения сохранения перед закрытием настроек
 function showConfirmModal() {
   return showConfirm({
     title: 'Сохранить изменения?',
@@ -120,6 +124,7 @@ function showConfirmModal() {
   });
 }
 
+// Создание и вывод кастомного модального окна подтверждения
 export function showConfirm(options) {
   return new Promise((resolve) => {
     const { title, text, icon = '⚠️', buttons = [] } = options;
@@ -165,6 +170,7 @@ export function showConfirm(options) {
 }
 
 
+// Переключение активной вкладки внутри бового меню настроек
 function switchSettingsTab(tabName) {
   DOM.settingsTabs?.querySelectorAll('.settings-tab').forEach((t) => {
     t.classList.toggle('active', t.dataset.tab === tabName);
@@ -175,6 +181,7 @@ function switchSettingsTab(tabName) {
   });
 }
 
+// Сохранение измененных настроек на сервере и применение их в UI
 async function handleSaveSettings() {
   const settings = getSettingsFromUI();
 
@@ -236,6 +243,7 @@ async function handleSaveSettings() {
   if (welcomeDeepScrape) welcomeDeepScrape.checked = settings.deepScrape || false;
 }
 
+// Сбор текущих значений настроек из элементов интерфейса
 function getSettingsFromUI() {
   const activeThemeCard = DOM.settingsThemeGrid?.querySelector('.settings-theme-card.active');
   const activeCurrencyBtn = DOM.settingsDefaultCurrency?.querySelector('.settings-currency-btn.active');
@@ -255,6 +263,7 @@ function getSettingsFromUI() {
   };
 }
 
+// Запрос статуса внешних API с сервера и обновление плашек состояния
 async function loadApiStatus() {
   try {
     const response = await fetch('/api/status');
@@ -276,7 +285,6 @@ async function loadApiStatus() {
 
     let hasApiError = false;
 
-    // Currency API Status
     if (data.currency) {
       updateStatus(DOM.currencyStatusText, data.currency.configured, 'Настроены', 'Не настроены');
       if (!data.currency.configured) hasApiError = true;
@@ -299,6 +307,7 @@ async function loadApiStatus() {
   }
 }
 
+// Отображение красной точки на вкладке API при наличии ошибок конфигурации
 function updateApiTabIndicator(hasError) {
   const apiTab = document.querySelector('.settings-tab[data-tab="api"]');
   if (!apiTab) return;
@@ -315,6 +324,7 @@ function updateApiTabIndicator(hasError) {
   }
 }
 
+// Получение статистики по количеству отчетов и вакансий в базе
 async function loadDataStats() {
   try {
     const response = await fetch('/api/reports');
@@ -330,6 +340,7 @@ async function loadDataStats() {
   }
 }
 
+// Обработка запроса на удаление всех отчетов из базы данных с подтверждением
 async function handleDeleteAllReports() {
   const confirmed = await showConfirm({
     title: 'Удалить все отчёты?',
@@ -362,10 +373,12 @@ async function handleDeleteAllReports() {
   }
 }
 
+// Очистка локального кэша приложения
 function handleClearCache() {
   showToast('Кэш успешно очищен', 'success');
 }
 
+// Сброс настроек приложения до заводских значений по умолчанию
 async function handleResetSettings() {
   const confirmed = await showConfirm({
     title: 'Сбросить настройки?',
@@ -402,6 +415,7 @@ async function handleResetSettings() {
   showToast('Настройки сброшены', 'success');
 }
 
+// Инициализация кастомного инкремента/декремента чисел (степпера) для числовых полей ввода
 export function setupStepperListeners() {
   let interval = null;
   let timeout = null;
@@ -481,6 +495,7 @@ export function setupStepperListeners() {
   document.addEventListener('touchcancel', stopStepping);
 }
 
+// Настройка обработчиков и анимации для сегментированных переключателей (Segmented Control)
 export function setupSegmentedControlListeners() {
   const controls = document.querySelectorAll('.segmented-control');
   controls.forEach(control => {

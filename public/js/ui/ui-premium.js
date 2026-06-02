@@ -1,3 +1,5 @@
+// модуль валидации форм и анимации тултипов
+
 export function initializePremiumUI() {
   console.log('[UI] ✨ Инициализация премиальных эффектов...');
   setupCustomValidation();

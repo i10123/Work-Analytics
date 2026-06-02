@@ -4,6 +4,7 @@ import { escapeHtml, formatDuration } from '../utils/formatters.js';
 let cachedReports = [];
 let cachedQueue = [];
 
+// Инициализация слушателей событий для сайдбара (поиск отчетов, клики по списку и очереди задач)
 export function setupSidebarListeners() {
   const searchClearBtn = document.getElementById('reportsSearchClear');
 
@@ -97,6 +98,7 @@ export function setupSidebarListeners() {
   }
 }
 
+// Фильтрация списка отчетов по поисковому запросу и их повторный рендеринг
 function filterAndRenderReports(searchQuery = '') {
   if (!searchQuery) {
     renderReportsList(cachedReports, false);
@@ -109,6 +111,7 @@ function filterAndRenderReports(searchQuery = '') {
   renderReportsList(filtered, false);
 }
 
+// Отрисовка списка отчетов в сайдбаре с группировкой по датам
 export function renderReportsList(reports, updateCache = true) {
   if (!DOM.reportsEmpty || !DOM.reportsList) return;
 
@@ -199,6 +202,7 @@ export function renderReportsList(reports, updateCache = true) {
   });
 }
 
+// Вспомогательная функция группировки отчетов по временным периодам (Сегодня, Вчера, Ранее)
 function groupReportsByDate(reports) {
   const groups = {
     'Сегодня': [],
@@ -224,6 +228,7 @@ function groupReportsByDate(reports) {
   return groups;
 }
 
+// Удаление отчета по ID с запросом подтверждения у пользователя
 async function deleteReportById(id, query) {
   const { showConfirm } = await import('./settings.js');
   const confirmed = await showConfirm({
@@ -268,6 +273,7 @@ async function deleteReportById(id, query) {
   }
 }
 
+// Загрузка состояния очереди задач с сервера и обновление статуса в сайдбаре
 export async function loadQueueUI() {
   try {
     const response = await fetch('/api/queue');
@@ -294,6 +300,7 @@ export async function loadQueueUI() {
 
 let queueTimers = new Map();
 
+// Отрисовка элементов очереди задач с отображением прогресса и таймеров выполнения
 export function renderQueueList(queue) {
   const container = document.getElementById('queueList');
   if (!container) return;
@@ -465,6 +472,7 @@ export function renderQueueList(queue) {
   });
 }
 
+// Отправка запроса на изменение приоритета или удаление задачи из очереди
 async function queueAction(id, action) {
   try {
     const response = await fetch(`/api/queue/${id}/${action}`, { method: 'POST' });
@@ -477,6 +485,7 @@ async function queueAction(id, action) {
   }
 }
 
+// Редактирование параметров (запрос, лимит) неактивной задачи в очереди
 async function queueEdit(task) {
   const newQuery = prompt('Ключевое слово:', task.query);
   if (newQuery === null) return;
